@@ -1,0 +1,10 @@
+/target/
+.settings/*
+.project
+.classpath
+*.o
+*.so
+*.out
+*.txt
+*.log
+/lib/
