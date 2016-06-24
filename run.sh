@@ -4,7 +4,7 @@ USAGE="usage: ./run.sh [class name]"
 
 MVN="/home/akolious/.m2/repository"
 
-LOG4J="${MVN}/log4j/log4j/1.2.12/log4j-1.2.12.jar"
+# LOG4J="${MVN}/log4j/log4j/1.2.12/log4j-1.2.12.jar"
 
 JETTYSERVER="${MVN}/org/eclipse/jetty/jetty-server/9.0.0.v20130308/jetty-server-9.0.0.v20130308.jar"
 JETTYUTIL="${MVN}/org/eclipse/jetty/jetty-util/9.0.0.v20130308/jetty-util-9.0.0.v20130308.jar"
@@ -37,7 +37,7 @@ fi
 # Set classpath
 JCP="."
 JCP="${JCP}:lib/saber-0.0.1-SNAPSHOT.jar"
-JCP="${JCP}:${LOG4J}";
+# JCP="${JCP}:${LOG4J}"
 JCP="${JCP}:${JETTYSERVER}:${JETTYUTIL}:${JETTYHTTP}:${JETTYIO}"
 JCP="${JCP}:${JACKSONCORE}:${JACKSONBIND}:${JACKSONANNOTATIONS}"
 JCP="${JCP}:${JAVAX}"
