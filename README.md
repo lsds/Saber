@@ -12,7 +12,7 @@ Alexandros Koliousis, Matthias Weildich, Raul Castro Fernandez, Alexander L. Wol
 
 The Saber source code is available to download from:
 
-[https://github.com/lsds/saber/sigmod16-reproducibility](https://github.com/lsds/saber/sigmod16-reproducibility)
+[https://github.com/lsds/saber/tree/sigmod16-reproducibility](https://github.com/lsds/saber/tree/sigmod16-reproducibility)
 
 ### Programming Language & Compiler Info
 
@@ -88,8 +88,9 @@ Device 0: "Quadro K5200"
 The `prepare-software.sh` script will guide you through the installation and compilation process of our system.
 
 ```
-$ git clone http://github.com/lsds/saber/sigmod16-reproducibility saber.git
+$ git clone http://github.com/lsds/saber.git saber.git
 $ cd saber.git
+$ git checkout --track origin/sigmod16-reproducibility
 $ export SABER_HOME=`pwd`
 $ ./scripts/prepare-software.sh
 ```
