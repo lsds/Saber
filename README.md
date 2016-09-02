@@ -12,7 +12,7 @@ Alexandros Koliousis, Matthias Weildich, Raul Castro Fernandez, Alexander L. Wol
 
 The Saber source code is available to download from:
 
-[https://github.com/lsds/saber/sigmod16-reproducibility](https://github.com/lsds/saber/sigmod16-reproducibility)
+[https://github.com/lsds/saber/tree/sigmod16-reproducibility](https://github.com/lsds/saber/tree/sigmod16-reproducibility)
 
 ### Programming Language & Compiler Info
 
@@ -81,15 +81,16 @@ Device 0: "Quadro K5200"
   Device PCI Domain ID / Bus ID / location ID:   0 / 4 / 0  
 ```
 
-## D) Experimentation Info
+## C) Experimentation Info
 
 ### Installing the system
 
 The `prepare-software.sh` script will guide you through the installation and compilation process of our system.
 
 ```
-$ git clone http://github.com/lsds/saber/sigmod16-reproducibility saber.git
+$ git clone http://github.com/lsds/saber.git saber.git
 $ cd saber.git
+$ git checkout --track origin/sigmod16-reproducibility
 $ export SABER_HOME=`pwd`
 $ ./scripts/prepare-software.sh
 ```
@@ -248,6 +249,8 @@ Anything command-line argument after `--` is considered a Saber application argu
 
 ### Operator microbenchmarks
 
+Apart from the system configuration command-line arguments, all microbenchmarks also share the following:
+
 ######--batch-size _N_
 
 Sets the query task size, in bytes. The default value is `1048576`, i.e. 1 MB.
@@ -262,27 +265,26 @@ Sets the number of attributes in the input stream. The default value is `6` and 
 
 ######--tuples-per-insert _N_
 
-The number of tuples pushed to the input stream buffer. Default value is `32768`.
+Sets the number of tuples pushed to the input stream buffer. Default value is `32768`.
 
 #### The projection.sh command
 
 ######--projected-attributes _N_
 
-The number of projected attributes. 
+Sets the number of projected attributes. 
 
 ######--expression-depth _N_
 
-The first attribute is projected as the expression 3 x _1 / 2. If the expression depth is 2 then the expression is 3 x (3 x _1 / 2) / 2 and so on.
-
+The first attribute ("_1") is projected as the expression 3 x "_1" / 2. If the expression depth is 2 then the expression is 3 x (3 x _1 / 2) / 2; and so on.
 #### The selection.sh command
 
 ######--comparisons _N_
 
-Number of comparisons evaluated on the first attribute of a tuple: _1 > 0 and _1 > 0 and so on.
+Number of comparisons evaluated on the first attribute of a tuple.
 
 ######--selectivity _N_
 
-The selectivity of the selection query, 1-100. 
+The selectivity of the selection query (between 1 and 100%). 
 
 #### The aggregation.sh command
 
@@ -292,5 +294,5 @@ An aggregate expression can be one of `cnt`, `sum`, `avg`, `min`, `max` or combi
 
 #### The theta-join.sh command
 
-The theta-join is similar to selection, only that it operates on two streams. Each stream can be configured using the suffix `-of-first-stream` or `-of-second-stream` in command-line arguments such as window type, size, slide, and number of input attributes. E.g. `--window-type-of-first-stream row`.
+The theta-join microbenchmark is similar to selection, only that it operates on two streams. Each stream can be configured using the suffix `-of-first-stream` or `-of-second-stream` in command-line arguments such as window type, size, slide, and number of input attributes. E.g. `--window-type-of-first-stream row`.
 
