@@ -77,7 +77,7 @@ saberExperimentRun () {
 	errors=0
 	points=0
 	
-	for mode in "hybrid"; do # "cpu" "gpu" "hybrid"; do
+	for mode in "cpu" "gpu" "hybrid"; do
 		
 		line=
 		key=
@@ -105,7 +105,7 @@ saberExperimentRun () {
 		CBS=4  # The initial value is  4 MB
 		CBL=16 # The lower bound   is 16 MB
 		
-		for N in 64; do # 128 256 512 1024 2048 4096; do
+		for N in 64 128 256 512 1024 2048 4096; do
 		
 		let points++
 		
