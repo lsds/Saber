@@ -73,7 +73,7 @@ OPTS=
 
 printf "Figure %3s: reproducibility version %d.%d\n" "$FIGID" $major $minor
 
-printf "Figure %3s: reproducibility of this figure is not supported yet\n" "$FIGID"
+printf "Figure %3s: automatic reproducibility of this figure is not supported yet\n" "$FIGID"
 
 exit 0
 
