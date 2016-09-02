@@ -91,7 +91,9 @@ public class ThetaJoin implements IOperatorCode {
 			int countMatchPositions = 0;
 		
 			// Changed <=, <=, || to &&
-			while (currentIndex1 < endIndex1 && currentIndex2 <= endIndex2) {
+			// while (currentIndex1 < endIndex1 && currentIndex2 <= endIndex2) {
+			// OLD
+			while (currentIndex1 < endIndex1 || currentIndex2 < endIndex2) {
 				
 				// System.out.println(String.format("[DBG] batch-1 index %10d end %10d batch-2 index %10d end %10d",
 				//		currentIndex1, endIndex1, currentIndex2, endIndex2));
@@ -108,7 +110,9 @@ public class ThetaJoin implements IOperatorCode {
 					/* Scan second window */
 					
 					// Changed here: <=
-					for (int i = currentWindowStart2; i <= currentWindowEnd2; i += tupleSize2) {
+					// for (int i = currentWindowStart2; i <= currentWindowEnd2; i += tupleSize2) {
+					// OLD
+					for (int i = currentWindowStart2; i < currentWindowEnd2; i += tupleSize2) {
 						
 						// System.out.println(String.format("[DBG] 1st window index %10d 2nd window index %10d", 
 						//		currentIndex1, i));
@@ -203,6 +207,7 @@ public class ThetaJoin implements IOperatorCode {
 					//		currentWindowStart1, currentWindowEnd1));
 					
 					// Changed here: <=
+					// for (int i = currentWindowStart1; i <= currentWindowEnd1; i += tupleSize1) {
 					for (int i = currentWindowStart1; i < currentWindowEnd1; i += tupleSize1) {
 						
 						if (monitorSelectivity)

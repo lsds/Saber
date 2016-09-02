@@ -56,7 +56,7 @@ public class TaskProcessor implements Runnable {
 		
 		AbstractTask task = null;
 		/* Pin worker to thread */
-		int min = (hybrid ? 2 : 1); /* +1 dispatcher, +1 GPU, if available */
+		int min = (hybrid ? 3 : 1); /* +1 dispatcher, +1 GPU, if available */
 		int max = 15;
 		int total = max - min + 1;
 		if (GPU) {

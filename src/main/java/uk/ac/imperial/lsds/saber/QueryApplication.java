@@ -93,8 +93,8 @@ public class QueryApplication {
 				policy [i][j] = 1;
 			}
 		}
-		// policy[0][0] = 0;
-		// policy[1][0] = 6000;
+		// policy[0][0] = 6000;
+		// policy[1][0] = 0;
 		
 		queue = new TaskQueue (N);
 		

@@ -3,7 +3,7 @@
 
 #define MAX_QUERIES    3
 
-#define MAX_KERNELS   10
+#define MAX_KERNELS   12
 #define MAX_INPUTS     6
 #define MAX_OUTPUTS   10
 

@@ -155,8 +155,9 @@ int gpu_query_setKernel (gpuQueryP q,
 		exit (1);
 	}
 	int i;
-	for (i = 0; i < NCONTEXTS; i++)
+	for (i = 0; i < NCONTEXTS; i++) {
 		gpu_context_setKernel (q->contexts[i], ndx, name, callback, args1, args2);
+	}
 	return 0;
 }
 

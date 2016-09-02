@@ -39,7 +39,7 @@ public class PerformanceMonitor implements Runnable {
 		Collections.sort(L, ordering);
 		int idx = 0;
 		for (Query query : L) {
-			System.out.println(String.format("[DBG] [MultiOperator] S %3d", query.getId()));
+			System.out.println(String.format("[MON] [MultiOperator] S %3d", query.getId()));
 			measurements[idx++] = 
 				new Measurement (
 					query.getId(), 
@@ -62,7 +62,7 @@ public class PerformanceMonitor implements Runnable {
 			dt = time - _time;
 			
 			StringBuilder b = new StringBuilder();
-			b.append("[DBG]");
+			b.append("[MON]");
 			
 			for (int i = 0; i < size; i++)
 				b.append(measurements[i].info(dt));
@@ -86,12 +86,18 @@ public class PerformanceMonitor implements Runnable {
 			
 			_time = time;
 			
-			// if (counter++ > 60) {
-			//	System.out.println("Done.");
-			//	for (int i = 0; i < size; i++)
-			//		measurements[i].stop();
-			//	break;
-			// }
+			if (SystemConf.DURATION > 0) {
+				
+				if (counter++ > SystemConf.DURATION) {
+					
+					for (int i = 0; i < size; i++)
+						measurements[i].stop();
+					
+					System.out.println("[MON] Done.");
+					System.out.flush();
+					break;
+				}
+			}
 		}
 	}
 	

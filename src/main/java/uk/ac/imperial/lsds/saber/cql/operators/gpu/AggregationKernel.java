@@ -36,7 +36,7 @@ public class AggregationKernel implements IOperatorCode, IAggregateOperator {
 	
 	private int qid;
 	
-	private static String filename = SystemConf.SABER_HOME + "/saber/clib/templates/Aggregation.cl";
+	private static String filename = SystemConf.SABER_HOME + "/clib/templates/Aggregation.cl";
 	
 	WindowDefinition windowDefinition;
 	
@@ -238,7 +238,7 @@ public class AggregationKernel implements IOperatorCode, IAggregateOperator {
 			
 		System.out.println(source);
 		
-		qid = TheGPU.getInstance().getQuery(source, 9, 1, 6);
+		qid = TheGPU.getInstance().getQuery(source, 9, 1, 9);
 		
 		TheGPU.getInstance().setInput (qid, 0, inputSize);
 		
@@ -264,8 +264,13 @@ public class AggregationKernel implements IOperatorCode, IAggregateOperator {
 		
 		/* Set partial window results */
 		TheGPU.getInstance().setOutput(qid, 5, outputSize, 1, 0, 0, 1, 1);
+		TheGPU.getInstance().setOutput(qid, 6, outputSize, 1, 0, 0, 1, 1);
+		TheGPU.getInstance().setOutput(qid, 7, outputSize, 1, 0, 0, 1, 1);
+		TheGPU.getInstance().setOutput(qid, 8, outputSize, 1, 0, 0, 1, 1);
 		
 		TheGPU.getInstance().setKernelAggregate (qid, args1, args2);
+		
+		
 	}
 
 	public void processData (WindowBatch batch, IWindowAPI api) {

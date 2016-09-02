@@ -33,7 +33,7 @@ public class ReductionKernel implements IOperatorCode, IAggregateOperator {
 	
 	private int qid;
 	
-	private static String filename = SystemConf.SABER_HOME + "/saber/clib/templates/Reduction.cl";
+	private static String filename = SystemConf.SABER_HOME + "/clib/templates/Reduction.cl";
 	
 	WindowDefinition windowDefinition;
 	

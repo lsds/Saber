@@ -60,7 +60,7 @@ public class KernelGenerator {
 		b.append("#pragma OPENCL EXTENSION cl_khr_byte_addressable_store: enable\n");
 		b.append("\n");
 		
-		b.append(String.format("#include \"%s/saber/clib/templates/byteorder.h\"", SystemConf.SABER_HOME));
+		b.append(String.format("#include \"%s/clib/templates/byteorder.h\"", SystemConf.SABER_HOME));
 		b.append("\n");
 		
 		int [] bytes1 = new int [1]; 

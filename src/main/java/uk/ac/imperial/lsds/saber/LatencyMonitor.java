@@ -86,7 +86,7 @@ public class LatencyMonitor {
 		
 		int length = measurements.size();
 		
-		System.out.println(String.format("[DBG] [LatencyMonitor] %10d measurements", length));
+		System.out.println(String.format("[MON] [LatencyMonitor] %10d measurements", length));
 		
 		if (length < 1)
 			return;
@@ -97,7 +97,7 @@ public class LatencyMonitor {
 			array[i++] = d.doubleValue();
 		Arrays.sort(array);
 		
-		System.out.println(String.format("[DBG] [LatencyMonitor] 5th %10.3f 25th %10.3f 50th %10.3f 75th %10.3f 99th %10.3f", 
+		System.out.println(String.format("[MON] [LatencyMonitor] 5th %10.3f 25th %10.3f 50th %10.3f 75th %10.3f 99th %10.3f", 
 			evaluateSorted(array,  5D),
 			evaluateSorted(array, 25D),
 			evaluateSorted(array, 50D),
