@@ -7,7 +7,7 @@ import uk.ac.imperial.lsds.saber.SystemConf;
 import uk.ac.imperial.lsds.saber.Utils;
 import uk.ac.imperial.lsds.saber.WindowBatch;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
-import uk.ac.imperial.lsds.saber.monetdb.MonetDBExperimentalSetup;
+// import uk.ac.imperial.lsds.saber.monetdb.MonetDBExperimentalSetup;
 
 public class ResultCollector {
 	
@@ -166,6 +166,7 @@ public class ResultCollector {
 				/* Release the current slot */
 				handler.slots.set(handler.next, -1);
 				
+				/*
 				if (MonetDBExperimentalSetup.enabled) {
 					if (handler.next == MonetDBExperimentalSetup.numberOfTasks - 1) {
 						long dt = System.nanoTime() - MonetDBExperimentalSetup.startTime;
@@ -173,6 +174,7 @@ public class ResultCollector {
 						System.out.println(String.format("[DBG] %d output bytes", handler.getTotalOutputBytes()));
 					}
 				}
+				*/
 				
 				/* Increment next */
 				handler.next = handler.next + 1;

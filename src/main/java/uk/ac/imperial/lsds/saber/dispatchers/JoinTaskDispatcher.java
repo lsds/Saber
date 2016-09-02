@@ -11,7 +11,7 @@ import uk.ac.imperial.lsds.saber.buffers.CircularQueryBuffer;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
 import uk.ac.imperial.lsds.saber.cql.operators.IAggregateOperator;
 import uk.ac.imperial.lsds.saber.handlers.ResultHandler;
-import uk.ac.imperial.lsds.saber.monetdb.MonetDBExperimentalSetup;
+// import uk.ac.imperial.lsds.saber.monetdb.MonetDBExperimentalSetup;
 import uk.ac.imperial.lsds.saber.tasks.Task;
 import uk.ac.imperial.lsds.saber.tasks.TaskFactory;
 import uk.ac.imperial.lsds.saber.tasks.TaskQueue;
@@ -282,14 +282,14 @@ public class JoinTaskDispatcher implements ITaskDispatcher {
 	private void createTask (boolean assembledFirst) {
 		
 		int taskid = this.getTaskNumber();
-		
+		/*
 		if (MonetDBExperimentalSetup.enabled) {
 			if (taskid == 1) {
 				MonetDBExperimentalSetup.startTime = System.nanoTime();
 				System.out.println("[DBG] MonetDB comparison experiment starts...");
 			}
 		}
-		
+		*/
 		// if (taskid > 6)
 		//	return;
 		
