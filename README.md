@@ -81,7 +81,7 @@ Device 0: "Quadro K5200"
   Device PCI Domain ID / Bus ID / location ID:   0 / 4 / 0  
 ```
 
-## D) Experimentation Info
+## C) Experimentation Info
 
 ### Installing the system
 
