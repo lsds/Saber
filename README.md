@@ -119,111 +119,111 @@ Edit `scripts/saber.conf` and revisit Saber's default configuration parameters i
 
 #### Maven repository
 
-`MVN_REPOSITORY` is the local folder where Saber's Java dependencies are downloaded and stored automatically by Maven. The default location on Linux is `$HOME/.m2`. The variable is used to construct the Java class path when running Saber appications from the command line.
+`MVN\_REPOSITORY` is the local folder where Saber's Java dependencies are downloaded and stored automatically by Maven. The default location on Linux is `$HOME/.m2`. The variable is used to construct the Java class path when running Saber appications from the command line.
 
 #### JVM configuration
 
-`SABER_JVM_MS` and `SABER_JVM_MX` set the minimum and maximum Java heap size (in GB) of a Saber application. In our experiments, both values are set to 48 GB (out of 64 GB available on the machine), resulting in a **fixed heap size**.
+`SABER\_JVM\_MS` and `SABER\_JVM\_MX` set the minimum and maximum Java heap size (in GB) of a Saber application. In our experiments, both values are set to 48 GB (out of 64 GB available on the machine), resulting in a **fixed heap size**.
 
-`SABER_JVM_NEWRATIO` sets the proportion of the heap dedicated to the young generation, where all new Java objects are allocated. The default value of `2` dedicates a third of the heap to the young generation.
+`SABER\_JVM\_NEWRATIO` sets the proportion of the heap dedicated to the young generation, where all new Java objects are allocated. The default value of `2` dedicates a third of the heap to the young generation.
 
-`SABER_JVM_SURVIVORRATIO` sets the ratio between Eden and Survivor space in the young generation. The default value is `16`.
+`SABER\_JVM\_SURVIVORRATIO` sets the ratio between Eden and Survivor space in the young generation. The default value is `16`.
 
 Based on the default configuration of the JVM, the Eden space of a Saber application is approximately 14 GB. In our experiments, the Eden space is never filled and thus no minor (_Stop the world_) garbage collection events occur. Saber reuses all major objects allocated (e.g., intermediate result buffers, tasks, etc.).
 
 #### Saber system configuration
 
-Variables in **saber.conf** prefixed with `SABER_CONF` configure the Saber runtime. Each of them also corresponds to a command-line argument available to all Saber applications:
+Variables in **saber.conf** prefixed with `SABER\_CONF` configure the Saber runtime. Each of them also corresponds to a command-line argument available to all Saber applications:
 
 ######--execution-mode `cpu`|`gpu`|`hybrid`
 
 Sets the execution mode to either CPU-only, GPU-only or Hybrid, respectively. In the latter case, both processors execute query tasks opportunistically. The default execution mode is `cpu`.
 
-It sets the `SABER_CONF_EXECUTIONMODE` variable.
+It sets the `SABER\_CONF\_EXECUTIONMODE` variable.
 
 ######--number-of-worker-threads _N_
 
 Sets the number of CPU worker threads. The default value is `1`. In GPU-only execution mode, the value must be `1`. **CPU worker threads are pinned to physical cores**. The first thread is pinned to core id 1, the second to core id 2, and so on.
 
-It sets the `SABER_CONF_NUMWORKERTHREADS` variable.
+It sets the `SABER\_CONF\_NUMWORKERTHREADS` variable.
 
 ######--number-of-result-slots _N_
 
 Sets the number of intermediate query result slots. The default value is `1024`. 
 
-It sets the `SABER_CONF_NUMRESULTSLOTS` variable.
+It sets the `SABER\_CONF\_NUMRESULTSLOTS` variable.
 
 ######--scheduling-policy `fcfs`|`static`|`hls`
 
 Sets the scheduling policy to either First-Come-First-Served (FCFS), Static or Heterogeneous Look-ahead Scheduling (HLS), respectively. The default value is `fcfs`.
 
-It sets the `SABER_CONF_SCHEDULINGPOLICY` variable.
+It sets the `SABER\_CONF\_SCHEDULINGPOLICY` variable.
 
 ######--switch-threshold _N_
 
 Used by the HLS scheduling algorithm (`--scheduling-policy hls`) to allow the non-preferred processor of a query to execute some of that query's tasks. The default value is `10`, allowing the non-preferred processor to execute 1 every 10 tasks executed on the preferred one.
 
-It sets the `SABER_CONF_SWITCHTHRESHOLD` variable.
+It sets the `SABER\_CONF\_SWITCHTHRESHOLD` variable.
 
 ######--number-of-partial-windows _N_
 
 Sets the maximum number of window fragments in a query task. The default value is `65536`.
 
-It sets the `SABER_CONF_NUMPARTIALWINDOWS` variable.
+It sets the `SABER\_CONF\_NUMPARTIALWINDOWS` variable.
 
 ######--circular-buffer-size _N_
 
 Sets the circular buffer size, in bytes. The default value is `1073741824`, i.e. 1 GB. 
 	
-It sets the `SABER_CONF_CIRCULARBUFFERSIZE` variable.
+It sets the `SABER\_CONF\_CIRCULARBUFFERSIZE` variable.
 
 ######--intermediate-buffer-size _N_
 
 Sets the intermediate result buffer size, in bytes, The default value is `1048576`, i.e. 1 MB.
 
-It sets the `SABER_CONF_INTERMEDIATEBUFFERSIZE` variable.
+It sets the `SABER\_CONF\_INTERMEDIATEBUFFERSIZE` variable.
 
 ######--hash-table-size _N_
 
 Hash table size (in bytes): hash tables hold partial window aggregate results (default is 1048576, i.e. 1MB). 
 
-It sets the `SABER_CONF_HASHTABLESIZE` variable.
+It sets the `SABER\_CONF\_HASHTABLESIZE` variable.
 
 ######--throughput-monitor-interval _N_
 
 Sets the query throughput matrix update interval, in msec. The default value is `1000` i.e. 1 sec.
 
-It sets the `SABER_CONF_THROUGHPUTMONITORINTERVAL` variable. 
+It sets the `SABER\_CONF\_THROUGHPUTMONITORINTERVAL` variable. 
 
 ######--performance-monitor-interval _N_
 
 Sets the performance monitor interval, in msec. The default value is `1000`, i.e. 1 sec. Controls how often Saber prints on standard output performance statistics such as throughput and latency. 
 
-It sets the `SABER_CONF_PERFORMANCEMONITORINTERVAL` variable.
+It sets the `SABER\_CONF\_PERFORMANCEMONITORINTERVAL` variable.
 
 ######--pipeline-depth _N_
 
 Sets the GPU pipeline depth - the number of query tasks scheduled on the GPU before the result of the first one is returned. The default value is `4`. 
 
-It sets the `SABER_CONF_PIPELINEDEPTH` variable.
+It sets the `SABER\_CONF\_PIPELINEDEPTH` variable.
 
 ######--enable-latency-measurements `true`|`false`
 
 Determines whether Saber should measure task latency or not. Default value is `false`. 
 
-It sets the `SABER_CONF_MEASURELATENCY` variable.
+It sets the `SABER\_CONF\_MEASURELATENCY` variable.
 
 ######--launch-web-server `true`|`false`
 
 Determines whether Saber should launch the _Saber Workbench_ back-end server (see our DEBS 2016 demo for details). Default value is `false`.
 
-It sets the `SABER_CONF_LAUNCHWEBSERVER` variable. 
+It sets the `SABER\_CONF\_LAUNCHWEBSERVER` variable. 
 
 ######--experiment-duration _N_
 
 Sets the duration after which no more performance statistics will be recorded by the system, in _performance monitor interval_ units. For example, if `--performance-monitor-interval 500` and `--experiment-duration 20` then the experiment duration is 10 sec. The default value is `0`, i.e. no limit specified.
 
-It sets the `SABER_CONF_EXPERIMENTDURATION` variable.
+It sets the `SABER\_CONF\_EXPERIMENTDURATION` variable.
 
 #### The run.sh command
 
@@ -233,11 +233,11 @@ Runs the specified Saber application class (e.g. `uk.ac.imperial.lsds.saber.expe
 
 ######--mode `foreground`|`background`
 
-Runs the Saber application specified by `--class` either in the foreground or the background. In background mode, standard output and standard error are redirected to log files in `$SABER_LOGDIR` and the application runs for a fixed duration.
+Runs the Saber application specified by `--class` either in the foreground or the background. In background mode, standard output and standard error are redirected to log files in `$SABER\_LOGDIR` and the application runs for a fixed duration.
 
 ######--alias _string_
 
-Sets a Saber application alias to manage its execution in background mode. For example, if alias is `test` then stdout and stderr are redirected to `$SABER_LOGDIR/test.out` and `$SABER_LOGDIR/test.err`, respectively.
+Sets a Saber application alias to manage its execution in background mode. For example, if alias is `test` then stdout and stderr are redirected to `$SABER\_LOGDIR/test.out` and `$SABER\_LOGDIR/test.err`, respectively.
 
 ######--duration _N_
 
@@ -248,6 +248,8 @@ Runs the Saber application in background mode for _N_ seconds and then exits gra
 Anything command-line argument after `--` is considered a Saber application argument. For example, `-- --execution-mode cpu --number-of-worker-threads 16` will run the application is CPU-only execution mode with 16 worker threads.
 
 ### Operator microbenchmarks
+
+Apart from the system configuration command-line arguments, all microbenchmarks also share the following:
 
 ######--batch-size _N_
 
@@ -263,27 +265,26 @@ Sets the number of attributes in the input stream. The default value is `6` and 
 
 ######--tuples-per-insert _N_
 
-The number of tuples pushed to the input stream buffer. Default value is `32768`.
+Sets the number of tuples pushed to the input stream buffer. Default value is `32768`.
 
 #### The projection.sh command
 
 ######--projected-attributes _N_
 
-The number of projected attributes. 
+Sets the number of projected attributes. 
 
 ######--expression-depth _N_
 
-The first attribute is projected as the expression 3 x _1 / 2. If the expression depth is 2 then the expression is 3 x (3 x _1 / 2) / 2 and so on.
-
+The first attribute ("\_1") is projected as the expression 3 x "\_1" / 2. If the expression depth is 2 then the expression is 3 x (3 x \_1 / 2) / 2; and so on.
 #### The selection.sh command
 
 ######--comparisons _N_
 
-Number of comparisons evaluated on the first attribute of a tuple: _1 > 0 and _1 > 0 and so on.
+Number of comparisons evaluated on the first attribute of a tuple.
 
 ######--selectivity _N_
 
-The selectivity of the selection query, 1-100. 
+The selectivity of the selection query (between 1 and 100%). 
 
 #### The aggregation.sh command
 
@@ -293,5 +294,5 @@ An aggregate expression can be one of `cnt`, `sum`, `avg`, `min`, `max` or combi
 
 #### The theta-join.sh command
 
-The theta-join is similar to selection, only that it operates on two streams. Each stream can be configured using the suffix `-of-first-stream` or `-of-second-stream` in command-line arguments such as window type, size, slide, and number of input attributes. E.g. `--window-type-of-first-stream row`.
+The theta-join microbenchmark is similar to selection, only that it operates on two streams. Each stream can be configured using the suffix `-of-first-stream` or `-of-second-stream` in command-line arguments such as window type, size, slide, and number of input attributes. E.g. `--window-type-of-first-stream row`.
 
