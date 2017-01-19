@@ -51,7 +51,7 @@ saberExperimentSetup () {
 	OPTS="$OPTS --aggregate-expression avg --groups-per-window 0"
 	
 	# System settings
-	OPTS="$OPTS --enable-latency-measurements true --number-of-partial-windows 65536 --intermediate-buffer-size 16777216"
+	OPTS="$OPTS --enable-latency-measurements true" 
 	
 	# Set the duration of each experiment in the figure
 	[ -z "$DURATION" ] && DURATION=$SABER_DEFAULT_DURATION
@@ -78,6 +78,7 @@ saberExperimentRun () {
 	points=0
 	
 	for mode in "cpu" "gpu" "hybrid"; do
+	# for mode in "hybrid"; do
 		
 		line=
 		key=
@@ -105,6 +106,31 @@ saberExperimentRun () {
 		for N in 2 4 8 16 32 64 128 256 512 1024; do
 		
 		let points++
+		
+		# Circular buffer size affects latency
+		OPTS=${OPTS}" --circular-buffer-size 268435456"
+		
+		if [ $N -eq 2 ]; then
+			OPTS=${OPTS}" --intermediate-buffer-size 41943040 --number-of-partial-windows 32768 --hash-table-size 256" 
+		elif [ $N -eq 4 ]; then
+			OPTS=${OPTS}" --intermediate-buffer-size 16777216 --number-of-partial-windows 16384"
+		elif [ $N -eq 8 ]; then
+			OPTS=${OPTS}" --intermediate-buffer-size 4194304 --number-of-partial-windows 8192"
+		elif [ $N -eq 16 ]; then
+			OPTS=${OPTS}" --intermediate-buffer-size 2097152 --number-of-partial-windows 4096"
+		elif [ $N -eq 32 ]; then
+			OPTS=${OPTS}" --intermediate-buffer-size 1048576 --number-of-partial-windows 2048"
+		elif [ $N -eq 64 ]; then
+			OPTS=${OPTS}" --intermediate-buffer-size 1048576 --number-of-partial-windows 1024"
+		elif [ $N -eq 128 ]; then
+			OPTS=${OPTS}" --intermediate-buffer-size 1048576 --number-of-partial-windows 512"
+		elif [ $N -eq 256 ]; then
+			OPTS=${OPTS}" --intermediate-buffer-size 1048576 --number-of-partial-windows 256"
+		elif [ $N -eq 512 ]; then
+			OPTS=${OPTS}" --intermediate-buffer-size 1048576 --number-of-partial-windows 128"
+		else
+			OPTS=${OPTS}" --intermediate-buffer-size 1048576 --number-of-partial-windows 64"	
+		fi
 		
 		# Convert to bytes
 		SLIDESIZE=`echo "$N * 32" | bc`
