@@ -4,7 +4,7 @@
 
 EXECPATH="$( dirname "${BASH_SOURCE[0]}" )"
 
-$EXECPATH/a/figure-11a.sh
+# $EXECPATH/a/figure-11a.sh
 
 $EXECPATH/b/figure-11b.sh
 
