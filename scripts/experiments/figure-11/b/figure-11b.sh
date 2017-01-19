@@ -104,6 +104,7 @@ saberExperimentRun () {
 		esac
 		
 		for N in 2 4 8 16 32 64 128 256 512 1024; do
+		# for N in 2 4; do
 		
 		let points++
 		
@@ -111,9 +112,9 @@ saberExperimentRun () {
 		OPTS=${OPTS}" --circular-buffer-size 268435456"
 		
 		if [ $N -eq 2 ]; then
-			OPTS=${OPTS}" --intermediate-buffer-size 41943040 --number-of-partial-windows 32768 --hash-table-size 256" 
+			OPTS=${OPTS}" --intermediate-buffer-size 9437184 --number-of-partial-windows 20000 --hash-table-size 16384 --circular-buffer-size 536870912" 
 		elif [ $N -eq 4 ]; then
-			OPTS=${OPTS}" --intermediate-buffer-size 16777216 --number-of-partial-windows 16384"
+			OPTS=${OPTS}" --intermediate-buffer-size 8388608 --number-of-partial-windows 16384 --hash-table-size 16384" # --circular-buffer-size 536870912"
 		elif [ $N -eq 8 ]; then
 			OPTS=${OPTS}" --intermediate-buffer-size 4194304 --number-of-partial-windows 8192"
 		elif [ $N -eq 16 ]; then
