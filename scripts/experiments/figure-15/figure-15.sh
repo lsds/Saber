@@ -48,7 +48,8 @@ saberExperimentSetup () {
 	
 	# System settings
 	OPTS="$OPTS --execution-mode hybrid --number-of-worker-threads 15"
-	OPTS="$OPTS --circular-buffer-size 268435456 --intermediate-buffer-size 1048576"
+	OPTS="$OPTS --circular-buffer-size 268435456" # --intermediate-buffer-size 32768" # --intermediate-buffer-size 1048576"
+	OPTS="$OPTS --intermediate-buffer-size 1048576" # --intermediate-buffer-size 1048576"
 	
 	# Set the duration of each experiment in the figure
 	[ -z "$DURATION" ] && DURATION=$SABER_DEFAULT_DURATION
@@ -58,7 +59,7 @@ saberExperimentSetup () {
 	# Workload-specific settings
 	
 	W2OPTS="$W2OPTS --number-of-partial-windows 128"
-	W2OPTS="$W2OPTS --switch-threshold 10 --throughput-monitor-interval 500"
+	W2OPTS="$W2OPTS --switch-threshold 10 --throughput-monitor-interval 100"
 	
 	return 0
 }
@@ -78,6 +79,7 @@ saberExperimentRun () {
 		[ $N -eq 1 ] && ALIAS="one" || ALIAS="two"
 		
 		for mode in "fcfs" "static" "hls"; do
+		# for mode in "hls"; do
 		
 		line=
 		key=
