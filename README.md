@@ -8,6 +8,10 @@ SABER: Window-based hybrid stream processing for heterogeneous architectures
 
 Alexandros Koliousis, Matthias Weildich, Raul Castro Fernandez, Alexander L. Wolf, Paolo Costa, and Peter Pietzuch 
 
+### Permissions
+
+Owner of artifact grants ACM permission to serve the artifact to users of the ACM Digital Library.
+
 ## A) Source code info
 
 The Saber source code is available to download from:
