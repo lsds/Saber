@@ -3,23 +3,12 @@ Window-based hybrid stream processing engine
 
 #### Quick Start
 
-$ git clone https://github.com/lsds/saber.git
+The latest Saber source code is available at: [https://github.com/lsds/saber/tree/sigmod16-reproducibility](https://github.com/lsds/saber/tree/sigmod16-reproducibility)
 
-$ cd saber
-
-$ export SABER_HOME=\`pwd\`
-
-Make sure your JAVA_HOME is set. E.g.:
-
-$ export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
-
-$ ./build.sh
-
-$ cd clib/
-
-$ make cpu
-
-$ cd ..
-
-$ ./run.sh uk.ac.imperial.lsds.saber.microbenchmarks.TestNoOp --mode cpu
-
+```
+$ git clone http://github.com/lsds/saber.git saber.git
+$ cd saber.git
+$ git checkout --track origin/sigmod16-reproducibility
+$ export SABER_HOME=`pwd`
+$ ./scripts/prepare-software.sh
+```
