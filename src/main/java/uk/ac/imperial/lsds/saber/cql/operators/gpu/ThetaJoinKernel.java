@@ -19,14 +19,14 @@ import uk.ac.imperial.lsds.saber.tasks.IWindowAPI;
 
 public class ThetaJoinKernel implements IOperatorCode {
 	
-	private static boolean debug = true;
+	private static boolean debug = false;
 	
 	private static final int numberOfThreadsPerGroup = 256;
 	private static final int numberOfTuplesPerThread =   2;
 	
 	private int qid;
 	
-	private static String filename = SystemConf.SABER_HOME + "/saber/clib/templates/ThetaJoin.cl";
+	private static String filename = SystemConf.SABER_HOME + "/clib/templates/ThetaJoin.cl";
 	
 	private ITupleSchema left, right;
 	private ITupleSchema outputSchema;
@@ -144,6 +144,8 @@ public class ThetaJoinKernel implements IOperatorCode {
 	}
 	
 	public void processData (WindowBatch first, WindowBatch second, IWindowAPI api) {
+		
+		/* TODO Fix the columns after padding*/
 		
 		IQueryBuffer inputBuffer1 = first.getBuffer();
 		int start1 = first.getBufferStartPointer();

@@ -41,6 +41,16 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 		return buffer.getLong(offset); 
 	}
 	
+	public long getMSBLongLong (int offset) {
+
+		return buffer.getLong(normalise(offset));
+	}
+	
+	public long getLSBLongLong (int offset) {
+
+		return buffer.getLong(normalise(offset) + 8);
+	}
+	
 	public byte [] array () {
 		
 		if (isDirect)
@@ -137,6 +147,25 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 	public int putLong (int index, long value) {
 		
 		buffer.putLong(index, value);
+		return 0;
+	}
+	
+	@SuppressWarnings("finally")
+	public int putLongLong (long msbValue, long lsbValue) {
+		try {
+			buffer.putLong(msbValue);
+			buffer.putLong(lsbValue);
+		} catch (BufferOverflowException e) {
+			e.printStackTrace();
+		} finally {
+			return 0;
+		}
+	}
+	
+	public int putLongLong (int index, long msbValue, long lsbValue) {
+		
+		buffer.putLong(index, msbValue);
+		buffer.putLong(index + 8, lsbValue);
 		return 0;
 	}
 	

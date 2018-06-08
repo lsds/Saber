@@ -4,7 +4,7 @@ public class TupleSchema implements ITupleSchema {
 	
 	public enum PrimitiveType {
 		
-		UNDEFINED, INT, FLOAT, LONG;
+		UNDEFINED, INT, FLOAT, LONG, LONGLONG;
 	}
 	
 	private int [] offsets;
@@ -14,7 +14,7 @@ public class TupleSchema implements ITupleSchema {
 	
 	private byte [] pad;
 	
-	private PrimitiveType [] types; /* 0:undefined 1:int, 2:float, 3:long */
+	private PrimitiveType [] types; /* 0:undefined 1:int, 2:float, 3:long, 4: long long */
 	private String [] names;
 	
 	private String name;
@@ -141,9 +141,10 @@ public class TupleSchema implements ITupleSchema {
 			s.append(getAttributeName(i));
 			s.append(": ");
 			switch (getAttributeType(i)) {
-			case   INT: s.append(  "int"); break;
-			case FLOAT: s.append("float"); break;
-			case  LONG: s.append( "long"); break;
+			case   	  INT: s.append(  "int"); break;
+			case 	FLOAT: s.append("float"); break;
+			case  	 LONG: s.append( "long"); break;
+			case LONGLONG: s.append("long long"); break;
 			default:
 				throw new IllegalStateException("error: invalid tuple attribute type");
 			}

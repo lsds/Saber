@@ -16,7 +16,7 @@ public class NoOpKernel implements IOperatorCode {
 	
 	private int qid;
 	
-	private String filename = SystemConf.SABER_HOME + "/saber/clib/templates/DummyKernel.cl";
+	private String filename = SystemConf.SABER_HOME + "/clib/templates/DummyKernel.cl";
 	
 	private ITupleSchema schema;
 	

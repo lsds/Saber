@@ -2,6 +2,7 @@ package uk.ac.imperial.lsds.saber.cql.predicates;
 
 import uk.ac.imperial.lsds.saber.ITupleSchema;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
+import uk.ac.imperial.lsds.saber.cql.expressions.Expression;
 import uk.ac.imperial.lsds.saber.cql.expressions.ints.IntExpression;
 
 public class IntComparisonPredicate implements IPredicate {
@@ -105,5 +106,13 @@ public class IntComparisonPredicate implements IPredicate {
 	
 	public int numberOfPredicates () {
 		return 1;
+	}
+	
+	public Expression getFirstExpression () {
+		return v1;
+	}
+	
+	public Expression getSecondExpression () {
+		return v2;
 	}
 }

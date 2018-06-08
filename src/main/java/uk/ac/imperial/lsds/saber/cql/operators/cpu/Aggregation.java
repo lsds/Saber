@@ -16,6 +16,8 @@ import uk.ac.imperial.lsds.saber.cql.expressions.floats.FloatColumnReference;
 import uk.ac.imperial.lsds.saber.cql.expressions.floats.FloatExpression;
 import uk.ac.imperial.lsds.saber.cql.expressions.ints.IntColumnReference;
 import uk.ac.imperial.lsds.saber.cql.expressions.ints.IntExpression;
+import uk.ac.imperial.lsds.saber.cql.expressions.longlongs.LongLongColumnReference;
+import uk.ac.imperial.lsds.saber.cql.expressions.longlongs.LongLongExpression;
 import uk.ac.imperial.lsds.saber.cql.expressions.longs.LongColumnReference;
 import uk.ac.imperial.lsds.saber.cql.expressions.longs.LongExpression;
 import uk.ac.imperial.lsds.saber.cql.operators.AggregationType;
@@ -27,7 +29,6 @@ import uk.ac.imperial.lsds.saber.tasks.IWindowAPI;
 public class Aggregation implements IOperatorCode, IAggregateOperator {
 	
 	private static final boolean debug = false;
-	
 	WindowDefinition windowDefinition;
 	
 	private AggregationType [] aggregationTypes;
@@ -241,9 +242,10 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 			for (int i = 1; i <= numberOfKeyAttributes; ++i) {
 				
 				Expression e = groupByAttributes[i - 1];
-				     if (e instanceof   IntExpression) { outputAttributes[i] = new   IntColumnReference(i); keyLength += 4; }
-				else if (e instanceof  LongExpression) { outputAttributes[i] = new  LongColumnReference(i); keyLength += 8; }
-				else if (e instanceof FloatExpression) { outputAttributes[i] = new FloatColumnReference(i); keyLength += 4; }
+				     if (e instanceof      IntExpression) { outputAttributes[i] = new      IntColumnReference(i); keyLength += 4; }
+				else if (e instanceof  	  LongExpression) { outputAttributes[i] = new     LongColumnReference(i); keyLength += 8; }
+				else if (e instanceof 	 FloatExpression) { outputAttributes[i] = new    FloatColumnReference(i); keyLength += 4; }
+				else if (e instanceof LongLongExpression) { outputAttributes[i] = new LongLongColumnReference(i); keyLength += 16; }
 				else
 					throw new IllegalArgumentException("error: invalid group-by attribute");
 			}
@@ -847,12 +849,12 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 		}
 		
 		/* Set complete windows */
-		System.out.println("Complete windows start at " + buffer.position());
+		//System.out.println("Complete windows start at " + buffer.position());
 		
 		ByteBuffer theTable = windowHashTable.getBuffer();
 		int intermediateTupleSize = windowHashTable.getIntermediateTupleSize();
 		/* Pack the elements of the table */
-		int tupleIndex = 0;
+		/*int tupleIndex = 0;
 		for (int idx = 0; idx < theTable.capacity(); idx += intermediateTupleSize) {
 			if (theTable.get(idx) == 1) {
 				int mark = theTable.get(idx);
@@ -872,8 +874,8 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 						));
 			}
 			tupleIndex ++;
-		}
-		System.exit(1);
+		}*/
+		/*System.exit(1);*/
 //		int tupleIndex = 0;
 //		for (int idx = offset; idx < (offset + SystemConf.HASH_TABLE_SIZE); idx += 32) {
 //			int mark = buffer.getInt(idx + 0);

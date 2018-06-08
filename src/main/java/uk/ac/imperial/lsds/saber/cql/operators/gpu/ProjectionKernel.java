@@ -18,7 +18,7 @@ public class ProjectionKernel implements IOperatorCode {
 	
 	private int qid;
 	
-	private static String filename = SystemConf.SABER_HOME + "/saber/clib/templates/Projection.cl";
+	private static String filename = SystemConf.SABER_HOME + "/clib/templates/Projection.cl";
 	
 	private ITupleSchema inputSchema, outputSchema;
 	

@@ -1,6 +1,8 @@
 package uk.ac.imperial.lsds.saber.buffers;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import uk.ac.imperial.lsds.saber.SystemConf;
@@ -15,7 +17,7 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	
 	private byte [] data = null;
 	
-	private int size;
+	public int size;
 	
 	private final PaddedAtomicLong start;
 	private final PaddedAtomicLong end;
@@ -29,6 +31,22 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	
 	private PaddedLong h;
 	
+	/* parallelize the work of dispatcher thread */
+	public boolean isParallel;
+	private CircularBufferWorker [] workers;
+	public AtomicInteger isReady;
+	public Latch isBufferFilledLatch;
+	public long timestamp = 0;
+	public long timestampBase = 0;
+	public int globalIndex;
+	public int globalLength;
+	public int numberOfThreads;
+	private boolean isFirst = true;
+	public int counter = -1;
+	public byte[] inputBuffer;
+	public CountDownLatch latch; 
+	/* 												*/
+
 	private static int nextPowerOfTwo (int size) {
 		
 		return 1 << (32 - Integer.numberOfLeadingZeros(size - 1));
@@ -69,6 +87,24 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		bytesProcessed = new AtomicLong (0L);
 		
 		h = new PaddedLong (0L);
+
+		/* parallelize the work of dispatcher thread */
+		isParallel = true;
+		if (this.id == 0) {
+			numberOfThreads = 2;
+			int coreToBind = 1;
+			isReady = new AtomicInteger(-1);
+			workers = new CircularBufferWorker [numberOfThreads];
+			for (int i = 0; i < workers.length; i++) {
+				workers[i] = new CircularBufferWorker (this, i + coreToBind);
+				Thread thread = new Thread(workers[i]);
+				thread.start();
+			}			
+			isBufferFilledLatch = new Latch(numberOfThreads);
+			latch = new CountDownLatch(numberOfThreads);
+			timestampBase = System.currentTimeMillis();
+			timestamp = System.currentTimeMillis() - timestampBase;
+		}		
 		
 		if (! this.isDirect) {
 			
@@ -94,6 +130,16 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	public long getLong (int offset) {
 		
 		return buffer.getLong(normalise(offset));
+	}
+	
+	public long getMSBLongLong (int offset) {
+
+		return buffer.getLong(normalise(offset));
+	}
+	
+	public long getLSBLongLong (int offset) {
+
+		return buffer.getLong(normalise(offset) + 8);
 	}
 	
 	public byte [] array () {
@@ -174,13 +220,26 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
 	}
 	
+	public int putLongLong (long msbValue, long lsbValue) {
+		
+		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
+	}
+	
+	public int putLongLong (int index, long msbValue, long lsbValue) {
+		
+		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
+	}
+	
 	public int put (byte [] values) {
 		
 		return put (values, values.length);
 	}
 	
 	public int put (byte [] values, int length) {
-		
+		return put( values, length, 0);
+	}
+	
+	public int put (byte [] values, int length, int offset) {
 		if (isDirect)
 			throw new UnsupportedOperationException("error: cannot put array to a direct buffer");
 		
@@ -193,22 +252,49 @@ public class CircularQueryBuffer implements IQueryBuffer {
 			h.value = start.get();
 			if (h.value <= wrapPoint) {
 				/* debug (); */
-				return -1;
+				return -1;				
 			}
 		}
 		int index = normalise (_end);
-		if (length > (size - index)) { /* Copy in two parts */
+		
+		if (id == 0) {
+			//set the pointers
+			globalIndex = index;
+			globalLength = length/numberOfThreads;
+			timestamp = System.currentTimeMillis() - timestampBase;
+			inputBuffer = values;
 			
-			int right = size - index;
-			int left  = length - (size - index);
+			if (this.isReady.get() == Integer.MAX_VALUE)
+				this.isReady.set(-1);
+			else
+				this.isReady.incrementAndGet();//compareandswap
 			
-			System.arraycopy(values, 0, data, index, right);
-			System.arraycopy(values, size - index, data, 0, left);
-			
+			while (this.isBufferFilledLatch.getCount()!=0)
+				Thread.yield();
+
+			this.isBufferFilledLatch.setLatch(numberOfThreads);
 		} else {
 			
-			System.arraycopy(values, 0, data, index, length);
+			if (length > (size - index)) { 
+			
+				if (offset != 0)
+					throw new NullPointerException ("error: copy in two part if the offset is greater than 0");
+				
+				int right = size - index;
+				int left  = length - (size - index);
+				
+				System.arraycopy(values, 0, data, index, right);
+				System.arraycopy(values, size - index, data, 0, left);
+				
+				//throw new IllegalStateException();
+				
+			} else {
+				
+				System.arraycopy(values, offset, data, index, length);
+	
+			}
 		}
+		
 		
 		int p = normalise (_end + length);
 		if (p <= index)
@@ -219,25 +305,14 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		return index;
 	}
 	
-	public int put (byte [] values, int offset, int length) {
-		
-		if (offset > 0)
-			throw new UnsupportedOperationException("error: cannot put byte array with an offset of non-zero to a circular buffer");
-		
-		return put (values, length);
-	}
-	
 	public int put (IQueryBuffer buffer) {
 		
 		return put (buffer.array());
 	}
 	
 	public int put (IQueryBuffer buffer, int offset, int length) {
-		
-		if (offset > 0)
-			throw new UnsupportedOperationException("error: cannot put byte array with an offset of non-zero to a circular buffer");
-		
-		return put (buffer.array(), length);
+				
+		return put (buffer.array(), length, offset);
 	}
 	
 	public void free (int offset) {

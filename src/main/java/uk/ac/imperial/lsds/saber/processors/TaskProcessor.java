@@ -56,14 +56,14 @@ public class TaskProcessor implements Runnable {
 		
 		AbstractTask task = null;
 		/* Pin worker to thread */
-		int min = (hybrid ? 2 : 1); /* +1 dispatcher, +1 GPU, if available */
+		int min = (hybrid ? 3 : 1); /* +1 dispatcher, +1 GPU, if available */
 		int max = 15;
 		int total = max - min + 1;
 		if (GPU) {
 			System.out.println ("[DBG] GPU thread is " + Thread.currentThread());
 			TheCPU.getInstance().bind(1);
 		} else {
-			int core = ((pid - (min - 1)) % total) + min;
+			int core = ((pid - (min - 1)) % total) + min + 4;
 			System.out.println(String.format("[DBG] bind worker %2d to core %2d", pid, core));
 			TheCPU.getInstance().bind(core);
 		}

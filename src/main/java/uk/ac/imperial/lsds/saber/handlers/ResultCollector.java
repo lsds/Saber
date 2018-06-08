@@ -7,7 +7,7 @@ import uk.ac.imperial.lsds.saber.SystemConf;
 import uk.ac.imperial.lsds.saber.Utils;
 import uk.ac.imperial.lsds.saber.WindowBatch;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
-import uk.ac.imperial.lsds.saber.monetdb.MonetDBExperimentalSetup;
+// import uk.ac.imperial.lsds.saber.monetdb.MonetDBExperimentalSetup;
 
 public class ResultCollector {
 	
@@ -60,12 +60,24 @@ public class ResultCollector {
 		
 		try {
 			
-			while (! handler.slots.compareAndSet(idx, -1, 0)) {
-
-				System.err.println(String.format("warning: result collector (%s) blocked: query %d task %4d slot %4d", 
-						Thread.currentThread(), query.getId(), taskid, idx));
-				
-				LockSupport.parkNanos(1L);
+			boolean isPadded = false;
+			
+			if (isPadded) {
+				while (! handler.paddedSlots[idx].compareAndSet(-1, 0)) {
+					
+					System.err.println(String.format("warning: result collector (%s) blocked: query %d task %4d slot %4d", 
+							Thread.currentThread(), query.getId(), taskid, idx));
+					
+					LockSupport.parkNanos(1L);
+				}
+			} else {
+				while (! handler.slots.compareAndSet(idx, -1, 0)) {
+					
+					System.err.println(String.format("warning: result collector (%s) blocked: query %d task %4d slot %4d", 
+							Thread.currentThread(), query.getId(), taskid, idx));
+					
+					LockSupport.parkNanos(1L);
+				}
 			}
 			
 			handler.freePointers1[idx] = freePtr1;
@@ -77,8 +89,11 @@ public class ResultCollector {
 			handler.mark  [idx] = mark;
 			
 			/* No other thread can modify this slot. */
-			handler.slots.set(idx, 1);
-			
+			if (isPadded) 
+				handler.paddedSlots[idx].set(1);
+			else
+				handler.slots.set(idx, 1);
+
 			/* Forward and free */
 
 			if (! handler.semaphore.tryAcquire())
@@ -87,9 +102,16 @@ public class ResultCollector {
 			/* No other thread can enter this section */
 
 			/* Is slot `next` occupied? */
-			if (! handler.slots.compareAndSet(handler.next, 1, 2)) {
-				handler.semaphore.release();
-				return;
+			if (isPadded) {
+				if (! handler.paddedSlots[handler.next].compareAndSet(1, 2)) {
+					handler.semaphore.release();
+					return;
+				}
+			} else {
+				if (! handler.slots.compareAndSet(handler.next, 1, 2)) {
+					handler.semaphore.release();
+					return;
+				}
 			}
 			
 			boolean busy = true;
@@ -127,7 +149,11 @@ public class ResultCollector {
 							if (! success) {
 								// System.out.println("[DBG] failed to forward results to next query...");
 								handler.latch[handler.next] = q;
-								handler.slots.set(handler.next, 1);
+								if (isPadded) 
+									handler.paddedSlots[handler.next].set(1);
+								else
+									handler.slots.set(handler.next, 1);
+
 								handler.semaphore.release();
 								return;
 							}
@@ -164,8 +190,12 @@ public class ResultCollector {
 					handler.freeBuffer2.free (f2);
 				
 				/* Release the current slot */
-				handler.slots.set(handler.next, -1);
-				
+				if (isPadded) 
+					handler.paddedSlots[handler.next].set(-1);
+				else
+					handler.slots.set(handler.next, -1);
+
+				/*
 				if (MonetDBExperimentalSetup.enabled) {
 					if (handler.next == MonetDBExperimentalSetup.numberOfTasks - 1) {
 						long dt = System.nanoTime() - MonetDBExperimentalSetup.startTime;
@@ -173,6 +203,7 @@ public class ResultCollector {
 						System.out.println(String.format("[DBG] %d output bytes", handler.getTotalOutputBytes()));
 					}
 				}
+				*/
 				
 				/* Increment next */
 				handler.next = handler.next + 1;
@@ -180,9 +211,17 @@ public class ResultCollector {
 				
 				/* Check if next is ready to be pushed */
 
-				if (! handler.slots.compareAndSet(handler.next, 1, 2)) {
-					busy = false;
+				if (isPadded) {
+					if (! handler.paddedSlots[handler.next].compareAndSet(1, 2)) {
+						busy = false;
+					}
 				}
+				else {
+					if (! handler.slots.compareAndSet(handler.next, 1, 2)) {
+						busy = false;
+					}
+				}					
+
 			}
 			/* Thread exit critical section */
 			handler.semaphore.release();

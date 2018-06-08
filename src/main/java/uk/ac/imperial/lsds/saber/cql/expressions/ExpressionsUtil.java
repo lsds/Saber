@@ -5,6 +5,7 @@ import uk.ac.imperial.lsds.saber.TupleSchema;
 import uk.ac.imperial.lsds.saber.TupleSchema.PrimitiveType;
 import uk.ac.imperial.lsds.saber.cql.expressions.floats.FloatExpression;
 import uk.ac.imperial.lsds.saber.cql.expressions.ints.IntExpression;
+import uk.ac.imperial.lsds.saber.cql.expressions.longlongs.LongLongExpression;
 import uk.ac.imperial.lsds.saber.cql.expressions.longs.LongExpression;
 
 public class ExpressionsUtil {
@@ -73,7 +74,7 @@ public class ExpressionsUtil {
 		}
 		
 		return b;
-	}
+	}			
 	
 	public static void longToByteArray (long value, byte [] bytes) {
 		
@@ -87,6 +88,43 @@ public class ExpressionsUtil {
 			bytes[pivot + i] = (byte) (value >> (8 - i - 1 << 3));
 		}
 		return (pivot + 8);
+	}
+	
+	public static final byte [] longLongToByteArray (long msbValue, long lsbValue) {
+		
+		byte [] b = new byte [16];
+		
+		for (int i = 0; i < 8; ++i) {
+			
+			b[i] = (byte) (msbValue >> (8 - i - 1 << 3));
+		}
+		
+		for (int i = 0; i < 8; ++i) {
+			
+			b[i + 8] = (byte) (lsbValue >> (8 - i - 1 << 3));
+		}
+		
+		return b;
+	}
+	
+	public static void longLongToByteArray (long msbValue, long lsbValue, byte [] bytes) {
+		
+		longLongToByteArray(msbValue, lsbValue, bytes, 0);
+	}
+	
+	public static int longLongToByteArray (long msbValue, long lsbValue, byte [] bytes, int pivot) {
+		
+		for (int i = 0; i < 8; ++i) {
+			
+			bytes[pivot + i] = (byte) (msbValue >> (8 - i - 1 << 3));
+		}
+		
+		for (int i = 0; i < 8; ++i) {
+			
+			bytes[pivot + i + 8] = (byte) (lsbValue >> (8 - i - 1 << 3));
+		}
+		
+		return (pivot + 16);
 	}
 	
 	public static final ITupleSchema getTupleSchemaFromExpressions (final Expression [] expressions) {
@@ -103,9 +141,10 @@ public class ExpressionsUtil {
 			
 			e = expressions[i];
 			
-			     if (e instanceof   IntExpression) idx += 4;
-			else if (e instanceof FloatExpression) idx += 4;
-			else if (e instanceof  LongExpression) idx += 8;
+			     if (e instanceof      IntExpression) idx += 4;
+			else if (e instanceof 	 FloatExpression) idx += 4;
+			else if (e instanceof     LongExpression) idx += 8;
+			else if (e instanceof LongLongExpression) idx += 16;
 		}
 		
 		schema = new TupleSchema (offsets, idx);
@@ -113,9 +152,10 @@ public class ExpressionsUtil {
 		/* Set types */
 		for (int i = 0; i < expressions.length; i++) {
 			e = expressions[i];
-			     if (e instanceof   IntExpression) schema.setAttributeType(i, PrimitiveType.INT  );
-			else if (e instanceof FloatExpression) schema.setAttributeType(i, PrimitiveType.FLOAT);
-			else if (e instanceof  LongExpression) schema.setAttributeType(i, PrimitiveType.LONG );
+			     if (e instanceof      IntExpression) schema.setAttributeType(i, PrimitiveType.INT      );
+			else if (e instanceof    FloatExpression) schema.setAttributeType(i, PrimitiveType.FLOAT    );
+			else if (e instanceof     LongExpression) schema.setAttributeType(i, PrimitiveType.LONG     );
+			else if (e instanceof LongLongExpression) schema.setAttributeType(i, PrimitiveType.LONGLONG );
 		}
 		
 		return schema;

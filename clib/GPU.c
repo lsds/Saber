@@ -654,10 +654,10 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheGPU_setKernelAg
 
 	(void) obj;
 	(void) qid;
-
+	
 	jsize argc1 = (*env)->GetArrayLength(env, _args1);
 	jsize argc2 = (*env)->GetArrayLength(env, _args2);
-
+	
 	if (argc1 != 6 && argc2 != 2) {
 		fprintf(stderr, "error: invalid number of kernel arguments (expected [6, 2], found [%d, %d])\n",
 			argc1, argc2);
@@ -666,7 +666,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheGPU_setKernelAg
 
 	jint  *args1 = (*env)->GetIntArrayElements (env, _args1, 0);
 	jlong *args2 = (*env)->GetLongArrayElements(env, _args2, 0);
-
+	
 	/* Set kernel(s) */
 	gpu_setKernel (qid, 0, "clearKernel",                    &callback_setKernelAggregate, args1, args2);
 	gpu_setKernel (qid, 1, "computeOffsetKernel",            &callback_setKernelAggregate, args1, args2);
@@ -677,10 +677,10 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheGPU_setKernelAg
 	gpu_setKernel (qid, 6, "aggregateOpeningWindowsKernel",  &callback_setKernelAggregate, args1, args2);
 	gpu_setKernel (qid, 7, "aggregatePendingWindowsKernel",  &callback_setKernelAggregate, args1, args2);
 	gpu_setKernel (qid, 8, "packKernel",                     &callback_setKernelAggregate, args1, args2);
-
+	
 	(*env)->ReleaseIntArrayElements (env, _args1, args1, JNI_ABORT);
 	(*env)->ReleaseLongArrayElements(env, _args2, args2, JNI_ABORT);
-
+	
 	return 0;
 }
 
@@ -696,12 +696,12 @@ void callback_setKernelAggregate (cl_kernel kernel, gpuContextP context, int *ar
 	int maxNumberOfWindows = args1[4];
 
 	int cache_size = args1[5];
-
+	
 	long previousPaneId = args2[0];
 	long startOffset    = args2[1];
-
+	
 	int error = 0;
-
+	
 	error |= clSetKernelArg (kernel, 0, sizeof(int),  (void *)      &numberOfTuples);
 
 	error |= clSetKernelArg (kernel, 1, sizeof(int),  (void *)  &numberOfInputBytes);
@@ -712,59 +712,78 @@ void callback_setKernelAggregate (cl_kernel kernel, gpuContextP context, int *ar
 
 	error |= clSetKernelArg (kernel, 5, sizeof(long), (void *)      &previousPaneId);
 	error |= clSetKernelArg (kernel, 6, sizeof(long), (void *)         &startOffset);
-
+	
 	/* Set input buffers */
 	error |= clSetKernelArg (
 			kernel,
 			7,
 			sizeof(cl_mem),
 			(void *) &(context->kernelInput.inputs[0]->device_buffer));
-
+	
+	
 	/* Set output buffers */
 	error |= clSetKernelArg (
 			kernel,
 			8,
 			sizeof(cl_mem),
 			(void *) &(context->kernelOutput.outputs[0]->device_buffer));
-
+	
 	error |= clSetKernelArg (
 			kernel,
 			9,
 			sizeof(cl_mem),
 			(void *) &(context->kernelOutput.outputs[1]->device_buffer));
-
+	
 	error |= clSetKernelArg (
 			kernel,
 			10,
 			sizeof(cl_mem),
 			(void *) &(context->kernelOutput.outputs[2]->device_buffer));
-
+	
 	error |= clSetKernelArg (
 			kernel,
 			11,
 			sizeof(cl_mem),
 			(void *) &(context->kernelOutput.outputs[3]->device_buffer));
-
+	
 	error |= clSetKernelArg (
 			kernel,
 			12,
 			sizeof(cl_mem),
 			(void *) &(context->kernelOutput.outputs[4]->device_buffer));
-
+	
 	error |= clSetKernelArg (
 			kernel,
 			13,
 			sizeof(cl_mem),
 			(void *) &(context->kernelOutput.outputs[5]->device_buffer));
-
+	
+	error |= clSetKernelArg (
+			kernel,
+			14,
+			sizeof(cl_mem),
+			(void *) &(context->kernelOutput.outputs[6]->device_buffer));
+	
+	error |= clSetKernelArg (
+			kernel,
+			15,
+			sizeof(cl_mem),
+			(void *) &(context->kernelOutput.outputs[7]->device_buffer));
+	
+	error |= clSetKernelArg (
+			kernel,
+			16,
+			sizeof(cl_mem),
+			(void *) &(context->kernelOutput.outputs[8]->device_buffer));
+	
 	/* Set local memory */
-	error |= clSetKernelArg (kernel, 14, (size_t) cache_size, (void *) NULL);
-
+	error |= clSetKernelArg (kernel, 17, (size_t) cache_size, (void *) NULL);
+	
 	if (error != CL_SUCCESS) {
 		fprintf(stderr, "opencl error (%d): %s\n", error, getErrorMessage(error));
 		exit (1);
 	}
-
+	
 	return;
 }
 

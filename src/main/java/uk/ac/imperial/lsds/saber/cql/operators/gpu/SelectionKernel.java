@@ -18,7 +18,7 @@ public class SelectionKernel implements IOperatorCode {
 	
 	private int qid;
 	
-	private static String filename = SystemConf.SABER_HOME + "/saber/clib/templates/Selection.cl";
+	private static String filename = SystemConf.SABER_HOME + "/clib/templates/Selection.cl";
 	
 	private ITupleSchema schema;
 	

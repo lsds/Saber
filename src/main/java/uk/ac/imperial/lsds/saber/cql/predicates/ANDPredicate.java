@@ -2,6 +2,7 @@ package uk.ac.imperial.lsds.saber.cql.predicates;
 
 import uk.ac.imperial.lsds.saber.ITupleSchema;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
+import uk.ac.imperial.lsds.saber.cql.expressions.Expression;
 
 public class ANDPredicate implements IPredicate {
 	
@@ -46,5 +47,13 @@ public class ANDPredicate implements IPredicate {
 	
 	public int numberOfPredicates () {
 		return predicates.length;
+	}
+	
+	public Expression getFirstExpression () {
+		return null;
+	}
+	
+	public Expression getSecondExpression () {
+		return null;
 	}
 }

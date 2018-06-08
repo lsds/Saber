@@ -55,6 +55,10 @@ public class ThetaJoin implements IOperatorCode {
 
 		int tupleSize1 = schema1.getTupleSize();
 		int tupleSize2 = schema2.getTupleSize();
+		
+		/* Actual Tuple Size without padding*/
+		int pointerOffset1 = tupleSize1 - schema1.getPadLength();
+		int pointerOffset2 = tupleSize2 - schema2.getPadLength();
 
 		WindowDefinition windowDef1 = batch1.getWindowDefinition();
 		WindowDefinition windowDef2 = batch2.getWindowDefinition();
@@ -91,7 +95,9 @@ public class ThetaJoin implements IOperatorCode {
 			int countMatchPositions = 0;
 		
 			// Changed <=, <=, || to &&
-			while (currentIndex1 < endIndex1 && currentIndex2 <= endIndex2) {
+			// while (currentIndex1 < endIndex1 && currentIndex2 <= endIndex2) {
+			// OLD
+			while (currentIndex1 < endIndex1 || currentIndex2 < endIndex2) {
 				
 				// System.out.println(String.format("[DBG] batch-1 index %10d end %10d batch-2 index %10d end %10d",
 				//		currentIndex1, endIndex1, currentIndex2, endIndex2));
@@ -108,7 +114,9 @@ public class ThetaJoin implements IOperatorCode {
 					/* Scan second window */
 					
 					// Changed here: <=
-					for (int i = currentWindowStart2; i <= currentWindowEnd2; i += tupleSize2) {
+					// for (int i = currentWindowStart2; i <= currentWindowEnd2; i += tupleSize2) {
+					// OLD
+					for (int i = currentWindowStart2; i < currentWindowEnd2; i += tupleSize2) {
 						
 						// System.out.println(String.format("[DBG] 1st window index %10d 2nd window index %10d", 
 						//		currentIndex1, i));
@@ -150,8 +158,8 @@ public class ThetaJoin implements IOperatorCode {
 							// System.out.println(String.format("[DBG] match at currentIndex1 = %10d (count = %6d)", 
 							//		currentIndex1, countMatchPositions));
 							
-							buffer1.appendBytesTo(currentIndex1, tupleSize1, outputBuffer);
-							buffer2.appendBytesTo(            i, tupleSize2, outputBuffer);
+							buffer1.appendBytesTo(currentIndex1, pointerOffset1, outputBuffer);
+							buffer2.appendBytesTo(            i, pointerOffset2, outputBuffer);
 							/* Write dummy content, if needed */
 							outputBuffer.put(outputSchema.getPad());
 							
@@ -203,6 +211,7 @@ public class ThetaJoin implements IOperatorCode {
 					//		currentWindowStart1, currentWindowEnd1));
 					
 					// Changed here: <=
+					// for (int i = currentWindowStart1; i <= currentWindowEnd1; i += tupleSize1) {
 					for (int i = currentWindowStart1; i < currentWindowEnd1; i += tupleSize1) {
 						
 						if (monitorSelectivity)

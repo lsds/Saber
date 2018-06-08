@@ -6,6 +6,7 @@ import uk.ac.imperial.lsds.saber.SystemConf;
 import uk.ac.imperial.lsds.saber.WindowBatch;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
 import uk.ac.imperial.lsds.saber.buffers.PartialWindowResults;
+import uk.ac.imperial.lsds.saber.buffers.WindowHashTable;
 import uk.ac.imperial.lsds.saber.buffers.WindowHashTableWrapper;
 import uk.ac.imperial.lsds.saber.cql.operators.AggregationType;
 import uk.ac.imperial.lsds.saber.cql.operators.IAggregateOperator;
@@ -104,8 +105,8 @@ public class PartialResultSlot {
 	 */
 	public void aggregate (PartialResultSlot p, IAggregateOperator operator) {
 		
-		// System.out.println(this);
-		// System.out.println(p);
+		//System.out.println(this);
+		//System.out.println(p);
 		
 		if (openingWindows.isEmpty()) { /* Nothing to aggregate */
 			
@@ -348,7 +349,8 @@ public class PartialResultSlot {
 			aggregateHashTables (b1, start1, end1, b2, start2, end2, operator, true);
 			/* At this point, w3 contains a packed, complete window result.
 			 * Append it directly to this node's complete windows. */
-			completeWindows.append(w3);
+			if (w3 != null)
+				completeWindows.append(w3);
 		}
 		
 		p.closingWindows.nullify();
@@ -414,6 +416,8 @@ public class PartialResultSlot {
 		IQueryBuffer b2, int start2, int end2, 
 		IAggregateOperator operator,
 		boolean pack) {
+
+		//System.out.println("Aggregate hash tables...pack " + pack);
 		
 		float value1, value2;
 		int   count1, count2;
@@ -423,38 +427,90 @@ public class PartialResultSlot {
 		
 		int timestampOffset1, timestampOffset2;
 		
+/*		int tmp = 0;
+		int j =0;
+		while (tmp < b1.position()) {
+			System.out.println((j++)*64 +", " + b1.getLong(tmp) +", " + b1.getLong(tmp + 8) +", " + b1.getLong(tmp+16) +" " + b1.getLong(tmp+24) +", " + b1.getFloat(tmp+32) +", " + b1.getFloat(tmp+36) + ", " + b1.getInt(tmp+40) +"! ");
+			tmp+= 64;
+		}
+		System.out.println("New HashTABLE");
+		tmp = 0;
+		j =0;
+		while (tmp < b2.position()) {
+			System.out.println((j++)*64 +", " + b2.getLong(tmp) +", " + b2.getLong(tmp + 8) +", " + b2.getLong(tmp+16) +" " + b2.getLong(tmp+24) +", " + b2.getFloat(tmp+32) +", " + b2.getFloat(tmp+36) + ", " + b2.getInt(tmp+40) +"! ");
+			tmp+= 64;
+		}*/
+
+
 		w3.clear();
-		if (pack) {
+		//if (pack) {
 			/* Clear contents */
 			for (int i = 0; i < w3.capacity(); i++)
 				w3.put(i, (byte) 0);
 			
 			mergedHashTable.configure(w3, 0, w3.capacity(), 
 					operator.getKeyLength(), operator.getValueLength());
-		}
+			
+		//}
+		
 		windowHashTable.configure (b2.getByteBuffer(), start2, end2, 
 				operator.getKeyLength(), operator.getValueLength());
 		
 		int tupleSize = windowHashTable.getIntermediateTupleSize();
-		
-		/* Iterate over tuples in first table. Search for key in hash table. 
+
+
+        WindowHashTableWrapper windowHashTable1 = new WindowHashTableWrapper();
+
+        windowHashTable1.configure(b1.getByteBuffer(), start1, end1,
+                operator.getKeyLength(), operator.getValueLength());
+
+		int tmp = 0;
+
+       /* System.out.println("--------------B1------------ ");
+        System.out.println("Index, Timestamp, Occupancy, Key1 Key2, Value1, Value2, Count");
+        for (int idx = start1; idx < end1; idx += tupleSize) {
+            if (b1.getByteBuffer().get(idx) != 1) *//* Skip empty slot *//*
+                continue;
+            System.out.println(idx +", " + b1.getLong(windowHashTable1.getTimestampOffset(idx)) +", " + b1.getLong(idx) +", "
+                    + b1.getLong(windowHashTable1.getKeyOffset(idx)) +" " + b1.getLong(windowHashTable1.getKeyOffset(idx)+8) +", " +
+                    b1.getFloat(windowHashTable1.getValueOffset(idx)) +", " + b1.getFloat(windowHashTable1.getValueOffset(idx)+4) + ", "
+                    + b1.getInt(windowHashTable1.getCountOffset(idx)) +"! ");
+        }
+
+
+        System.out.println("--------------B2------------ ");
+        System.out.println("Index, Timestamp, Occupancy, Key1 Key2, Value1, Value2, Count");
+        for (int idx = start2; idx < end2; idx += tupleSize) {
+            if (b2.getByteBuffer().get(idx) != 1) *//* Skip empty slot *//*
+                continue;
+            System.out.println(idx +", " + b2.getLong(windowHashTable.getTimestampOffset(idx)) +", " + b2.getLong(idx) +", "
+                    + b2.getLong(windowHashTable.getKeyOffset(idx)) +" " + b2.getLong(windowHashTable.getKeyOffset(idx)+8) +", " +
+                    b2.getFloat(windowHashTable.getValueOffset(idx)) +", " + b2.getFloat(windowHashTable.getValueOffset(idx)+4) + ", "
+                    + b2.getInt(windowHashTable.getCountOffset(idx)) +"! ");
+        }*/
+
+
+
+        /* Iterate over tuples in first table. Search for key in hash table.
 		 * If found, merge the two entries. */
 		for (int idx = start1; idx < end1; idx += tupleSize) {
 			
 			if (b1.getByteBuffer().get(idx) != 1) /* Skip empty slot */
 				continue;
 			
-			// System.out.println(String.format("[DBG] key at %6d", idx));
-			
+
 			b2found[0] = false;
 			/* Search key in buffer b1 in the hash table stored in buffer b2.
 			 * 
 			 * Since the length of both tables is the same, `getKeyOffset()`
 			 * should return the correct index.
 			 */
-			int b2pos = windowHashTable.getIndex(b1.array(), 
+			int b2pos = windowHashTable.findIndex(b1.array(),
 					windowHashTable.getKeyOffset(idx), operator.getKeyLength(), b2found);
-			if (b2pos < 0) {
+
+
+
+            if (b2pos < 0) {
 				System.out.println("error: open-adress hash table is full");
 				System.exit(1);
 			}
@@ -463,8 +519,12 @@ public class PartialResultSlot {
 				
 				if (pack) {
 					/* Copy tuple based on output schema */
-					
-					/* Put timestamp */
+
+                    /*System.out.println(String.format("[DBG] Not found in B2 and pack."));
+                    System.out.println(String.format("[DBG] B1 with index %d with key %d %d, writing in %d W3 ", idx, windowHashTable1.getContent().getLong(windowHashTable1.getKeyOffset(idx)),
+                            windowHashTable1.getContent().getLong(windowHashTable1.getKeyOffset(idx)+8), idx));*/
+
+                    /* Put timestamp */
 					w3.putLong(b1.getLong(windowHashTable.getTimestampOffset(idx)));
 					/* Put key */
 					w3.put(b1.array(), windowHashTable.getKeyOffset(idx), operator.getKeyLength());
@@ -491,6 +551,18 @@ public class PartialResultSlot {
 					w3found[0] = false;
 					int w3pos = mergedHashTable.getIndex(b1.array(), mergedHashTable.getKeyOffset(idx), 
 							operator.getKeyLength(), w3found);
+
+                    //System.out.println(String.format("[DBG] w3pos is %6d and key is %6d %6d", w3pos, mergedHashTable.getContent().getLong(mergedHashTable.getKeyOffset(idx)), mergedHashTable.getContent().getLong(mergedHashTable.getKeyOffset(idx))));
+                    /*System.out.println(String.format("[DBG] Not found in B2."));
+                    System.out.println(String.format("[DBG] B1 with index %d with key %d %d, writing in %d W3 ", idx, windowHashTable1.getContent().getLong(windowHashTable1.getKeyOffset(idx)),
+                            windowHashTable1.getContent().getLong(windowHashTable1.getKeyOffset(idx)+8), w3pos));*/
+
+					/*if (w3found[0]) {
+						//System.out.println("It already exists!");
+						w3found[0] = false;
+						w3pos = mergedHashTable.getIndex(b2.array(), mergedHashTable.getKeyOffset(idx), 
+								operator.getKeyLength(), w3found, true);
+					}*/
 					
 					if (w3pos < 0 || w3found[0])
 						throw new IllegalStateException ("error: failed to insert new key in intermediate hash table");
@@ -515,8 +587,11 @@ public class PartialResultSlot {
 				
 				if (pack) {
 					/* Copy tuple based on output schema */
-					
-					/* Put timestamp */
+                    /*System.out.println(String.format("[DBG] Found in B2 and pack."));
+                    System.out.println(String.format("[DBG] B1 with index %d with key %d %d, found in %d B2 with key %d %d", idx, windowHashTable1.getContent().getLong(windowHashTable1.getKeyOffset(idx)),
+                            windowHashTable1.getContent().getLong(windowHashTable1.getKeyOffset(idx)+8), b2pos, windowHashTable.getContent().getLong(windowHashTable.getKeyOffset(b2pos)),
+                            windowHashTable.getContent().getLong(windowHashTable.getKeyOffset(b2pos)+8)));*/
+                    /* Put timestamp */
 					w3.putLong(b1.getLong(windowHashTable.getTimestampOffset(idx)));
 					/* Put key */
 					w3.put(b1.array(), windowHashTable.getKeyOffset(idx), operator.getKeyLength());
@@ -567,8 +642,20 @@ public class PartialResultSlot {
 					w3found[0] = false;
 					int w3pos = mergedHashTable.getIndex(b1.array(), mergedHashTable.getKeyOffset(idx), 
 							operator.getKeyLength(), w3found);
-					
-					if (w3pos < 0 || w3found[0])
+
+
+                    //System.out.println(String.format("[DBG] w3pos is %6d and key is %6d %6d", w3pos, mergedHashTable.getContent().getLong(mergedHashTable.getKeyOffset(idx)), mergedHashTable.getContent().getLong(mergedHashTable.getKeyOffset(idx))));
+
+                    /*System.out.println(String.format("[DBG] Found in B2."));
+                    System.out.println(String.format("[DBG] B1 with index %d with key %d %d, found in %d B2 with key %d %d", idx, windowHashTable1.getContent().getLong(windowHashTable1.getKeyOffset(idx)),
+                            windowHashTable1.getContent().getLong(windowHashTable1.getKeyOffset(idx)+8), b2pos,
+                            windowHashTable.getContent().getLong(windowHashTable.getKeyOffset(b2pos)),
+                            windowHashTable.getContent().getLong(windowHashTable.getKeyOffset(b2pos)+8)));
+                    System.out.println(String.format("[DBG] Writing in w3pos at %6d and key is %6d %6d", w3pos, mergedHashTable.getContent().getLong(mergedHashTable.getKeyOffset(w3pos)),
+                            mergedHashTable.getContent().getLong(mergedHashTable.getKeyOffset(w3pos)+8)));
+*/
+
+                    if (w3pos < 0 || w3found[0])
 						throw new IllegalStateException ("error: failed to insert new key in intermediate hash table");
 					
 					/* Store intermediate tuple is slot starting at `w3pos` */
@@ -625,9 +712,25 @@ public class PartialResultSlot {
 					/* Put count */
 					w3.putInt(count1 + count2);
 				}
+				// Unmark occupancy in second buffer
+				b2.getByteBuffer().put (b2pos, (byte) 0);
 			}
 		}
-		
+
+
+        /*System.out.println("--------------Remaining B2------------ ");
+        System.out.println("Index, Timestamp, Occupancy, Key1 Key2, Value1, Value2, Count");
+        for (int idx = start2; idx < end2; idx += tupleSize) {
+            if (b2.getByteBuffer().get(idx) != 1) *//* Skip empty slot *//*
+                continue;
+            System.out.println(idx +", " + b2.getLong(windowHashTable.getTimestampOffset(idx)) +", " + b2.getLong(idx) +", "
+                    + b2.getLong(windowHashTable.getKeyOffset(idx)) +" " + b2.getLong(windowHashTable.getKeyOffset(idx)+8) +", " +
+                    b2.getFloat(windowHashTable.getValueOffset(idx)) +", " + b2.getFloat(windowHashTable.getValueOffset(idx)+4) + ", "
+                    + b2.getInt(windowHashTable.getCountOffset(idx)) +"! ");
+        }*/
+
+
+
 		/* Iterate over the remaining tuples in the second table. */
 		for (int idx = start2; idx < end2; idx += tupleSize) {
 			
@@ -636,8 +739,9 @@ public class PartialResultSlot {
 			
 			if (pack) {
 				/* Copy tuple based on output schema */
-				
-				/* Put timestamp */
+                //System.out.println(String.format("[DBG] Skipping pack with B2."));
+
+                /* Put timestamp */
 				w3.putLong(b2.getLong(windowHashTable.getTimestampOffset(idx)));
 				/* Put key */
 				w3.put(b2.array(), windowHashTable.getKeyOffset(idx), operator.getKeyLength());
@@ -664,9 +768,39 @@ public class PartialResultSlot {
 				w3found[0] = false;
 				int w3pos = mergedHashTable.getIndex(b2.array(), mergedHashTable.getKeyOffset(idx), 
 						operator.getKeyLength(), w3found);
+
+                //System.out.println(String.format("[DBG] w3pos is %6d and key is %6d %6d", idx, windowHashTable.getContent().getLong(windowHashTable.getKeyOffset(idx)), mergedHashTable.getContent().getLong(windowHashTable.getKeyOffset(idx))));
+
+                //System.out.println(String.format("[DBG] w3pos is %6d and key is %6d %6d", w3pos, mergedHashTable.getContent().getLong(mergedHashTable.getKeyOffset(idx)), mergedHashTable.getContent().getLong(mergedHashTable.getKeyOffset(idx))));
+
+
+                /*System.out.println(String.format("[DBG] Writing in W3 from B2."));
+                System.out.println(String.format("[DBG] B2 with index %d with key %d %d, found in %d W3 with key %d %d", idx, windowHashTable.getContent().getLong(windowHashTable.getKeyOffset(idx)),
+                        windowHashTable.getContent().getLong(windowHashTable.getKeyOffset(idx)+8), w3pos, mergedHashTable.getContent().getLong(mergedHashTable.getKeyOffset(w3pos)),
+                        mergedHashTable.getContent().getLong(mergedHashTable.getKeyOffset(w3pos)+8)));*/
+
+				/*tmp = 0;
+				j =0;
+				cont = mergedHashTable.getContent();
+				while (tmp < cont.position()) {
+					System.out.println((j++)*64+", " + cont.getLong(tmp) +", " + cont.getLong(tmp + 8) +", " + cont.getLong(tmp+16) +" " + cont.getLong(tmp+24) +", " + cont.getFloat(tmp+32) +", " + cont.getFloat(tmp+36) + ", " + cont.getInt(tmp+40) +"! ");
+					tmp+= 64;
+				}*/				
 				
-				if (w3pos < 0 || w3found[0])
-					throw new IllegalStateException ("error: failed to insert new key in intermediate hash table");
+				/*if (w3found[0]) {
+					//System.out.println("It already exists(!");
+					w3found[0] = false;
+					w3pos = mergedHashTable.getIndex(b2.array(), mergedHashTable.getKeyOffset(idx), 
+							operator.getKeyLength(), w3found, true);
+				}*/
+				
+				if (w3pos < 0 || w3found[0]) {
+				//if (w3pos < 0) {
+
+                        //throw new IllegalStateException("error: failed to insert new key in intermediate hash table at " + w3pos);
+					System.err.println(String.format("George's error: position is %d and found is %s", w3pos, w3found[0]));
+					System.exit(1);
+				}
 				
 				/* Store intermediate tuple is slot starting at `w3pos` */
 				
@@ -682,6 +816,16 @@ public class PartialResultSlot {
 				w3.putInt(b2.getInt(windowHashTable.getCountOffset(idx)));
 			}
 		}
+		
+/*		System.out.println("w3 hashtable");
+		tmp = 0;
+		j =0;
+		while (tmp < w3.position()) {
+			System.out.println((j++)*64+", " + w3.getLong(tmp) +", " + w3.getLong(tmp + 8) +", " + w3.getLong(tmp+16) +" " + w3.getLong(tmp+24) +", " + w3.getFloat(tmp+32) +", " + w3.getFloat(tmp+36) + ", " + w3.getInt(tmp+40) +"! ");
+			tmp+= 64;
+		}
+		System.out.println("end of w3 hashtable");*/
+
 	}
 	
 	public boolean isReady() {

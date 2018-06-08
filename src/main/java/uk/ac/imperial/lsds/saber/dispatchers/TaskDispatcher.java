@@ -208,10 +208,6 @@ public class TaskDispatcher implements ITaskDispatcher {
 			System.exit(1);
 		}
 		
-		if (parent.getTaskDispatcher().getHandler().freeBuffer1 == null) {
-			System.err.println("This buffer is null?!");
-			System.exit(1);
-		}
 		batch = WindowBatchFactory.newInstance (batchSize, taskid, (int) (free), Integer.MIN_VALUE, parent, buffer, window, schema, mark);
 		
 		if (window.isRangeBased()) {

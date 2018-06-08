@@ -89,7 +89,8 @@ public class PartialWindowResults {
 	public void append (ByteBuffer windowBuffer) {
 		if (count >= N)
 			throw new IndexOutOfBoundsException ("error: partial window result index out of bounds");
-		startPointers[count++] = buffer.position();
+			
+		startPointers[count++] = getBuffer().position();
 		buffer.put(windowBuffer.array(), 0, windowBuffer.position());
 	}
 	
@@ -109,6 +110,9 @@ public class PartialWindowResults {
 		
 		if (count_ >= N)
 			throw new IndexOutOfBoundsException ("error: partial window result index out of bounds");
+		
+		if (buffer == null)
+			getBuffer();
 		
 		/* Shift-down windows */
 		

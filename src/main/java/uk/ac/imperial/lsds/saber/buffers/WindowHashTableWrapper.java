@@ -59,6 +59,10 @@ public class WindowHashTableWrapper {
 		return (idx + TSTAMP_OFFSET);
 	}
 	
+	public ByteBuffer getContent () {
+		return this.content;
+	}
+	
 	public int getKeyOffset (int idx) {
 		return (idx + KEY_OFFSET);
 	}
@@ -81,7 +85,7 @@ public class WindowHashTableWrapper {
 	}
 	
 	public int getIndex (byte [] array, int offset, int length, boolean [] found) {
-		
+
 		int h = JenkinsHashFunctions.hash(array, offset, length, 1) & (slots - 1);
 		int idx = start + h * tupleLength;
 		
@@ -93,12 +97,33 @@ public class WindowHashTableWrapper {
 					return idx;
 				}
 			} else {
-				found[0] = false;
-				return idx;
+                found[0] = false;
+                return idx;
+            }
+			attempts ++;
+			idx = getNext (++h);
+		}
+		found[0] = false;
+		return -1;
+	}
+
+	public int findIndex (byte [] array, int offset, int length, boolean [] found) {
+
+		int h = JenkinsHashFunctions.hash(array, offset, length, 1) & (slots - 1);
+		int idx = start + h * tupleLength;
+
+		int attempts = 0;
+		while (attempts < slots) {
+			if (content.get(idx) == 1) {
+				if (compare (array, offset, length, idx) == 0) {
+					found[0] = true;
+					return idx;
+				}
 			}
 			attempts ++;
 			idx = getNext (++h);
 		}
+		found[0] = false;
 		return -1;
 	}
 	

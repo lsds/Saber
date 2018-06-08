@@ -6,9 +6,11 @@ public interface IQueryBuffer {
 	
 	public int getBufferId ();
 	
-	public int   getInt   (int offset);
-	public float getFloat (int offset);
-	public long  getLong  (int offset);
+	public int   		   getInt 	(int offset);
+	public float 		 getFloat 	(int offset);
+	public long  		  getLong 	(int offset);
+	public long    getMSBLongLong 	(int offset);
+	public long    getLSBLongLong 	(int offset);
 	
 	public byte [] array ();
 	
@@ -40,6 +42,9 @@ public interface IQueryBuffer {
 	
 	public int putLong (long value);
 	public int putLong (int index, long value);
+	
+	public int putLongLong (long msbValue, long lsbValue);
+	public int putLongLong (int index, long msbValue, long lsbValue);
 	
 	public int put (byte [] src);
 	public int put (byte [] src, int offset, int length);
