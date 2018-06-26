@@ -14,6 +14,8 @@ public class UnboundedQueryBufferFactory {
 	public static AtomicLong count = new AtomicLong(0L);
 	
 	private static ConcurrentLinkedQueue<IQueryBuffer> pool = new ConcurrentLinkedQueue<IQueryBuffer>();
+
+	private static boolean isDirect = true;
 	
 	static {
 		
@@ -22,7 +24,7 @@ public class UnboundedQueryBufferFactory {
 		while (i-- > 0) {
 			
 			int id = (int) count.getAndIncrement();
-			pool.add (new UnboundedQueryBuffer(id, _buffer_size, false));
+			pool.add (new UnboundedQueryBuffer(id, _buffer_size, isDirect));
 		}
 	}
 	
@@ -31,7 +33,7 @@ public class UnboundedQueryBufferFactory {
 		IQueryBuffer buffer = pool.poll();
 		if (buffer == null) {
 			int id = (int) count.getAndIncrement();
-			return new UnboundedQueryBuffer(id, _buffer_size, false);
+			return new UnboundedQueryBuffer(id, _buffer_size, isDirect);
 		}
 		return buffer;
 	}

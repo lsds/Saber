@@ -48,12 +48,12 @@ public class TestAggregation {
 		
 		WindowType windowType = WindowType.ROW_BASED;
 		
-		int windowSize = 1;
+		int windowSize = 100;
 		int windowSlide = 1;
 		
-		int numberOfAttributes = 6;
+		int numberOfAttributes = 2;
 		
-		String aggregateExpression = "";
+		String aggregateExpression = "MIN";
 		int numberOfGroups = 0;
 		
 		int tuplesPerInsert = 32768;

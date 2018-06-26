@@ -347,5 +347,10 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 	public int getBufferId () {
 		
 		return this.id;
-	}	
+	}
+
+	@Override
+	public int put(ByteBuffer src, int offset, int length) {
+		throw new UnsupportedOperationException("error: doesn't support this operation yet.");
+	}
 }

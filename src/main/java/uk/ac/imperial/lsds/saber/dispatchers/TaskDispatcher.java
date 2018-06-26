@@ -1,5 +1,6 @@
 package uk.ac.imperial.lsds.saber.dispatchers;
 
+import sun.misc.Unsafe;
 import uk.ac.imperial.lsds.saber.ITupleSchema;
 import uk.ac.imperial.lsds.saber.Query;
 import uk.ac.imperial.lsds.saber.SystemConf;
@@ -15,8 +16,21 @@ import uk.ac.imperial.lsds.saber.tasks.Task;
 import uk.ac.imperial.lsds.saber.tasks.TaskFactory;
 import uk.ac.imperial.lsds.saber.tasks.TaskQueue;
 
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+
 public class TaskDispatcher implements ITaskDispatcher {
-	
+
+    public static Unsafe getTheUnsafe() {
+        try {
+            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+            theUnsafe.setAccessible(true);
+            return (Unsafe) theUnsafe.get(null);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
 	private TaskQueue workerQueue;
 	
 	private IQueryBuffer buffer;
@@ -44,12 +58,15 @@ public class TaskDispatcher implements ITaskDispatcher {
 	
 	private long thisBatchStartPointer;
 	private long nextBatchEndPointer;
-	
+
+
+	private boolean isDirect = true;
+
 	public TaskDispatcher (Query query) {
 		
 		parent = query;
 		
-		buffer = new CircularQueryBuffer(parent.getId(), SystemConf.CIRCULAR_BUFFER_SIZE, false);
+		buffer = new CircularQueryBuffer(parent.getId(), SystemConf.CIRCULAR_BUFFER_SIZE, isDirect);
 		
 		window = this.parent.getWindowDefinition ();
 		schema = this.parent.getSchema ();
@@ -114,7 +131,44 @@ public class TaskDispatcher implements ITaskDispatcher {
 		
 		throw new UnsupportedOperationException("error: cannot dispatch to a second stream buffer");
 	}
-	
+
+	public void dispatch (ByteBuffer inputBuffer, int length) {
+		/*int idx;
+		while ((idx = buffer.put(inputBuffer, length)) < 0) {
+			Thread.yield();
+		}
+		assemble (idx, length);*/
+        throw new UnsupportedOperationException("error: cannot dispatch to a stream buffer");
+    }
+
+	public boolean tryDispatch (ByteBuffer inputBuffer, int length) {
+		int idx;
+
+		if ((idx = buffer.put(inputBuffer.array(), length)) < 0) {
+			return false;
+		}
+		assemble (idx, length);
+		return true;
+	}
+
+	public void dispatchToFirstStream (ByteBuffer inputBuffer, int length) {
+		dispatch (inputBuffer, length);
+	}
+
+	public boolean tryDispatchToFirstStream (ByteBuffer inputBuffer, int length) {
+		return tryDispatch (inputBuffer, length);
+	}
+
+	public void dispatchToSecondStream (ByteBuffer inputBuffer, int length) {
+
+		throw new UnsupportedOperationException("error: cannot dispatch to a second stream buffer");
+	}
+
+	public boolean tryDispatchToSecondStream (ByteBuffer inputBuffer, int length) {
+
+		throw new UnsupportedOperationException("error: cannot dispatch to a second stream buffer");
+	}
+
 	public IQueryBuffer getBuffer () {
 		return buffer;
 	}

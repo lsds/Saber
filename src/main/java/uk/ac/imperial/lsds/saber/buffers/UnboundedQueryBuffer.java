@@ -1,11 +1,27 @@
 package uk.ac.imperial.lsds.saber.buffers;
 
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
+
+import java.lang.reflect.Field;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 public class UnboundedQueryBuffer implements IQueryBuffer {
-	
-	private int id;
+
+    public static Unsafe getTheUnsafe() {
+        try {
+            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+            theUnsafe.setAccessible(true);
+            return (Unsafe) theUnsafe.get(null);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private Unsafe unsafe = getTheUnsafe();
+
+    private int id;
 	
 	ByteBuffer buffer;
 	
@@ -200,7 +216,27 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 		
 		return put (src.array(), offset, length);
 	}
-	
+
+	public int put (ByteBuffer src, int offset, int length) {
+
+	    //int tempPosition = src.position();
+	    //src.position(offset);
+        //buffer.put(src);
+        //src.position(tempPosition);
+
+        long addr1 = ((DirectBuffer) src).address();
+        long addr2 = ((DirectBuffer) buffer).address();
+        int _position = buffer.position();
+        for (int i = offset;  i < (offset+length); i+=4)
+            unsafe.putInt(addr2 + _position, unsafe.getInt(addr1 + i));
+        //unsafe.copyMemory(addr1 + offset, addr2 + _position, length);
+        int position = _position + length;
+        position -= (offset == 0) ? 1 : 0;
+        buffer.position(position);
+		return 0;
+	}
+
+
 	public void free (int index) {
 		
 		throw new UnsupportedOperationException("error: cannot free bytes from an unbounded buffer");

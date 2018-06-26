@@ -52,7 +52,9 @@ public interface IQueryBuffer {
 	
 	public int put (IQueryBuffer src);
 	public int put (IQueryBuffer src, int offset, int length);
-	
+	public int put (ByteBuffer src, int offset, int length);
+
+
 	public void free (int offset);
 	public void release ();
 	

@@ -89,8 +89,8 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		h = new PaddedLong (0L);
 
 		/* parallelize the work of dispatcher thread */
-		isParallel = true;
-		if (this.id == 0) {
+		isParallel = false;
+		if (this.id == 0 && isParallel) {
 			numberOfThreads = 2;
 			int coreToBind = 1;
 			isReady = new AtomicInteger(-1);
@@ -240,8 +240,8 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	}
 	
 	public int put (byte [] values, int length, int offset) {
-		if (isDirect)
-			throw new UnsupportedOperationException("error: cannot put array to a direct buffer");
+		//if (isDirect)
+		//	throw new UnsupportedOperationException("error: cannot put array to a direct buffer");
 		
 		if (values == null || length <= 0)
 			throw new NullPointerException ("error: cannot put null to a circular buffer");
@@ -255,9 +255,10 @@ public class CircularQueryBuffer implements IQueryBuffer {
 				return -1;				
 			}
 		}
+
 		int index = normalise (_end);
 		
-		if (id == 0) {
+		if (id == 0 && isParallel) {
 			//set the pointers
 			globalIndex = index;
 			globalLength = length/numberOfThreads;
@@ -288,11 +289,15 @@ public class CircularQueryBuffer implements IQueryBuffer {
 				
 				//throw new IllegalStateException();
 				
-			} else {
+			} else if (isDirect) {
 				
-				System.arraycopy(values, offset, data, index, length);
-	
-			}
+				//System.arraycopy(values, offset, data, index, length);
+                if (index==0)
+                    buffer.position(0);
+				buffer.put(values);
+			} else {
+                System.arraycopy(values, offset, data, index, length);
+            }
 		}
 		
 		
@@ -314,8 +319,13 @@ public class CircularQueryBuffer implements IQueryBuffer {
 				
 		return put (buffer.array(), length, offset);
 	}
-	
-	public void free (int offset) {
+
+    @Override
+    public int put(ByteBuffer src, int offset, int length) {
+        throw new UnsupportedOperationException("error: doesn't support this operation yet.");
+    }
+
+    public void free (int offset) {
 		final long _start = start.get();
 		final int index = normalise (_start);
 		final int bytes;
@@ -363,13 +373,13 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	
 	public void appendBytesTo (int offset, int length, IQueryBuffer dst) {
 		
-		if (isDirect || dst.isDirect())
-			throw new UnsupportedOperationException("error: cannot append bytes from/to a direct buffer");
-		
 		int start = normalise(offset);
-		
-		dst.put(data, start, length);
-	}
+
+        if (isDirect || dst.isDirect())
+		    dst.put(buffer, start, length);
+        else
+            dst.put(data, start, length);
+    }
 	
 	public void appendBytesTo (int start, int end, byte [] dst) {
 		

@@ -49,7 +49,7 @@ public class TestSelection {
 		int windowSize = 1;
 		int windowSlide = 1;
 		
-		int numberOfAttributes = 6;
+		int numberOfAttributes = 2;
 		
 		/* Either one of the other must be set
 		 * 
@@ -185,7 +185,7 @@ public class TestSelection {
 		
 		byte [] data = new byte [tupleSize * tuplesPerInsert];
 		
-		ByteBuffer b = ByteBuffer.wrap (data);
+		ByteBuffer b = ByteBuffer.allocateDirect(tupleSize * tuplesPerInsert); //wrap (data);
 		
 		/* Fill the buffer */
 		int value = 0;

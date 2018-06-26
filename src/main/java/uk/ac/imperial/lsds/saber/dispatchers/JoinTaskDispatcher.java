@@ -16,6 +16,8 @@ import uk.ac.imperial.lsds.saber.tasks.Task;
 import uk.ac.imperial.lsds.saber.tasks.TaskFactory;
 import uk.ac.imperial.lsds.saber.tasks.TaskQueue;
 
+import java.nio.ByteBuffer;
+
 public class JoinTaskDispatcher implements ITaskDispatcher {
 	
 	private TaskQueue workerQueue;
@@ -134,7 +136,22 @@ public class JoinTaskDispatcher implements ITaskDispatcher {
 		}
 		assembleSecond (idx, length);
 	}
-	
+
+	@Override
+	public void dispatch(ByteBuffer buffer, int length) {
+
+	}
+
+	@Override
+	public void dispatchToFirstStream(ByteBuffer buffer, int length) {
+
+	}
+
+	@Override
+	public void dispatchToSecondStream(ByteBuffer buffer, int length) {
+
+	}
+
 	public boolean tryDispatchToSecondStream (byte [] data, int length) {
 		int idx;
 		if ((idx = secondBuffer.put(data, length)) < 0) {
@@ -143,7 +160,22 @@ public class JoinTaskDispatcher implements ITaskDispatcher {
 		assembleSecond (idx, length);
 		return true;
 	}
-	
+
+	@Override
+	public boolean tryDispatch(ByteBuffer buffer, int length) {
+		return false;
+	}
+
+	@Override
+	public boolean tryDispatchToFirstStream(ByteBuffer buffer, int length) {
+		return false;
+	}
+
+	@Override
+	public boolean tryDispatchToSecondStream(ByteBuffer buffer, int length) {
+		return false;
+	}
+
 	public IQueryBuffer getBuffer () {
 		return firstBuffer;
 	}
