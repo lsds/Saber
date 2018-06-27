@@ -418,13 +418,17 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 		
 		long timestampValue;
 		float value;
-		
+
 		for (int currentWindow = 0; currentWindow < startP.length; ++currentWindow) {
 			if (currentWindow > batch.getLastWindowIndex())
 				break;
 			
 			start = startP [currentWindow];
 			end   = endP   [currentWindow];
+
+			// TODO: get absolute position...
+            start /= 8;
+            end /= 8;
 			
 			/* Check start and end pointers */
 			if (start < 0 && end < 0) {
@@ -462,16 +466,16 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 			
 			if (start == end) {
 				/* Store "null" (zero-valued) tuple in output buffer */
-				outputBuffer.putLong(0L);
+				outputBuffer.getByteBuffers()[0].putLong(0L);
 				for (int i = 0; i < numberOfValues(); ++i) {
-					outputBuffer.putFloat(0);
+					outputBuffer.getByteBuffers()[i+1].putFloat(0);
 				}
-				outputBuffer.putInt(0);
+				outputBuffer.getByteBuffers()[outputBuffer.getByteBuffers().length-1].putInt(0);
 				/* Move to next window */
 				continue;
 			}
 			
-			float [] values = tl_values.get(); 
+			float [] values = tl_values.get();
 			int [] counts = tl_counts.get();
 			
 			/* Process first tuple */
@@ -484,26 +488,29 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 				counts[i] = 1;
 			}
 			/* Move pointer to second tuple */
-			start += inputTupleSize;
+			//start += inputTupleSize;
+			start++;
 			/* For all remaining tuples... */
 			while (start < end) {
 				for (int i = 0; i < numberOfValues(); ++i) {
-					if (aggregationTypes[i] == AggregationType.CNT) {
-						values[i] += 1;
-					} else {
-						value = aggregationAttributes[i].eval(inputBuffer, inputSchema, start);
-						switch (aggregationTypes[i]) {
-						case MAX: values[i] = (value <= values[i]) ? values[i] : value;
-						case MIN: values[i] = (value <= values[i]) ? values[i] : value;
+					//if (aggregationTypes[i] == AggregationType.CNT) {
+						//values[i] += 1;
+					//} else {
+						value = inputBuffer.getByteBuffers()[0].getInt(start);//aggregationAttributes[i].eval(inputBuffer, inputSchema, start);
+						value++;
+						/*switch (aggregationTypes[i]) {
+						case MAX: values[i] = (value <= values[i]) ? values[i] : value; break;
+						case MIN: values[i] = (value >= values[i]) ? values[i] : value; break;
 						case SUM:
 						case AVG: values[i] += value; break;
 						default:
 							throw new IllegalArgumentException("error: invalid aggregation type");
-						}
-					}
-					counts[i] += 1;
+						}*/
+					//}
+					//counts[i] += 1;
 				}
-				start += inputTupleSize;
+				//start += inputTupleSize;
+                start++;
 			}
 			/* Compute average, if any */
 			for (int i = 0; i < numberOfValues(); ++i) {
@@ -512,11 +519,11 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 				}
 			}
 			/* Store window result in output buffer */
-			outputBuffer.putLong(timestampValue);
+			outputBuffer.putLong(timestampValue, 0);
 			for (int i = 0; i < numberOfValues(); ++i) {
-				outputBuffer.putFloat(values[i]);
+				outputBuffer.putFloat(values[i], i+1);
 			}
-			outputBuffer.putInt(counts[0]);
+			outputBuffer.putInt(counts[0], outputBuffer.getByteBuffers().length-1, true);
 		}
 		
 		/* At the end of processing, set window batch accordingly */

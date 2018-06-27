@@ -31,7 +31,8 @@ public class FloatColumnReference implements FloatExpression {
 
 	public float eval (IQueryBuffer buffer, ITupleSchema schema, int offset) {
 		
-		return buffer.getFloat(offset + schema.getAttributeOffset(column));
+		//return buffer.getFloat(offset + schema.getAttributeOffset(column));
+		return 0;//buffer.getFloat(offset*size, column);
 	}
 	
 	public void appendByteResult (IQueryBuffer src, ITupleSchema schema, int offset, IQueryBuffer dst) {

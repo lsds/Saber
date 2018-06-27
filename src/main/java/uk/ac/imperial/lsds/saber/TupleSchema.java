@@ -70,7 +70,7 @@ public class TupleSchema implements ITupleSchema {
 		
 		return offsets[index];
 	}
-	
+
 	public int getTupleSize () {
 		
 		return tupleSize;

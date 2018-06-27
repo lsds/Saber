@@ -156,78 +156,82 @@ public class ResultAggregator {
 			// System.out.println(p);
 			
 			IQueryBuffer buffer = p.completeWindows.getBuffer();
-			byte [] arr = buffer.array();
-			int length = buffer.position();
-			
-			/* Forward results */
-			
-			if (length > 0 && query.getNumberOfDownstreamQueries() > 0) {
-				
-				/* Forward the latency mark downstream... */
-				
-				if (SystemConf.LATENCY_ON && (p.mark != -1)) {
-					
-					long t1 = (long) Utils.getSystemTimestamp (freeBuffer1.getLong (p.mark));
-					long t2 = (long) Utils.getTupleTimestamp (buffer.getLong(0));
-					buffer.putLong(0, Utils.pack (t1, t2));
-				}
-				
-				int nextQuery = p.latch;
-				
-				for (int q = nextQuery; q < query.getNumberOfDownstreamQueries(); ++q) {
-					
-					if (query.getDownstreamQuery(q) != null) {
-						
-						boolean success = false;
-						if (query.isLeft())
-							success = query.getDownstreamQuery(q).getTaskDispatcher().tryDispatchToFirstStream  (arr, length);
-						else
-							success = query.getDownstreamQuery(q).getTaskDispatcher().tryDispatchToSecondStream (arr, length);
-						
-						if (! success) {
-							p.latch = q;
-							slots.set(nextToForward, READY);
-							semaphore.release();
-							return;
+			//byte [] arr = buffer.array();
+			for (int i = 0; i < buffer.getByteBuffers().length; i++) {
+
+				//int length = buffer.position();
+                int length = buffer.getByteBuffers()[i].position();
+
+                /* Forward results */
+
+				if (length > 0 && query.getNumberOfDownstreamQueries() > 0) {
+
+					/* Forward the latency mark downstream... */
+
+					if (SystemConf.LATENCY_ON && (p.mark != -1)) {
+
+						long t1 = (long) Utils.getSystemTimestamp(freeBuffer1.getLong(p.mark));
+						long t2 = (long) Utils.getTupleTimestamp(buffer.getLong(0));
+						buffer.putLong(0, Utils.pack(t1, t2));
+					}
+
+					int nextQuery = p.latch;
+
+					for (int q = nextQuery; q < query.getNumberOfDownstreamQueries(); ++q) {
+
+						if (query.getDownstreamQuery(q) != null) {
+
+							boolean success = false;
+							if (query.isLeft())
+								success = query.getDownstreamQuery(q).getTaskDispatcher().tryDispatchToFirstStream(buffer.getByteBuffer(), length);
+							else
+								success = query.getDownstreamQuery(q).getTaskDispatcher().tryDispatchToSecondStream(buffer.getByteBuffer(), length);
+
+							if (!success) {
+								p.latch = q;
+								slots.set(nextToForward, READY);
+								semaphore.release();
+								return;
+							}
 						}
 					}
 				}
-			}
-			
-			/* Forward to the distributed API */
 
-			/* Measure latency */
-			if (query.isMostDownstream())
-				if (SystemConf.LATENCY_ON && (p.mark != -1))
-					query.getLatencyMonitor().monitor(freeBuffer1, p.mark);
-			
-			/* 
-			 * Before releasing the result buffer, increment bytes generated. It is  important 
-			 * all operators set the position of the buffer accordingly. Assume that the start
-			 * position is 0.
-			 */
-			handler.incTotalOutputBytes(length);
-			
-			/* Free input buffer */
-			if (p.freePointer1 != Integer.MIN_VALUE)
-				freeBuffer1.free (p.freePointer1);
-			
-			if (p.freePointer2 != Integer.MIN_VALUE)
-				freeBuffer2.free (p.freePointer2);
-			
-			p.release ();
-			
-			/* Release the current slot */
-			slots.set (nextToForward, FREE);
-			
-			/* Increment next */
-			nextToForward = nextToForward + 1;
-			nextToForward = nextToForward % size;
-			
-			/* Check if next is ready to be pushed */
-			if (! slots.compareAndSet (nextToForward, READY, BUSY)) {
-				busy = false;
+                /*
+                 * Before releasing the result buffer, increment bytes generated. It is  important
+                 * all operators set the position of the buffer accordingly. Assume that the start
+                 * position is 0.
+                 */
+                handler.incTotalOutputBytes(length);
 			}
+            /* Forward to the distributed API */
+
+            /* Measure latency */
+            if (query.isMostDownstream())
+                if (SystemConf.LATENCY_ON && (p.mark != -1))
+                    query.getLatencyMonitor().monitor(freeBuffer1, p.mark);
+
+
+            /* Free input buffer */
+            if (p.freePointer1 != Integer.MIN_VALUE)
+                freeBuffer1.free(p.freePointer1);
+
+            if (p.freePointer2 != Integer.MIN_VALUE)
+                freeBuffer2.free(p.freePointer2);
+
+            p.release();
+
+            /* Release the current slot */
+            slots.set(nextToForward, FREE);
+
+            /* Increment next */
+            nextToForward = nextToForward + 1;
+            nextToForward = nextToForward % size;
+
+            /* Check if next is ready to be pushed */
+            if (!slots.compareAndSet(nextToForward, READY, BUSY)) {
+                busy = false;
+            }
 		}
 		
 		/* Thread exit critical section */

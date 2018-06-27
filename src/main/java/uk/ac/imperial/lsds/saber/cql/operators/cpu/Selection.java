@@ -32,16 +32,22 @@ public class Selection implements IOperatorCode {
 		
 		ITupleSchema schema = batch.getSchema();
 		int tupleSize = schema.getTupleSize();
-		
-		for (int pointer = batch.getBufferStartPointer(); pointer < batch.getBufferEndPointer(); pointer += tupleSize) {
+
+		//int mapSize = inputBuffer.getColumnMap().length;
+		for (int pointer = batch.getBufferStartPointer(); pointer < batch.getBufferEndPointer(); pointer += 1) {
 			
 			if (predicate.satisfied (inputBuffer, schema, pointer)) {
-				
+
+				//inputBuffer.getColumnMap()[pointer&mapSize] = 1;
 				/* Write tuple to result buffer */
-				inputBuffer.appendBytesTo(pointer, tupleSize, outputBuffer);
+				//inputBuffer.appendBytesToColumn(pointer, tupleSize, outputBuffer, 1);
+                inputBuffer.appendBytesTo(pointer, tupleSize, outputBuffer);
 			}
 		}
-		
+
+        //inputBuffer.appendBytesToColumns(batch.getBufferStartPointer()/8, tupleSize, outputBuffer, 1);
+        // put zeros in the byte array !!!
+		//inputBuffer.resetColumnMap();
 		inputBuffer.release();
 		batch.setBuffer(outputBuffer);
 		

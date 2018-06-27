@@ -73,7 +73,7 @@ public class PartialWindowResults {
 			throw new IllegalStateException ("error: buffer in partial window result is null");
 		if (count >= N)
 			throw new IndexOutOfBoundsException ("error: partial window result index out of bounds");
-		startPointers[count++] = buffer.position();
+		startPointers[count++] = buffer.getByteBuffers()[0].position();
 	}
 	
 	public int getStartPointer (int idx) {

@@ -12,10 +12,10 @@ public class UnboundedQueryBufferFactory {
 	private static final int _buffer_size = SystemConf.UNBOUNDED_BUFFER_SIZE;
 	
 	public static AtomicLong count = new AtomicLong(0L);
-	
-	private static ConcurrentLinkedQueue<IQueryBuffer> pool = new ConcurrentLinkedQueue<IQueryBuffer>();
 
 	private static boolean isDirect = true;
+
+	private static ConcurrentLinkedQueue<IQueryBuffer> pool = new ConcurrentLinkedQueue<IQueryBuffer>();
 	
 	static {
 		

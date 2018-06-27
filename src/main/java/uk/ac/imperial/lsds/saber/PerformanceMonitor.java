@@ -181,7 +181,7 @@ public class PerformanceMonitor implements Runnable {
 				throughputCounter++;
 				if (this.id == 0) {
 					throughputSum += MBpsProcessed;
-					thoughputAvg = ((throughputSum / throughputCounter) * _1MB_) / 128; // tuple size to get the records per second
+					thoughputAvg = ((throughputSum / throughputCounter) * _1MB_) / SystemConf.INPUT_SCHEMA_SIZE; // tuple size to get the records per second
 					numberAsString = numberFormat.format((double) thoughputAvg);
 					System.out.println("Throughput Average(records/sec) " + numberAsString);				
 				}

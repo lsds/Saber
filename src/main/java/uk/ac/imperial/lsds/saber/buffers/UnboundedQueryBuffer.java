@@ -1,11 +1,12 @@
 package uk.ac.imperial.lsds.saber.buffers;
 
+import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
+
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
 import java.lang.reflect.Field;
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
 
 public class UnboundedQueryBuffer implements IQueryBuffer {
 
@@ -21,9 +22,11 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 
     private Unsafe unsafe = getTheUnsafe();
 
-    private int id;
+	private int id;
 	
 	ByteBuffer buffer;
+
+	ByteBuffer [] buffers;
 	
 	private boolean isDirect;
 	
@@ -36,9 +39,14 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 		this.isDirect = isDirect;
 		
 		if (! isDirect) {
-			buffer = ByteBuffer.allocate(size);
+			//buffer = ByteBuffer.allocate(size);
+			buffers = new ByteBuffer[3];
+			for (int i = 0; i < 3; i++)
+			    buffers[i] = ByteBuffer.allocate(size);
 		} else {
-			buffer = ByteBuffer.allocateDirect(size);
+            buffers = new ByteBuffer[3];
+            for (int i = 0; i < 3; i++)
+                buffers[i] = ByteBuffer.allocateDirect(size);
 		}
 	}
 	
@@ -66,7 +74,33 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 
 		return buffer.getLong(normalise(offset) + 8);
 	}
-	
+
+	// columnar access methods
+	public int getInt (int offset, int column) {
+
+		return buffers[column].getInt(offset);
+	}
+
+	public float getFloat (int offset, int column) {
+
+		return buffers[column].getFloat(offset);
+	}
+
+	public long getLong (int offset, int column) {
+
+		return buffers[column].getLong(offset);
+	}
+
+	public long getMSBLongLong (int offset, int column) {
+
+		return buffers[column].getLong(normalise(offset));
+	}
+
+	public long getLSBLongLong (int offset, int column) {
+
+		return buffers[column].getLong(normalise(offset) + 8);
+	}
+
 	public byte [] array () {
 		
 		if (isDirect)
@@ -79,6 +113,11 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 		
 		return buffer; 
 	}
+
+    public ByteBuffer [] getByteBuffers () {
+
+        return buffers;
+    }
 	
 	public int capacity () {
 		
@@ -111,8 +150,9 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 	}
 	
 	public void clear () {
-		
-		buffer.clear();
+
+	    for (int i = 0; i < buffers.length; i++)
+		    buffers[i].clear();
 	}
 	
 	@SuppressWarnings("finally")
@@ -184,7 +224,78 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 		buffer.putLong(index + 8, lsbValue);
 		return 0;
 	}
-	
+
+	// columnar put methods
+    @SuppressWarnings("finally")
+    public int putInt (int value, int column, boolean isColumnar) {
+        try {
+            buffers[column].putInt(value);
+        } catch (BufferOverflowException e) {
+            e.printStackTrace();
+        } finally {
+            return 0;
+        }
+    }
+
+    public int putInt (int index, int value, int column) {
+
+        buffers[column].putInt(index, value);
+        return 0;
+    }
+
+    @SuppressWarnings("finally")
+    public int putFloat (float value, int column) {
+        try {
+            buffers[column].putFloat(value);
+        } catch (BufferOverflowException e) {
+            e.printStackTrace();
+        } finally {
+            return 0;
+        }
+    }
+
+    public int putFloat (int index, float value, int column) {
+
+        buffers[column].putFloat(index, value);
+        return 0;
+    }
+
+    @SuppressWarnings("finally")
+    public int putLong (long value, int column) {
+        try {
+            buffers[column].putLong(value);
+        } catch (BufferOverflowException e) {
+            e.printStackTrace();
+        } finally {
+            return 0;
+        }
+    }
+
+    public int putLong (int index, long value, int column) {
+
+        buffers[column].putLong(index, value);
+        return 0;
+    }
+
+    @SuppressWarnings("finally")
+    public int putLongLong (long msbValue, long lsbValue, int column) {
+        try {
+            buffers[column].putLong(msbValue);
+            buffers[column].putLong(lsbValue);
+        } catch (BufferOverflowException e) {
+            e.printStackTrace();
+        } finally {
+            return 0;
+        }
+    }
+
+    public int putLongLong (int index, long msbValue, long lsbValue, int column) {
+
+        buffers[column].putLong(index, msbValue);
+        buffers[column].putLong(index + 8, lsbValue);
+        return 0;
+    }
+
 	@SuppressWarnings("finally")
 	public int put (byte [] values) {
 		try {
@@ -207,8 +318,53 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 		buffer.put(src, 0, length);
 		return 0;
 	}
-	
-	public int put (IQueryBuffer src) {
+
+	public int put (byte [] src, int offset, int length, int column) {
+
+        buffers[column].put(src, offset, length);
+        return 0;
+	}
+
+    public int put (ByteBuffer src, int offset, int length) {
+        throw new UnsupportedOperationException("error: it is not supported for columnar-representation");
+        //return put(src, offset, length, 0);
+    }
+
+    public int put (ByteBuffer src, int offset, int length, int column) {
+
+        //int tempPosition = src.position();
+        //src.position(offset);
+        //buffer.put(src);
+        //src.position(tempPosition);
+
+        long addr1 = ((DirectBuffer) src).address();
+        long addr2 = ((DirectBuffer) buffers[column]).address();
+        int _position = buffers[column].position();
+        for (int i = offset;  i < (offset+length); i+=4)
+            unsafe.putInt(addr2 + _position, unsafe.getInt(addr1 + i));
+        //unsafe.copyMemory(addr1 + offset, addr2 + _position, length);
+        int position = _position + length;
+        position -= (offset == 0) ? 1 : 0;
+        buffers[column].position(position);
+        return 0;
+    }
+
+    @Override
+    public int put(byte[][] src) {
+        return 0;
+    }
+
+    @Override
+    public int put(byte[][] src, int offset, int length) {
+        return 0;
+    }
+
+    @Override
+    public int put(byte[][] src, int length) {
+        return 0;
+    }
+
+    public int put (IQueryBuffer src) {
 		return put (src.array(), src.array().length);
 	}
 	
@@ -216,27 +372,7 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 		
 		return put (src.array(), offset, length);
 	}
-
-	public int put (ByteBuffer src, int offset, int length) {
-
-	    //int tempPosition = src.position();
-	    //src.position(offset);
-        //buffer.put(src);
-        //src.position(tempPosition);
-
-        long addr1 = ((DirectBuffer) src).address();
-        long addr2 = ((DirectBuffer) buffer).address();
-        int _position = buffer.position();
-        for (int i = offset;  i < (offset+length); i+=4)
-            unsafe.putInt(addr2 + _position, unsafe.getInt(addr1 + i));
-        //unsafe.copyMemory(addr1 + offset, addr2 + _position, length);
-        int position = _position + length;
-        position -= (offset == 0) ? 1 : 0;
-        buffer.position(position);
-		return 0;
-	}
-
-
+	
 	public void free (int index) {
 		
 		throw new UnsupportedOperationException("error: cannot free bytes from an unbounded buffer");
@@ -256,8 +392,18 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 		
 		dst.put(this.buffer.array(), offset, length);
 	}
-	
-	public void appendBytesTo (int start, int end, byte [] dst) {
+
+    @Override
+    public void appendBytesToColumn(int offset, int length, IQueryBuffer dst, int column) {
+
+    }
+
+    @Override
+    public void appendBytesToColumns(int offset, int length, IQueryBuffer dst, int column) {
+
+    }
+
+    public void appendBytesTo (int start, int end, byte [] dst) {
 		
 		if (isDirect)
 			throw new UnsupportedOperationException("error: cannot append bytes to a byte array from a direct buffer");
@@ -288,4 +434,12 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 		
 		return id;
 	}
+
+    @Override
+    public byte[] getColumnMap() {
+        return new byte[0];
+    }
+
+	@Override
+	public void resetColumnMap() {}
 }

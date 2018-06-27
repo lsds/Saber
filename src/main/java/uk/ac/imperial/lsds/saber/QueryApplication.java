@@ -59,6 +59,18 @@ public class QueryApplication {
 			dispatchers[i].dispatch (values, length);
 		}
 	}
+
+	public void processData (byte [][] values) {
+
+		processData (values, values[0].length);
+	}
+
+	public void processData (byte [][] values, int length) {
+
+		for (int i = 0; i < dispatchers.length; ++i) {
+			dispatchers[i].dispatch (values, length);
+		}
+	}
 	
 	public void processFirstStream (byte [] values) {
 		

@@ -13,11 +13,15 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	
 	private int id;
 	
-	private boolean isDirect = false;
-	
-	private byte [] data = null;
-	
-	public int size;
+	private boolean isDirect = true;
+
+    private boolean isColumnar = true;
+
+    private byte [] data = null;
+
+    private byte [][] _data = null;
+
+    public int size;
 	
 	private final PaddedAtomicLong start;
 	private final PaddedAtomicLong end;
@@ -26,8 +30,11 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	private long wraps;
 	
 	private ByteBuffer buffer;
-	
-	private AtomicLong bytesProcessed;
+
+    private ByteBuffer [] buffers;
+    private byte [] columnMap;
+
+    private AtomicLong bytesProcessed;
 	
 	private PaddedLong h;
 	
@@ -107,13 +114,25 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		}		
 		
 		if (! this.isDirect) {
-			
-			data   = new byte [this.size];
-			buffer = ByteBuffer.wrap(data);
+			if (!isColumnar) {
+			    data   = new byte [this.size];
+			    buffer = ByteBuffer.wrap(data);
+			} else {
+			    _data = new byte [3][this.size];
+			    buffers = new ByteBuffer [3];
+                for (int i = 0; i < 3; i++) {
+                    buffers[i] = ByteBuffer.wrap(_data[i]);
+                }
+
+                columnMap = new byte [this.size];
+            }
 			
 		} else {
-			
-			buffer = ByteBuffer.allocateDirect(this.size);
+
+            buffers = new ByteBuffer [3];
+            for (int i = 0; i < 3; i++) {
+                buffers[i] = ByteBuffer.allocateDirect(this.size);
+            }
 		}
 	}
 	
@@ -141,7 +160,33 @@ public class CircularQueryBuffer implements IQueryBuffer {
 
 		return buffer.getLong(normalise(offset) + 8);
 	}
-	
+
+    // columnar access methods
+    public int getInt (int offset, int column) {
+
+        return buffers[column].getInt(offset);
+    }
+
+    public float getFloat (int offset, int column) {
+
+        return buffers[column].getFloat(offset);
+    }
+
+    public long getLong (int offset, int column) {
+
+        return buffers[column].getLong(offset);
+    }
+
+    public long getMSBLongLong (int offset, int column) {
+
+        return buffers[column].getLong(normalise(offset));
+    }
+
+    public long getLSBLongLong (int offset, int column) {
+
+        return buffers[column].getLong(normalise(offset) + 8);
+    }
+
 	public byte [] array () {
 		
 		if (isDirect)
@@ -153,7 +198,12 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	public ByteBuffer getByteBuffer () {
 		return buffer;
 	}
-	
+
+    public ByteBuffer [] getByteBuffers () {
+
+        return buffers;
+    }
+
 	public int capacity () {
 		return size;
 	}
@@ -229,6 +279,47 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		
 		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
 	}
+
+	// columnar put methods
+	public int putInt (int value, int column, boolean isColumnar) {
+
+		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
+	}
+
+	public int putInt (int index, int value, int column) {
+
+		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
+	}
+
+	public int putFloat (float value, int column) {
+
+		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
+	}
+
+	public int putFloat (int index, float value, int column) {
+
+		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
+	}
+
+	public int putLong (long value, int column) {
+
+		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
+	}
+
+	public int putLong (int index, long value, int column) {
+
+		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
+	}
+
+	public int putLongLong (long msbValue, long lsbValue, int column) {
+
+		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
+	}
+
+	public int putLongLong (int index, long msbValue, long lsbValue, int column) {
+
+		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
+	}
 	
 	public int put (byte [] values) {
 		
@@ -255,7 +346,6 @@ public class CircularQueryBuffer implements IQueryBuffer {
 				return -1;				
 			}
 		}
-
 		int index = normalise (_end);
 		
 		if (id == 0 && isParallel) {
@@ -275,29 +365,29 @@ public class CircularQueryBuffer implements IQueryBuffer {
 
 			this.isBufferFilledLatch.setLatch(numberOfThreads);
 		} else {
-			
-			if (length > (size - index)) { 
-			
+
+			if (length > (size - index)) {
+
 				if (offset != 0)
-					throw new NullPointerException ("error: copy in two part if the offset is greater than 0");
-				
+					throw new NullPointerException("error: copy in two part if the offset is greater than 0");
+
 				int right = size - index;
-				int left  = length - (size - index);
-				
+				int left = length - (size - index);
+
 				System.arraycopy(values, 0, data, index, right);
 				System.arraycopy(values, size - index, data, 0, left);
-				
+
 				//throw new IllegalStateException();
-				
 			} else if (isDirect) {
-				
+
 				//System.arraycopy(values, offset, data, index, length);
-                if (index==0)
-                    buffer.position(0);
+				if (index==0)
+					buffer.position(0);
 				buffer.put(values);
 			} else {
-                System.arraycopy(values, offset, data, index, length);
-            }
+				
+				System.arraycopy(values, offset, data, index, length);
+			}
 		}
 		
 		
@@ -309,7 +399,71 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		/* debug (); */
 		return index;
 	}
-	
+
+    public int put (byte [] values, int offset, int length, int column) {
+        throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
+        //return put (buffer.array(), length, offset);
+    }
+
+	public int put (byte [][] values) {
+
+		return put (values, values[0].length);
+	}
+
+	public int put (byte [][] values, int length) {
+		return put( values, length, 0);
+	}
+
+	public int put (byte [][] values, int length, int offset) {
+		//if (isDirect)
+		//	throw new UnsupportedOperationException("error: cannot put array to a direct buffer");
+
+		if (values == null || length <= 0)
+			throw new NullPointerException ("error: cannot put null to a circular buffer");
+
+		final long _end = end.get();
+		final long wrapPoint = (_end + length - 1) - size;
+		if (h.value <= wrapPoint) {
+			h.value = start.get();
+			if (h.value <= wrapPoint) {
+				/* debug (); */
+				return -1;
+			}
+		}
+		int index = normalise (_end);
+        if (length > (size - index)) { /* Copy in two parts */
+
+            int right = size - index;
+            int left  = length - (size - index);
+            for (int i = 0; i <  _data.length; i++) {
+                System.arraycopy(values[i], 0, _data[i], index, right);
+                System.arraycopy(values[i], size - index, _data[i], 0, left);
+            }
+
+        }
+        else if (isDirect) {
+
+            if (index==0)
+                for (int i = 0; i <  buffers.length; i++)
+                    buffers[i].position(0);
+
+            for (int i = 0; i <  buffers.length; i++)
+                buffers[i].put(values[i]);
+        } else {
+
+            for (int i = 0; i <  _data.length; i++)
+                System.arraycopy(values[i], 0, _data[i], index, length);
+        }
+
+        int p = normalise (_end + length);
+        if (p <= index)
+            wraps ++;
+        /* buffer.position(p); */
+        end.lazySet(_end + length);
+        /* debug (); */
+        return index;
+	}
+
 	public int put (IQueryBuffer buffer) {
 		
 		return put (buffer.array());
@@ -325,6 +479,11 @@ public class CircularQueryBuffer implements IQueryBuffer {
         throw new UnsupportedOperationException("error: doesn't support this operation yet.");
     }
 
+    @Override
+    public int put(ByteBuffer src, int offset, int length, int column) {
+        return 0;
+    }
+
     public void free (int offset) {
 		final long _start = start.get();
 		final int index = normalise (_start);
@@ -336,14 +495,17 @@ public class CircularQueryBuffer implements IQueryBuffer {
 			bytes = offset - index + 1;
 		
 		/* debug(); */
-		
-		bytesProcessed.addAndGet(bytes);
+
+		// TODO: fix the way bytes are counted...
+		int _bytes = (bytes/8)*SystemConf.INPUT_SCHEMA_SIZE;
+		bytesProcessed.addAndGet(_bytes);
 		
 		/* Set new start pointer */
 		start.lazySet(_start + bytes);
 	}
 	
 	public void release () {
+
 		return ;
 	}
 	
@@ -373,15 +535,60 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	
 	public void appendBytesTo (int offset, int length, IQueryBuffer dst) {
 		
-		int start = normalise(offset);
+		//if (isDirect || dst.isDirect())
+		//	throw new UnsupportedOperationException("error: cannot append bytes from/to a direct buffer");
+		
+		int start = normalise(offset*8);
+		
+		//dst.put(data, start, length);
+        if (!isDirect && !dst.isDirect()) {
 
-        if (isDirect || dst.isDirect())
-		    dst.put(buffer, start, length);
-        else
-            dst.put(data, start, length);
+            dst.put(_data[0], start, 8, 0);
+
+            start = normalise(offset*4);
+            for (int i = 1; i < _data.length; i++)
+                dst.put(_data[i], start, 4, i);
+        } else {
+
+            dst.put(buffers[0], start, 8, 0);
+            //dst.put(buffer, start, length);
+
+            start = normalise(offset*4);
+            for (int i = 1; i < buffers.length; i++)
+                dst.put(buffers[i], start, 4, i);
+        }
+	}
+
+    @Override
+    public void appendBytesToColumn(int offset, int length, IQueryBuffer dst, int column) {
+
+        int start = normalise(offset*4);
+        dst.put(_data[column], start, 4, column);
     }
-	
-	public void appendBytesTo (int start, int end, byte [] dst) {
+
+    @Override
+    public void appendBytesToColumns(int offset, int length, IQueryBuffer dst, int column) {
+
+        int start = normalise(offset*8);
+
+        for (int i = 0; i < this.columnMap.length; i++) {
+            if (this.columnMap[i] != 0) {
+                dst.put(_data[0], start, 8, 0);
+            }
+            start += 8;
+        }
+
+        start = normalise(offset*4);
+
+        for (int i = 0; i < this.columnMap.length; i++) {
+            if (this.columnMap[i] != 0) {
+                dst.put(_data[2], start, 4, 2);
+            }
+            start += 4;
+        }
+    }
+
+    public void appendBytesTo (int start, int end, byte [] dst) {
 		
 		if (isDirect)
 			throw new UnsupportedOperationException("error: cannot append bytes to a byte array from a direct buffer");
@@ -416,4 +623,18 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		
 		return this.id;
 	}
+
+    @Override
+    public byte[] getColumnMap() {
+        return this.columnMap;
+    }
+
+    @Override
+    public void resetColumnMap() {
+	    int len = this.columnMap.length;
+        this.columnMap[0] = 0;
+        for (int i = 1; i < len/8; i += i) {
+            System.arraycopy(this.columnMap, 0, this.columnMap, i, ((len - i) < i) ? (len - i) : i);
+        }
+    }
 }

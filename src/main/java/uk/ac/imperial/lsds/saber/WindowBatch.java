@@ -197,11 +197,11 @@ public class WindowBatch {
 	}
 	
 	public int getBufferStartPointer () {
-		return startPointer;
+		return startPointer/8;
 	}
 	
 	public int getBufferEndPointer () {
-		return endPointer;
+		return endPointer/8;
 	}
 	
 	public void setBufferPointers (int start, int end) {
@@ -498,7 +498,7 @@ public class WindowBatch {
 	
 	public void initPartialCountBasedWindowPointers () {
 		
-		int tupleSize = schema.getTupleSize ();
+		int tupleSize = 8;//schema.getTupleSize ();
 		long paneSize = windowDefinition.getPaneSize();
 		
 		Arrays.fill(windowStartPointers, -1);

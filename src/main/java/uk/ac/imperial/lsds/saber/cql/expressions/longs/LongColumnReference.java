@@ -31,7 +31,8 @@ public class LongColumnReference implements LongExpression {
 	
 	public long eval (IQueryBuffer buffer, ITupleSchema schema, int offset) {
 		
-		return buffer.getLong(offset + schema.getAttributeOffset(column));
+		//return buffer.getLong(offset + schema.getAttributeOffset(column));
+		return buffer.getLong(offset*size, column);
 	}
 
 	public void appendByteResult (IQueryBuffer src, ITupleSchema schema, int offset, IQueryBuffer dst) {

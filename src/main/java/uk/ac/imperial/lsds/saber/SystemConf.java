@@ -53,6 +53,8 @@ public class SystemConf {
 	public static boolean LATENCY_ON = false;
 	
 	public static long DURATION = 0;
+
+	public static int INPUT_SCHEMA_SIZE = 16;
 	
 	public static boolean parse (String opt, String arg) {
 		/* 

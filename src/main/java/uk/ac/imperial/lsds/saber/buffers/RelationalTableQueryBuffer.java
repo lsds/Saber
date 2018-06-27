@@ -105,7 +105,32 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 
 		return buffer.getLong(normalise(offset) + 8);
 	}
-	
+
+	@Override
+	public int getInt(int offset, int column) {
+		return 0;
+	}
+
+	@Override
+	public float getFloat(int offset, int column) {
+		return 0;
+	}
+
+	@Override
+	public long getLong(int offset, int column) {
+		return 0;
+	}
+
+	@Override
+	public long getMSBLongLong(int offset, int column) {
+		return 0;
+	}
+
+	@Override
+	public long getLSBLongLong(int offset, int column) {
+		return 0;
+	}
+
 	public byte [] array () {
 		
 		if (isDirect)
@@ -117,6 +142,11 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 	public ByteBuffer getByteBuffer () {
 		return buffer;
 	}
+
+    public ByteBuffer [] getByteBuffers () {
+
+        throw new UnsupportedOperationException("error: doesn't support this operation yet.");
+    }
 	
 	public int capacity () {
 		return size;
@@ -193,7 +223,47 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 		
 		throw new UnsupportedOperationException("error: cannot put value to a circular buffer");
 	}
-	
+
+	@Override
+	public int putInt(int value, int column, boolean isColumnar) {
+		return 0;
+	}
+
+	@Override
+	public int putInt(int index, int value, int column) {
+		return 0;
+	}
+
+	@Override
+	public int putFloat(float value, int column) {
+		return 0;
+	}
+
+	@Override
+	public int putFloat(int index, float value, int column) {
+		return 0;
+	}
+
+	@Override
+	public int putLong(long value, int column) {
+		return 0;
+	}
+
+	@Override
+	public int putLong(int index, long value, int column) {
+		return 0;
+	}
+
+	@Override
+	public int putLongLong(long msbValue, long lsbValue, int column) {
+		return 0;
+	}
+
+	@Override
+	public int putLongLong(int index, long msbValue, long lsbValue, int column) {
+		return 0;
+	}
+
 	public int put (byte [] values) {
 		
 		return put (values, values.length);
@@ -235,7 +305,27 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 	 	debug (); 
 		return index;			
 	}
-	
+
+	@Override
+	public int put(byte[] src, int offset, int length, int column) {
+		return 0;
+	}
+
+	@Override
+	public int put(byte[][] src) {
+		return 0;
+	}
+
+	@Override
+	public int put(byte[][] src, int offset, int length) {
+		return 0;
+	}
+
+	@Override
+	public int put(byte[][] src, int length) {
+		return 0;
+	}
+
 	public int put (byte [] values, int offset, int length) {
 		
 		if (offset > 0)
@@ -256,7 +346,17 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 		
 		return put (buffer.array(), length);
 	}
-	
+
+	@Override
+	public int put(ByteBuffer src, int offset, int length) {
+		return 0;
+	}
+
+	@Override
+	public int put(ByteBuffer src, int offset, int length, int column) {
+		return 0;
+	}
+
 	public void free (int offset) {
 		final long _start = start.get();
 		final int index = normalise (_start);
@@ -312,8 +412,18 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 		
 		dst.put(data, start, length);
 	}
-	
-	public void appendBytesTo (int start, int end, byte [] dst) {
+
+    @Override
+    public void appendBytesToColumn(int offset, int length, IQueryBuffer dst, int column) {
+
+    }
+
+    @Override
+    public void appendBytesToColumns(int offset, int length, IQueryBuffer dst, int column) {
+
+    }
+
+    public void appendBytesTo (int start, int end, byte [] dst) {
 		
 		if (isDirect)
 			throw new UnsupportedOperationException("error: cannot append bytes to a byte array from a direct buffer");
@@ -349,8 +459,12 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 		return this.id;
 	}
 
+    @Override
+    public byte[] getColumnMap() {
+        return new byte[0];
+    }
+
 	@Override
-	public int put(ByteBuffer src, int offset, int length) {
-		throw new UnsupportedOperationException("error: doesn't support this operation yet.");
+	public void resetColumnMap() {
 	}
 }

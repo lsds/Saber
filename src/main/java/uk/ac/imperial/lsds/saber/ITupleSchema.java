@@ -10,6 +10,8 @@ public interface ITupleSchema {
 	public int [] getOffsets ();
 	public int getAttributeOffset (int index);
 
+	//public int getColumnarAttributeOffset (int index);
+
 	public byte [] getPad ();
 	public int getPadLength ();
 	

@@ -111,7 +111,12 @@ public class JoinTaskDispatcher implements ITaskDispatcher {
 		}
 		assembleFirst (idx, length);
 	}
-	
+
+	@Override
+	public void dispatch(byte[][] data, int length) {
+
+	}
+
 	public boolean tryDispatch (byte [] data, int length) {
 		int idx;
 		if ((idx = firstBuffer.put(data, length)) < 0) {
@@ -179,7 +184,12 @@ public class JoinTaskDispatcher implements ITaskDispatcher {
 	public IQueryBuffer getBuffer () {
 		return firstBuffer;
 	}
-	
+
+	@Override
+	public IQueryBuffer[] getBuffers() {
+		return new IQueryBuffer[0];
+	}
+
 	public IQueryBuffer getFirstBuffer () {
 		return getBuffer();
 	}

@@ -65,7 +65,7 @@ public class LatencyMonitor {
 		
 		/* Check buffer */
 		
-		long t1 = (long) Utils.getSystemTimestamp (buffer.getLong(mark));
+		long t1 = (long) Utils.getSystemTimestamp (buffer.getLong(mark, 0));
 		
 		long t2 = (System.nanoTime() - timestampReference) / 1000L;
 		dt = (t2 - t1) / 1000.; /* In milliseconds */

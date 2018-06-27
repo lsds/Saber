@@ -43,15 +43,20 @@ public class TestAggregation {
 		try {
 		
 		/* Application-specific arguments */
-		
-		int batchSize = 1048576;
+        SystemConf.CIRCULAR_BUFFER_SIZE = 32*1024*1024;
+		SystemConf.INPUT_SCHEMA_SIZE = 12;
+		int batchSize = 32768;//1048576/16;
+
+		SystemConf.UNBOUNDED_BUFFER_SIZE = batchSize;
+        SystemConf.PARTIAL_WINDOWS = 4*1024;
+
 		
 		WindowType windowType = WindowType.ROW_BASED;
 		
-		int windowSize = 100;
-		int windowSlide = 1;
+		int windowSize = 1024;
+		int windowSlide = 64;
 		
-		int numberOfAttributes = 2;
+		int numberOfAttributes = 1;
 		
 		String aggregateExpression = "MIN";
 		int numberOfGroups = 0;
@@ -190,19 +195,20 @@ public class TestAggregation {
 		
 		/* Set up the input stream */
 		
-		byte [] data = new byte [tupleSize * tuplesPerInsert];
-		
-		ByteBuffer b = ByteBuffer.wrap (data);
+		byte [][] data = new byte [3][tupleSize * tuplesPerInsert];
+		ByteBuffer [] buffers = new ByteBuffer[numberOfAttributes+1];
+		for (int k = 0;  k < buffers.length; k++)
+		    buffers[k] = ByteBuffer.wrap (data[k]);
 		
 		/* Fill the buffer */
 		Random random = new Random();
 		int groupId = 1;
 		
-		while (b.hasRemaining()) {
-			
-			b.putLong (1);
-			b.putFloat (random.nextFloat());
-			b.putInt(groupId);
+		while (buffers[0].hasRemaining()) {
+
+            buffers[0].putLong (1);
+            buffers[1].putInt (random.nextInt());
+            //buffers[2].putInt(groupId);
 			
 			if (numberOfGroups > 0) {
 				
@@ -212,14 +218,14 @@ public class TestAggregation {
 			}
 			
 			for (i = 2; i < numberOfAttributes; i++)
-				b.putInt(1);
+                buffers[i].putInt(1);
 		}
 		
 		if (SystemConf.LATENCY_ON) {
 			/* Reset timestamp */
 			long systemTimestamp = (System.nanoTime() - timestampReference) / 1000L; /* us */
-			long packedTimestamp = Utils.pack(systemTimestamp, b.getLong(0));
-			b.putLong(0, packedTimestamp);
+			long packedTimestamp = Utils.pack(systemTimestamp, buffers[0].getLong(0));
+            buffers[0].putLong(0, packedTimestamp);
 		}
 		
 		while (true) {
@@ -227,7 +233,7 @@ public class TestAggregation {
 			application.processData (data);
 				
 			if (SystemConf.LATENCY_ON)
-				b.putLong(0, Utils.pack((long) ((System.nanoTime() - timestampReference) / 1000L), 1L));
+                buffers[0].putLong(0, Utils.pack((long) ((System.nanoTime() - timestampReference) / 1000L), 1L));
 		}
 		
 		} catch (Exception e) {

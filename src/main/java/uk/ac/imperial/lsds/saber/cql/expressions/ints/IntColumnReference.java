@@ -31,7 +31,8 @@ public class IntColumnReference implements IntExpression {
 
 	public int eval(IQueryBuffer buffer, ITupleSchema schema, int offset) {
 		
-		return buffer.getInt(offset + schema.getAttributeOffset(column));
+		//return buffer.getInt(offset + schema.getAttributeOffset(column));
+        return buffer.getInt(offset*size, column);
 	}
 	
 	public void appendByteResult (IQueryBuffer src, ITupleSchema schema, int offset, IQueryBuffer dst) {

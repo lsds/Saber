@@ -170,24 +170,26 @@ public class PartialResultSlot {
 			
 			pos1 = p.closingWindows.getStartPointer(wid);
 			/* Skip timestamp */
-			pos1 += 8;
-			
-			countOffset1 = pos1 + (operator.numberOfValues() * 4);
+			//pos1 += 8;
+
+			pos1*=4;
+
+			countOffset1 = operator.numberOfValues() + 1; //pos1 + (operator.numberOfValues() * 4);
 			countOffset2 = countOffset1;
-			count1 = b1.getInt(countOffset1);
-			count2 = b2.getInt(countOffset2);
+			count1 = b1.getInt(pos1, countOffset1);
+			count2 = b2.getInt(pos1, countOffset2);
 			/* Iterate over values */
 			for (int i = 0; i < operator.numberOfValues(); ++i) {
-				valueOffset1 = pos1 + (i * 4);
+				valueOffset1 = i + 1;//pos1 + (i * 4);
 				valueOffset2 = valueOffset1;
-				value1 = b1.getFloat(valueOffset1);
-				value2 = b2.getFloat(valueOffset2);
+				value1 = b1.getFloat(pos1, valueOffset1);
+				value2 = b2.getFloat(pos1, valueOffset2);
 				// System.out.println(String.format("[DBG] value1 = %5.1f value2 = %5.1f", value1, value2));
 				AggregationType type = operator.getAggregationType(i);
 				switch (type) {
 				case CNT:
 				case SUM:
-					b2.putFloat(valueOffset2, value1 + value2);
+					b2.putFloat(pos1, value1 + value2, valueOffset2);
 					break;
 				case AVG:
 					/* Given <value1, count1> and <value2, count2>, then
@@ -195,21 +197,21 @@ public class PartialResultSlot {
 					 * 
 					 * ((value1 x count2) + (value2 x count1)) / (count1 + count2)
 					 */
-					b2.putFloat(valueOffset2, ((value1 * count2) + (value2 * count1)) / ((float) (count1 + count2)));
+					b2.putFloat(pos1, ((value1 * count2) + (value2 * count1)) / ((float) (count1 + count2)), valueOffset2);
 					break;
 				case MIN:
 					if (value1 < value2)
-						b2.putFloat(valueOffset2, value1);
+						b2.putFloat(pos1, value1, valueOffset2);
 					break;
 				case MAX:
 					if (value1 > value2)
-						b2.putFloat(valueOffset2, value1);
+						b2.putFloat(pos1, value1, valueOffset2);
 					break;
 				default:
 					throw new IllegalArgumentException("error: invalid aggregation type");
 				}
 			}
-			b2.putInt (countOffset2, (count1 + count2));
+			b2.putInt (pos1, (count1 + count2), countOffset2);
 		}
 
 		/* All closing windows of `p` are now complete. Append them to this node's complete windows */
