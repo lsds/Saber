@@ -10,114 +10,114 @@ import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
 // import uk.ac.imperial.lsds.saber.monetdb.MonetDBExperimentalSetup;
 
 public class ResultCollector {
-	
-	public static void forwardAndFree (ResultHandler handler, WindowBatch batch1) {
-		
-		if (batch1.containsFragmentedWindows()) {
-			
-			if (handler == null) {
-				System.err.println("Null handler...");
-				System.exit(1);
-			}
-			if (handler.resultAggregator == null) {
-				System.err.println("Null aggregator...");
-				System.exit(1);
-			}
-			handler.resultAggregator.add(batch1);
-			
-		} else {
-		
-			int taskid = batch1.getTaskId();
-			
-			Query query = batch1.getQuery();
-			
-			IQueryBuffer results = batch1.getBuffer();
-			
-			int freePtr1 =  batch1.getFirstFreePointer();
-			int freePtr2 = batch1.getSecondFreePointer();
-			
-			int mark = batch1.getLatencyMark();
-			
-			forwardAndFree (taskid, handler, query, results, freePtr1, freePtr2, mark);
-		}
-	}
-	
-	public static void forwardAndFree (
-			int taskid, 
-			ResultHandler handler,
-			Query query,
-			IQueryBuffer results, 
-			int freePtr1, 
-			int freePtr2,
-			int mark
-		) {
-		
-		if (taskid < 0) { /* Invalid task id */
-			return;
-		}
-		
-		int idx = ((taskid - 1) % handler.numberOfSlots);
-		
-		try {
-			
-			boolean isPadded = false;
 
-			if (isPadded) {
-				while (! handler.paddedSlots[idx].compareAndSet(-1, 0)) {
-					
-					System.err.println(String.format("warning: result collector (%s) blocked: query %d task %4d slot %4d", 
-							Thread.currentThread(), query.getId(), taskid, idx));
-					
-					LockSupport.parkNanos(1L);
-				}
-			} else {
-				while (! handler.slots.compareAndSet(idx, -1, 0)) {
-					
-					System.err.println(String.format("warning: result collector (%s) blocked: query %d task %4d slot %4d", 
-							Thread.currentThread(), query.getId(), taskid, idx));
-					
-					LockSupport.parkNanos(1L);
-				}
-			}
-			
-			handler.freePointers1[idx] = freePtr1;
-			handler.freePointers2[idx] = freePtr2;
-			
-			handler.results[idx] = results;
+    public static void forwardAndFree(ResultHandler handler, WindowBatch batch1) {
 
-			handler.latch [idx] = 0;
-			handler.mark  [idx] = mark;
-			
-			/* No other thread can modify this slot. */
-			if (isPadded) 
-				handler.paddedSlots[idx].set(1);
-			else
-				handler.slots.set(idx, 1);
+        if (batch1.containsFragmentedWindows()) {
 
-			/* Forward and free */
+            if (handler == null) {
+                System.err.println("Null handler...");
+                System.exit(1);
+            }
+            if (handler.resultAggregator == null) {
+                System.err.println("Null aggregator...");
+                System.exit(1);
+            }
+            handler.resultAggregator.add(batch1);
 
-			if (! handler.semaphore.tryAcquire())
-				return;
+        } else {
 
-			/* No other thread can enter this section */
+            int taskid = batch1.getTaskId();
 
-			/* Is slot `next` occupied? */
-			if (isPadded) {
-				if (! handler.paddedSlots[handler.next].compareAndSet(1, 2)) {
-					handler.semaphore.release();
-					return;
-				}
-			} else {
-				if (! handler.slots.compareAndSet(handler.next, 1, 2)) {
-					handler.semaphore.release();
-					return;
-				}
-			}
-			
-			boolean busy = true;
-			while (busy) {
-				
-				IQueryBuffer buffer = handler.results[handler.next];
+            Query query = batch1.getQuery();
+
+            IQueryBuffer results = batch1.getBuffer();
+
+            int freePtr1 = batch1.getFirstFreePointer();
+            int freePtr2 = batch1.getSecondFreePointer();
+
+            int mark = batch1.getLatencyMark();
+
+            forwardAndFree(taskid, handler, query, results, freePtr1, freePtr2, mark);
+        }
+    }
+
+    public static void forwardAndFree(
+            int taskid,
+            ResultHandler handler,
+            Query query,
+            IQueryBuffer results,
+            int freePtr1,
+            int freePtr2,
+            int mark
+    ) {
+
+        if (taskid < 0) { /* Invalid task id */
+            return;
+        }
+
+        int idx = ((taskid - 1) % handler.numberOfSlots);
+
+        try {
+
+            boolean isPadded = false;
+
+            if (isPadded) {
+                while (!handler.paddedSlots[idx].compareAndSet(-1, 0)) {
+
+                    System.err.println(String.format("warning: result collector (%s) blocked: query %d task %4d slot %4d",
+                            Thread.currentThread(), query.getId(), taskid, idx));
+
+                    LockSupport.parkNanos(1L);
+                }
+            } else {
+                while (!handler.slots.compareAndSet(idx, -1, 0)) {
+
+                    System.err.println(String.format("warning: result collector (%s) blocked: query %d task %4d slot %4d",
+                            Thread.currentThread(), query.getId(), taskid, idx));
+
+                    LockSupport.parkNanos(1L);
+                }
+            }
+
+            handler.freePointers1[idx] = freePtr1;
+            handler.freePointers2[idx] = freePtr2;
+
+            handler.results[idx] = results;
+
+            handler.latch[idx] = 0;
+            handler.mark[idx] = mark;
+
+            /* No other thread can modify this slot. */
+            if (isPadded)
+                handler.paddedSlots[idx].set(1);
+            else
+                handler.slots.set(idx, 1);
+
+            /* Forward and free */
+
+            if (!handler.semaphore.tryAcquire())
+                return;
+
+            /* No other thread can enter this section */
+
+            /* Is slot `next` occupied? */
+            if (isPadded) {
+                if (!handler.paddedSlots[handler.next].compareAndSet(1, 2)) {
+                    handler.semaphore.release();
+                    return;
+                }
+            } else {
+                if (!handler.slots.compareAndSet(handler.next, 1, 2)) {
+                    handler.semaphore.release();
+                    return;
+                }
+            }
+
+            boolean busy = true;
+            while (busy) {
+
+                IQueryBuffer buffer = handler.results[handler.next];
                 //byte[] arr;
                 for (int i = 0; i < buffer.getByteBuffers().length; i++) {
                     //arr = buffer.getByteBuffers()[i].array();
@@ -170,7 +170,6 @@ public class ResultCollector {
                      */
                     handler.incTotalOutputBytes(length);
                     //buffer.release();
-
 
 
                 }
@@ -229,12 +228,12 @@ public class ResultCollector {
                         busy = false;
                     }
                 }
-			}
-			/* Thread exit critical section */
-			handler.semaphore.release();
+            }
+            /* Thread exit critical section */
+            handler.semaphore.release();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
