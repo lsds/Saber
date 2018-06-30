@@ -7,6 +7,7 @@ import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
 import java.lang.reflect.Field;
+import java.nio.ByteOrder;
 
 public class UnboundedQueryBuffer implements IQueryBuffer {
 
@@ -45,8 +46,10 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 			    buffers[i] = ByteBuffer.allocate(size);
 		} else {
             buffers = new ByteBuffer[3];
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 3; i++) {
                 buffers[i] = ByteBuffer.allocateDirect(size);
+                buffers[i].order(ByteOrder.LITTLE_ENDIAN);
+            }
 		}
 	}
 	

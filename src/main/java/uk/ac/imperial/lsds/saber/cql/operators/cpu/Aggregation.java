@@ -1,8 +1,10 @@
 package uk.ac.imperial.lsds.saber.cql.operators.cpu;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import uk.ac.imperial.lsds.saber.ITupleSchema;
+import uk.ac.imperial.lsds.saber.SystemConf;
 import uk.ac.imperial.lsds.saber.WindowBatch;
 import uk.ac.imperial.lsds.saber.WindowDefinition;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
@@ -23,6 +25,8 @@ import uk.ac.imperial.lsds.saber.cql.expressions.longs.LongExpression;
 import uk.ac.imperial.lsds.saber.cql.operators.AggregationType;
 import uk.ac.imperial.lsds.saber.cql.operators.IAggregateOperator;
 import uk.ac.imperial.lsds.saber.cql.operators.IOperatorCode;
+import uk.ac.imperial.lsds.saber.devices.TheCPU;
+import uk.ac.imperial.lsds.saber.devices.TheCPUOperators;
 import uk.ac.imperial.lsds.saber.processors.ThreadMap;
 import uk.ac.imperial.lsds.saber.tasks.IWindowAPI;
 
@@ -44,6 +48,9 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
     private ThreadLocal<int     []> tl_counts;
     private ThreadLocal<byte    []> tl_tuplekey;
     private ThreadLocal<boolean []> tl_found;
+
+    public native int byteBufferMethod (ByteBuffer buffer, ByteBuffer resultBuffer);
+    public Aggregation () {};
 
     public Aggregation (WindowDefinition windowDefinition) {
 
@@ -412,6 +419,30 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
         long timestampValue;
         float value;
 
+        int slidesBeforeFullWindow = (int)(batch.getWindowDefinition().getSize()/batch.getWindowDefinition().getSlide()) -1;
+        ByteBuffer resultBuffer = ByteBuffer.allocateDirect((batch.getLastWindowIndex() + slidesBeforeFullWindow + 1)*4);
+        resultBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        int startPointer = batch.getBufferStartPointer();
+        int endPointer = batch.getBufferEndPointer();
+        //for (int k =0; k< 2048; k++)
+        //    System.out.println(inputBuffer.getByteBuffers()[1].getInt(k*4)+" \n");
+
+        int resultsPosition = 0;
+        resultsPosition += TheCPU.getInstance().byteBufferMethod(inputBuffer.getByteBuffers()[1], startPointer, endPointer,
+                resultBuffer, resultsPosition, (int) batch.getWindowDefinition().getSize(),
+                (int) batch.getWindowDefinition().getSlide()) + 1;
+
+        startPointer = endPointer - (int)(batch.getWindowDefinition().getSize());
+        resultsPosition += TheCPU.getInstance().byteBufferMethod(inputBuffer.getByteBuffers()[1], startPointer, endPointer,
+                resultBuffer, resultsPosition, (int) batch.getWindowDefinition().getSize(),
+                (int) batch.getWindowDefinition().getSlide());
+        resultBuffer.position(resultsPosition*4);
+
+        //for (int k =0; k< resultsPosition; k++)
+        //    System.out.println("pos: " + k + " res: " +resultBuffer.getInt(k*4)+" \n");
+
+        int resultCounter = 0;
         for (int currentWindow = 0; currentWindow < startP.length; ++currentWindow) {
             if (currentWindow > batch.getLastWindowIndex())
                 break;
@@ -429,6 +460,9 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
                 end = batch.getBufferEndPointer();
                 if (batch.getStreamStartPointer() == 0) {
                     /* Treat this window as opening; there is no previous batch to open it */
+                    if (resultCounter==0)
+                        resultCounter+=(slidesBeforeFullWindow);
+
                     outputBuffer = openingWindows.getBuffer();
                     openingWindows.increment();
                 } else {
@@ -444,12 +478,16 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
                 start = batch.getBufferStartPointer();
                 // System.out.println(String.format("[DBG] task %6d closing window: [%10d, %10d]", batch.getTaskId(), start, end));
             } else if (end < 0) {
+                if (resultCounter==0)
+                    resultCounter+=(slidesBeforeFullWindow);
                 outputBuffer = openingWindows.getBuffer();
                 openingWindows.increment();
                 end = batch.getBufferEndPointer();
             } else {
                 if (start == end) /* Empty window */
                     continue;
+                if (resultCounter==0)
+                    resultCounter+=(slidesBeforeFullWindow);
                 outputBuffer = completeWindows.getBuffer();
                 completeWindows.increment();
             }
@@ -482,15 +520,18 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
             }
             /* Move pointer to second tuple */
             //start += inputTupleSize;
-            start++;
+            //start++;
+
+            start=end;
+
             /* For all remaining tuples... */
-            while (start < end) {
-                for (int i = 0; i < numberOfValues(); ++i) {
+            //while (start < end) {
+              //  for (int i = 0; i < numberOfValues(); ++i) {
                     //if (aggregationTypes[i] == AggregationType.CNT) {
                     //values[i] += 1;
                     //} else {
-                    value = inputBuffer.getByteBuffers()[0].getInt(start);//aggregationAttributes[i].eval(inputBuffer, inputSchema, start);
-                    value++;
+                    //value = inputBuffer.getByteBuffers()[0].getInt(start);//aggregationAttributes[i].eval(inputBuffer, inputSchema, start);
+                    //value++;
 						/*switch (aggregationTypes[i]) {
 						case MAX: values[i] = (value <= values[i]) ? values[i] : value; break;
 						case MIN: values[i] = (value >= values[i]) ? values[i] : value; break;
@@ -501,10 +542,10 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 						}*/
                     //}
                     //counts[i] += 1;
-                }
+                //}
                 //start += inputTupleSize;
-                start++;
-            }
+                //start++;
+           // }
             /* Compute average, if any */
             for (int i = 0; i < numberOfValues(); ++i) {
                 if (aggregationTypes[i] == AggregationType.AVG) {
@@ -514,8 +555,11 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
             /* Store window result in output buffer */
             outputBuffer.putLong(timestampValue, 0);
             for (int i = 0; i < numberOfValues(); ++i) {
-                outputBuffer.putFloat(values[i], i+1);
+                //outputBuffer.putFloat(values[i], i+1);
+                //System.out.println("ResultCounter: " + resultCounter*4);
+                outputBuffer.putFloat((float)resultBuffer.getInt(resultCounter*4), i+1);
             }
+            resultCounter++;
             outputBuffer.putInt(counts[0], outputBuffer.getByteBuffers().length-1, true);
         }
 

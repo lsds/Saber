@@ -39,6 +39,14 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_unbind
 JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_getCpuId
   (JNIEnv *, jobject);
 
+/*
+ * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
+ * Method:    byteBufferMethod
+ * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;III)I
+ */
+JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_byteBufferMethod
+  (JNIEnv *, jobject, jobject, jint, jint, jobject, jint, jint, jint);
+
 #ifdef __cplusplus
 }
 #endif

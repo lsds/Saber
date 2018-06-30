@@ -9,6 +9,7 @@ CLASS_PATH = ../target/classes
 vpath %.class $(CLASS_PATH)
 
 CC = gcc
+CPLUSPLUS = g++
 
 CFL_BASE = -W -Wall -DWARNING -fpic
 
@@ -69,13 +70,13 @@ libGPU.so: $(OBJS)
 	$(CC) -shared -o libGPU.so $(OBJS) $(GLIBS) $(CLIBS)
 
 libCPU.so: CPU.o
-	$(CC) -shared -o libCPU.so CPU.o
+	$(CPLUSPLUS) -shared -o libCPU.so CPU.o
 
 GPU.o: GPU.c GPU.h uk_ac_imperial_lsds_saber_devices_TheGPU.h timer.h openclerrorcode.h 
 	$(CC) $(CFLAGS) $(GFLAGS) -c $< -o $@
 
-CPU.o: CPU.c uk_ac_imperial_lsds_saber_devices_TheCPU.h
-	$(CC) $(CFLAGS) -c $< -o $@
+CPU.o: CPU.c CircularQueue.h Utils.h TwoStackCircular.h AggregateStacksSIMD.cpp
+	$(CPLUSPLUS) -std=c++14 $(CFLAGS) -O3 -mavx2 -c $< -o $@
 
 #
 # JNI class headers

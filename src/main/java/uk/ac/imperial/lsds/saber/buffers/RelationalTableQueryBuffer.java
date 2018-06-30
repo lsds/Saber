@@ -1,6 +1,7 @@
 package uk.ac.imperial.lsds.saber.buffers;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
 
 import uk.ac.imperial.lsds.saber.SystemConf;
@@ -78,6 +79,7 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 		} else {
 			
 			buffer = ByteBuffer.allocateDirect(this.size);
+			buffer.order(ByteOrder.LITTLE_ENDIAN);
 		}		
 	}	
 	

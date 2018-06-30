@@ -1,6 +1,7 @@
 package uk.ac.imperial.lsds.saber.experiments.microbenchmarks;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -47,14 +48,16 @@ public class TestAggregation {
             SystemConf.INPUT_SCHEMA_SIZE = 12;
             int batchSize = 32768;//1048576/16;
 
-            SystemConf.UNBOUNDED_BUFFER_SIZE = batchSize;
-            SystemConf.PARTIAL_WINDOWS = 4 * 1024;
+            SystemConf.THREADS = 1;
+
+            SystemConf.UNBOUNDED_BUFFER_SIZE = batchSize*2;
+            SystemConf.PARTIAL_WINDOWS = 16 * 1024;
 
 
             WindowType windowType = WindowType.ROW_BASED;
 
             int windowSize = 1024;
-            int windowSlide = 64;
+            int windowSlide = 1;
 
             int numberOfAttributes = 1;
 
@@ -189,17 +192,20 @@ public class TestAggregation {
 
             byte[][] data = new byte[3][tupleSize * tuplesPerInsert];
             ByteBuffer[] buffers = new ByteBuffer[numberOfAttributes + 1];
-            for (int k = 0; k < buffers.length; k++)
+            for (int k = 0; k < buffers.length; k++) {
                 buffers[k] = ByteBuffer.wrap(data[k]);
+                buffers[k].order(ByteOrder.LITTLE_ENDIAN);
+            }
 
             /* Fill the buffer */
-            Random random = new Random();
+            Random random = new Random(42);
             int groupId = 1;
 
+            int l = 0;
             while (buffers[0].hasRemaining()) {
 
                 buffers[0].putLong(1);
-                buffers[1].putInt(random.nextInt());
+                buffers[1].putInt(l++);//random.nextInt());
                 //buffers[2].putInt(groupId);
 
                 if (numberOfGroups > 0) {
@@ -212,6 +218,9 @@ public class TestAggregation {
                 for (i = 2; i < numberOfAttributes; i++)
                     buffers[i].putInt(1);
             }
+
+            //for (int k = 0; k <1024; k++)
+            //    System.out.println(buffers[1].getInt(k*4) + " \n");
 
             if (SystemConf.LATENCY_ON) {
                 /* Reset timestamp */

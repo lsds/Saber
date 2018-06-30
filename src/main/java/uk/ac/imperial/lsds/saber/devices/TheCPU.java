@@ -1,10 +1,12 @@
 package uk.ac.imperial.lsds.saber.devices;
 
-import uk.ac.imperial.lsds.saber.SystemConf;
+//import uk.ac.imperial.lsds.saber.SystemConf;
+
+import java.nio.ByteBuffer;
 
 public class TheCPU {
 	
-	private static final String cpuLibrary = SystemConf.SABER_HOME + "/clib/libCPU.so";
+	private static final String cpuLibrary = System.getProperty("user.dir") + "/clib/libCPU.so";
 	
 	static {
 		try {
@@ -24,4 +26,6 @@ public class TheCPU {
 	public native int bind (int cpu);
 	public native int unbind ();
 	public native int getCpuId ();
+    public native int byteBufferMethod (ByteBuffer buffer, int startPointer, int endPointer,
+										ByteBuffer resultBuffer, int resultsPointer, int windowSize, int windowSlide);
 }

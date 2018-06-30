@@ -1,6 +1,7 @@
 package uk.ac.imperial.lsds.saber.buffers;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -114,6 +115,7 @@ public class CircularQueryBuffer implements IQueryBuffer {
             buffers = new ByteBuffer[3];
             for (int i = 0; i < 3; i++) {
                 buffers[i] = ByteBuffer.allocateDirect(this.size);
+                buffers[i].order(ByteOrder.LITTLE_ENDIAN);
             }
         }
     }
