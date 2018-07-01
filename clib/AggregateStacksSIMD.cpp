@@ -1,6 +1,9 @@
 #include <climits>
 #include "Utils.h"
 #include "AggregateStacksSIMD.h"
+#include <stdexcept>
+#include <map>
+#include <functional>
 
 #include "immintrin.h"
 #include "emmintrin.h"
@@ -114,8 +117,14 @@ int processStacksSIMD (AggregateStacksSIMD *aggr , int input [], int length, int
     return (resultsPointer-1);
 }
 
-int processStacksSIMD(AggregateStacksSIMD *aggr , int input [], int length, int timestamps []){
-    return processStacksSIMD<AggregationType::MIN>(aggr, input, length, timestamps);
+int processStacksSIMD(AggregateStacksSIMD *aggr , int input [], int length, int results []){
+    return std::map<AggregationType,std::function<int(AggregateStacksSIMD * , int [], int, int[])>>{
+            {AVG,processStacksSIMD<AggregationType::AVG>},
+            {MIN,processStacksSIMD<AggregationType::MIN>},
+            {MAX,processStacksSIMD<AggregationType::MAX>},
+            {CNT,processStacksSIMD<AggregationType::CNT>},
+            {SUM,processStacksSIMD< AggregationType::SUM>},
+    }.at(aggr->type)(aggr, input, length, results);
 }
 
 

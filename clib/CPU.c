@@ -97,7 +97,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_getCpuId
 
 JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_byteBufferMethod
   (JNIEnv * env, jobject obj, jobject buffer, jint startPointer, jint endPointer, jobject resultBuffer,
-  jint resultsPointer, jint windowSize, jint windowSlide) {
+  jint resultsPointer, jint windowSize, jint windowSlide, jint aggrType) {
 
     int *data= (int *) env->GetDirectBufferAddress(buffer);
     //int len = env->GetDirectBufferCapacity(buffer);
@@ -106,7 +106,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_byteBufferM
 
     //int windowSize = 1024;
     //int windowSlide = 64;
-    AggregationType type = MIN;
+    AggregationType type = (AggregationType) aggrType;//MIN;
     TimeGranularity granularity = sec;
     int inputSize = (endPointer-startPointer);
 

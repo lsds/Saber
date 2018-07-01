@@ -1,6 +1,7 @@
 package uk.ac.imperial.lsds.saber.experiments.microbenchmarks;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -111,7 +112,7 @@ public class TestSelection {
              * by `numberOfAttributes` integer attributes.
              */
 
-            int[] offsets = new int[numberOfAttributes + 1];
+            int [] offsets = new int [numberOfAttributes + 1];
 
             offsets[0] = 0;
             int tupleSize = 8;
@@ -121,7 +122,7 @@ public class TestSelection {
                 tupleSize += 4;
             }
 
-            ITupleSchema schema = new TupleSchema(offsets, tupleSize);
+            ITupleSchema schema = new TupleSchema (offsets, tupleSize);
 
             schema.setAttributeType(0, PrimitiveType.LONG);
 
@@ -132,24 +133,26 @@ public class TestSelection {
             /* tupleSize equals schema.getTupleSize() */
             tupleSize = schema.getTupleSize();
 
+
             /* Build the selection query */
 
             IPredicate predicate = null;
-            IPredicate[] predicates = null;
+            IPredicate [] predicates = null;
 
             if (selectivity > 0 && numberOfComparisons == 0) {
 
                 predicate =
                         new IntComparisonPredicate(IntComparisonPredicate.LESS_OP, new IntColumnReference(1), new IntConstant(selectivity));
 
-            } else if (selectivity == 0 && numberOfComparisons > 0) {
+            } else
+            if (selectivity == 0 && numberOfComparisons > 0) {
 
-                predicates = new IPredicate[numberOfComparisons];
+                predicates = new IPredicate [numberOfComparisons];
                 for (i = 0; i < numberOfComparisons; i++) {
                     predicates[i] =
                             new IntComparisonPredicate(IntComparisonPredicate.GREATER_OP, new IntColumnReference(1), new IntConstant(0));
                 }
-                predicate = new ANDPredicate(predicates);
+                predicate = new ANDPredicate (predicates);
 
             } else {
                 System.err.println(String.format("error: invalid configuration: %d%% selectivity and %d comparisons",
@@ -157,8 +160,8 @@ public class TestSelection {
                 System.exit(1);
             }
 
-            IOperatorCode cpuCode = new Selection(predicate);
-            IOperatorCode gpuCode = new SelectionKernel(schema, predicate, null, batchSize);
+            IOperatorCode cpuCode = new Selection (predicate);
+            IOperatorCode gpuCode = new SelectionKernel (schema, predicate, null, batchSize);
 
             QueryOperator operator;
             operator = new QueryOperator(cpuCode, gpuCode);
@@ -179,84 +182,46 @@ public class TestSelection {
 
             /* Set up the input stream */
 
-            boolean isColumnar = true;
+            byte[][] data = new byte[schema.numberOfAttributes()][8 * tuplesPerInsert];
 
-            if (!isColumnar) {
-                byte[] data = new byte[tupleSize * tuplesPerInsert];
+            //ByteBuffer b = ByteBuffer.wrap(data);
 
-                ByteBuffer b = ByteBuffer.wrap(data);
+            ByteBuffer [] buffers = new ByteBuffer [schema.numberOfAttributes()];
+            for (int k = 0; k < schema.numberOfAttributes(); k++) {
+                buffers[k] = ByteBuffer.wrap(data[k]);
+                buffers[k].order(ByteOrder.LITTLE_ENDIAN);
+            }
 
-                /* Fill the buffer */
-                int value = 0;
-                while (b.hasRemaining()) {
-                    b.putLong(1);
-                    if (selectivity > 0) {
-                        b.putInt(value);
-                        value = (value + 1) % 100;
-                        for (i = 1; i < numberOfAttributes; i++)
-                            b.putInt(1);
-                    } else {
-                        for (i = 0; i < numberOfAttributes; i++)
-                            b.putInt(1);
-                    }
-                }
-
-                if (SystemConf.LATENCY_ON) {
-                    /* Reset timestamp */
-                    long systemTimestamp = (System.nanoTime() - timestampReference) / 1000L; /* us */
-                    long packedTimestamp = Utils.pack(systemTimestamp, b.getLong(0));
-                    b.putLong(0, packedTimestamp);
-                }
-
-                while (true) {
-
-                    application.processData(data);
-
-                    if (SystemConf.LATENCY_ON)
-                        b.putLong(0, Utils.pack((long) ((System.nanoTime() - timestampReference) / 1000L), 1L));
+            /* Fill the buffer */
+            int value = 0;
+            while (buffers[0].hasRemaining()) {
+                buffers[0].putLong(1);
+                if (selectivity > 0) {
+                    buffers[1].putInt(value);
+                    value = (value + 1) % 100;
+                    for (i = 1; i < numberOfAttributes; i++)
+                        buffers[i+1].putInt(1);
+                } else {
+                    for (i = 0; i < numberOfAttributes; i++)
+                        buffers[i+1].putInt(1);
                 }
             }
-            else {
 
-                byte[][] data = new byte[schema.numberOfAttributes()][8 * tuplesPerInsert];
-
-                //ByteBuffer b = ByteBuffer.wrap(data);
-
-                ByteBuffer [] buffers = new ByteBuffer [schema.numberOfAttributes()];
-                for (int k = 0; k < schema.numberOfAttributes(); k++)
-                    buffers[k] = ByteBuffer.wrap(data[k]);
-
-                /* Fill the buffer */
-                int value = 0;
-                while (buffers[0].hasRemaining()) {
-                    buffers[0].putLong(1);
-                    if (selectivity > 0) {
-                        buffers[1].putInt(value);
-                        value = (value + 1) % 100;
-                        for (i = 1; i < numberOfAttributes; i++)
-                            buffers[i+1].putInt(1);
-                    } else {
-                        for (i = 0; i < numberOfAttributes; i++)
-                            buffers[i+1].putInt(1);
-                    }
-                }
-
-                if (SystemConf.LATENCY_ON) {
-                    /* Reset timestamp */
-                    long systemTimestamp = (System.nanoTime() - timestampReference) / 1000L; /* us */
-                    long packedTimestamp = Utils.pack(systemTimestamp, buffers[0].getLong(0));
-                    buffers[0].putLong(0, packedTimestamp);
-                }
-
-                while (true) {
-
-                    application.processData(data);
-
-                    if (SystemConf.LATENCY_ON)
-                        buffers[0].putLong(0, Utils.pack((long) ((System.nanoTime() - timestampReference) / 1000L), 1L));
-                }
-
+            if (SystemConf.LATENCY_ON) {
+                /* Reset timestamp */
+                long systemTimestamp = (System.nanoTime() - timestampReference) / 1000L; /* us */
+                long packedTimestamp = Utils.pack(systemTimestamp, buffers[0].getLong(0));
+                buffers[0].putLong(0, packedTimestamp);
             }
+
+            while (true) {
+
+                application.processData(data);
+
+                if (SystemConf.LATENCY_ON)
+                    buffers[0].putLong(0, Utils.pack((long) ((System.nanoTime() - timestampReference) / 1000L), 1L));
+            }
+
         } catch(Exception e){
             e.printStackTrace();
             System.exit(1);

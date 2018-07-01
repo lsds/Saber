@@ -27,5 +27,6 @@ public class TheCPU {
 	public native int unbind ();
 	public native int getCpuId ();
     public native int byteBufferMethod (ByteBuffer buffer, int startPointer, int endPointer,
-										ByteBuffer resultBuffer, int resultsPointer, int windowSize, int windowSlide);
+										ByteBuffer resultBuffer, int resultsPointer, int windowSize,
+										int windowSlide, int aggregationType);
 }

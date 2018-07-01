@@ -366,7 +366,8 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 
         if (! this.groupBy) {
             if (processIncremental) {
-                processDataPerWindowIncrementally (batch, api);
+                processDataPerWindow (batch, api);
+                //processDataPerWindowIncrementally (batch, api);
             } else {
                 processDataPerWindow (batch, api);
             }
@@ -431,12 +432,12 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
         int resultsPosition = 0;
         resultsPosition += TheCPU.getInstance().byteBufferMethod(inputBuffer.getByteBuffers()[1], startPointer, endPointer,
                 resultBuffer, resultsPosition, (int) batch.getWindowDefinition().getSize(),
-                (int) batch.getWindowDefinition().getSlide()) + 1;
+                (int) batch.getWindowDefinition().getSlide(), aggregationTypes[0].ordinal()) + 1;
 
         startPointer = endPointer - (int)(batch.getWindowDefinition().getSize());
         resultsPosition += TheCPU.getInstance().byteBufferMethod(inputBuffer.getByteBuffers()[1], startPointer, endPointer,
                 resultBuffer, resultsPosition, (int) batch.getWindowDefinition().getSize(),
-                (int) batch.getWindowDefinition().getSlide());
+                (int) batch.getWindowDefinition().getSlide(), aggregationTypes[0].ordinal());
         resultBuffer.position(resultsPosition*4);
 
         //for (int k =0; k< resultsPosition; k++)
@@ -451,8 +452,10 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
             end   = endP   [currentWindow];
 
             // TODO: get absolute position...
-            start /= 8;
-            end /= 8;
+            if (start > 0)
+                start /= 8;
+            if (end > 0)
+                end /= 8;
 
             /* Check start and end pointers */
             if (start < 0 && end < 0) {
@@ -512,10 +515,10 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
             /* Process first tuple */
             timestampValue = timestampReference.eval(inputBuffer, inputSchema, start);
             for (int i = 0; i < numberOfValues(); ++i) {
-                if (aggregationTypes[i] == AggregationType.CNT)
+                /*if (aggregationTypes[i] == AggregationType.CNT)
                     values[i] = 1;
                 else
-                    values[i] = aggregationAttributes[i].eval(inputBuffer, inputSchema, start);
+                    values[i] = aggregationAttributes[i].eval(inputBuffer, inputSchema, start);*/
                 counts[i] = 1;
             }
             /* Move pointer to second tuple */
@@ -547,11 +550,11 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
                 //start++;
            // }
             /* Compute average, if any */
-            for (int i = 0; i < numberOfValues(); ++i) {
+            /*for (int i = 0; i < numberOfValues(); ++i) {
                 if (aggregationTypes[i] == AggregationType.AVG) {
                     values[i] /= ((float) counts[i]);
                 }
-            }
+            }*/
             /* Store window result in output buffer */
             outputBuffer.putLong(timestampValue, 0);
             for (int i = 0; i < numberOfValues(); ++i) {
@@ -603,6 +606,11 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
             start = startP [currentWindow];
             end   = endP   [currentWindow];
 
+            if (start > 0)
+                start /= 8;
+            if (end > 0)
+                end /= 8;
+
             /* Check start and end pointers */
             if (start < 0 && end < 0) {
                 start = batch.getBufferStartPointer();
@@ -638,11 +646,11 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 
             if (start == end) {
                 /* Store "null" (zero-valued) tuple in output buffer */
-                outputBuffer.putLong(0L);
+                outputBuffer.getByteBuffers()[0].putLong(0L);
                 for (int i = 0; i < numberOfValues(); ++i) {
-                    outputBuffer.putFloat(0);
+                    outputBuffer.getByteBuffers()[i+1].putFloat(0);
                 }
-                outputBuffer.putInt(0);
+                outputBuffer.getByteBuffers()[outputBuffer.getByteBuffers().length-1].putInt(0);
                 /* Move to next window */
                 continue;
             }
@@ -678,7 +686,7 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
                         if (aggregationTypes[i] == AggregationType.CNT)
                             values[i] += 1;
                         else
-                            values[i] += aggregationAttributes[i].eval(inputBuffer, inputSchema, start);
+                            values[i] += inputBuffer.getByteBuffers()[0].getInt(start);//aggregationAttributes[i].eval(inputBuffer, inputSchema, start);
                         counts[i] += 1;
                     }
                     p += inputTupleSize;
@@ -692,7 +700,7 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
                         if (aggregationTypes[i] == AggregationType.CNT)
                             values[i] -= 1;
                         else
-                            values[i] -= aggregationAttributes[i].eval(inputBuffer, inputSchema, start);
+                            values[i] -= inputBuffer.getByteBuffers()[0].getInt(start);//aggregationAttributes[i].eval(inputBuffer, inputSchema, start);
                         counts[i] -= 1;
                     }
                 }
@@ -705,11 +713,14 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
             }
             timestampValue = this.timestampReference.eval(inputBuffer, inputSchema, start);
             /* Store window result in output buffer */
-            outputBuffer.putLong(timestampValue);
+            outputBuffer.putLong(timestampValue, 0);
             for (int i = 0; i < numberOfValues(); ++i) {
-                outputBuffer.putFloat(values[i]);
+                //outputBuffer.putFloat(values[i]);
+                outputBuffer.putFloat(values[i], i+1);
+
             }
-            outputBuffer.putInt(counts[0]);
+            //outputBuffer.putInt(counts[0]);
+            outputBuffer.putInt(counts[0], outputBuffer.getByteBuffers().length-1, true);
 
             /* Continue with the next window */
             _start = start;

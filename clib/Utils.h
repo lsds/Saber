@@ -17,7 +17,7 @@
 
 #define info(fmt, args...) do { fprintf(stdout, "INFO  %35s (l. %4d) > " fmt, __FILE__, __LINE__, ## args); fflush(stdout); } while (0)
 
-enum AggregationType {MIN, MAX, CNT, SUM, AVG};
+enum AggregationType {MAX, MIN, CNT, SUM, AVG};
 enum TimeGranularity {sec, msec, nsec};
 
 #endif //INTRINSICSTEST_UTILS_H

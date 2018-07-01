@@ -90,13 +90,20 @@ public class PartialWindowResults {
     }
 
     public void append(PartialWindowResults closingWindows) {
-        int offset = buffer.position();
+        int offset = buffer.getByteBuffers()[0].position()/8;
         for (int wid = 0; wid < closingWindows.numberOfWindows(); ++wid) {
             if (count >= N)
                 throw new IndexOutOfBoundsException("error: partial window result index out of bounds");
             startPointers[count++] = offset + closingWindows.getStartPointer(wid);
         }
-        buffer.put(closingWindows.getBuffer(), 0, closingWindows.getBuffer().position());
+
+        buffer.put(closingWindows.getBuffer().getByteBuffers()[0], 0,
+                closingWindows.getBuffer().getByteBuffers()[0].position(), 0);
+
+        for (int i = 1; i < closingWindows.getBuffer().getByteBuffers().length; i++)
+            buffer.put(closingWindows.getBuffer().getByteBuffers()[i], 0,
+                    closingWindows.getBuffer().getByteBuffers()[i].position(), i);
+        //buffer.put(closingWindows.getBuffer(), 0, closingWindows.getBuffer().position());
     }
 
     public void prepend(PartialWindowResults openingWindows, int start, int added, int windowSize) {

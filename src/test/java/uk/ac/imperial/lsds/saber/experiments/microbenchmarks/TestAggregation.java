@@ -61,7 +61,7 @@ public class TestAggregation {
 
             int numberOfAttributes = 1;
 
-            String aggregateExpression = "MIN";
+            String aggregateExpression = "AVG";
             int numberOfGroups = 0;
 
             int tuplesPerInsert = 32768;
@@ -190,7 +190,7 @@ public class TestAggregation {
 
             /* Set up the input stream */
 
-            byte[][] data = new byte[3][tupleSize * tuplesPerInsert];
+            byte[][] data = new byte[2][tupleSize * tuplesPerInsert];
             ByteBuffer[] buffers = new ByteBuffer[numberOfAttributes + 1];
             for (int k = 0; k < buffers.length; k++) {
                 buffers[k] = ByteBuffer.wrap(data[k]);

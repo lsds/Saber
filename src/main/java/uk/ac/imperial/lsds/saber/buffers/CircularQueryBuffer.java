@@ -112,8 +112,8 @@ public class CircularQueryBuffer implements IQueryBuffer {
 
         } else {
 
-            buffers = new ByteBuffer[3];
-            for (int i = 0; i < 3; i++) {
+            buffers = new ByteBuffer[2];
+            for (int i = 0; i < 2; i++) {
                 buffers[i] = ByteBuffer.allocateDirect(this.size);
                 buffers[i].order(ByteOrder.LITTLE_ENDIAN);
             }
