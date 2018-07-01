@@ -418,7 +418,8 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 		
 		long timestampValue;
 		float value;
-		
+
+		//if (false)
 		for (int currentWindow = 0; currentWindow < startP.length; ++currentWindow) {
 			if (currentWindow > batch.getLastWindowIndex())
 				break;
@@ -493,8 +494,8 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 					} else {
 						value = aggregationAttributes[i].eval(inputBuffer, inputSchema, start);
 						switch (aggregationTypes[i]) {
-						case MAX: values[i] = (value <= values[i]) ? values[i] : value;
-						case MIN: values[i] = (value <= values[i]) ? values[i] : value;
+						case MAX: values[i] = (value <= values[i]) ? values[i] : value;break;
+						case MIN: values[i] = (value >= values[i]) ? values[i] : value;break;
 						case SUM:
 						case AVG: values[i] += value; break;
 						default:

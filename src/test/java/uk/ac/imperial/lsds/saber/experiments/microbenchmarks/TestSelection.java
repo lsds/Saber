@@ -101,6 +101,9 @@ public class TestSelection {
 		}
 		
 		SystemConf.LATENCY_ON = true;
+		SystemConf.CIRCULAR_BUFFER_SIZE = 32*1024*1024;
+		SystemConf.UNBOUNDED_BUFFER_SIZE = batchSize;
+		SystemConf.THREADS = 1;
 		
 		SystemConf.dump();
 		

@@ -2,14 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="b98c4510-a0f5-41df-8f51-e9ed57795230" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/CircularQueryBuffer.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/CircularQueryBuffer.java" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/IQueryBuffer.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/IQueryBuffer.java" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/RelationalTableQueryBuffer.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/RelationalTableQueryBuffer.java" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/UnboundedQueryBuffer.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/UnboundedQueryBuffer.java" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/UnboundedQueryBufferFactory.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/UnboundedQueryBufferFactory.java" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/ITaskDispatcher.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/ITaskDispatcher.java" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/JoinTaskDispatcher.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/JoinTaskDispatcher.java" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/TaskDispatcher.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/TaskDispatcher.java" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/PartialWindowResults.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/PartialWindowResults.java" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/cql/operators/cpu/Aggregation.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/cql/operators/cpu/Aggregation.java" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultAggregator.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultAggregator.java" />
       <change beforePath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultCollector.java" afterPath="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultCollector.java" />
       <change beforePath="$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestAggregation.java" afterPath="$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestAggregation.java" />
       <change beforePath="$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestSelection.java" afterPath="$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestSelection.java" />
@@ -27,8 +24,8 @@
       <file leaf-file-name="TaskDispatcher.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/TaskDispatcher.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="198">
-              <caret line="28" column="31" lean-forward="true" selection-start-line="28" selection-start-column="31" selection-end-line="28" selection-end-column="31" />
+            <state relative-caret-position="0">
+              <caret line="28" column="31" lean-forward="false" selection-start-line="28" selection-start-column="31" selection-end-line="28" selection-end-column="31" />
               <folding>
                 <element signature="e#4084#4085#0" expanded="true" />
                 <element signature="e#4121#4122#0" expanded="true" />
@@ -40,14 +37,9 @@
       <file leaf-file-name="UnboundedQueryBuffer.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/UnboundedQueryBuffer.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="353">
-              <caret line="234" column="13" lean-forward="false" selection-start-line="234" selection-start-column="13" selection-end-line="234" selection-end-column="13" />
+            <state relative-caret-position="329">
+              <caret line="235" column="0" lean-forward="false" selection-start-line="235" selection-start-column="0" selection-end-line="235" selection-end-column="0" />
               <folding>
-                <element signature="e#2126#2154#0" expanded="true" />
-                <element signature="e#2418#2446#0" expanded="true" />
-                <element signature="e#2722#2750#0" expanded="true" />
-                <element signature="e#3019#3047#0" expanded="true" />
-                <element signature="e#3434#3462#0" expanded="true" />
                 <element signature="e#3869#3870#0" expanded="true" />
                 <element signature="e#3920#3921#0" expanded="true" />
               </folding>
@@ -55,11 +47,41 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="PartialWindowResults.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/PartialWindowResults.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="185">
+              <caret line="104" column="0" lean-forward="false" selection-start-line="104" selection-start-column="0" selection-end-line="104" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ResultAggregator.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultAggregator.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1695">
+              <caret line="233" column="0" lean-forward="false" selection-start-line="233" selection-start-column="0" selection-end-line="233" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="PartialResultSlot.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/PartialResultSlot.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-859">
+              <caret line="216" column="0" lean-forward="false" selection-start-line="216" selection-start-column="0" selection-end-line="216" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="Aggregation.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/cql/operators/cpu/Aggregation.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-3398">
-              <caret line="54" column="11" lean-forward="false" selection-start-line="54" selection-start-column="11" selection-end-line="54" selection-end-column="11" />
+            <state relative-caret-position="527">
+              <caret line="504" column="35" lean-forward="true" selection-start-line="504" selection-start-column="35" selection-end-line="504" selection-end-column="35" />
               <folding>
                 <element signature="method#Aggregation#0;class#Aggregation#0" expanded="false" />
                 <element signature="method#Aggregation#2;class#Aggregation#0" expanded="false" />
@@ -73,22 +95,15 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="WindowBatch.java" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/WindowBatch.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="216">
-              <caret line="346" column="0" lean-forward="false" selection-start-line="346" selection-start-column="0" selection-end-line="346" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="TestAggregation.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="TestAggregation.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestAggregation.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="270">
-              <caret line="51" column="27" lean-forward="false" selection-start-line="51" selection-start-column="27" selection-end-line="51" selection-end-column="27" />
-              <folding />
+            <state relative-caret-position="450">
+              <caret line="61" column="41" lean-forward="false" selection-start-line="61" selection-start-column="41" selection-end-line="61" selection-end-column="41" />
+              <folding>
+                <element signature="e#5572#5587#0" expanded="true" />
+                <element signature="e#5809#5816#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -96,11 +111,11 @@
       <file leaf-file-name="CircularQueryBuffer.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/CircularQueryBuffer.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="179">
-              <caret line="380" column="41" lean-forward="false" selection-start-line="380" selection-start-column="41" selection-end-line="380" selection-end-column="41" />
+            <state relative-caret-position="-5166">
+              <caret line="15" column="35" lean-forward="false" selection-start-line="15" selection-start-column="35" selection-end-line="15" selection-end-column="35" />
               <folding>
-                <element signature="e#5470#5471#0" expanded="true" />
-                <element signature="e#5507#5508#0" expanded="true" />
+                <element signature="e#5469#5470#0" expanded="true" />
+                <element signature="e#5506#5507#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -109,8 +124,8 @@
       <file leaf-file-name="ResultCollector.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultCollector.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="288">
-              <caret line="121" column="0" lean-forward="false" selection-start-line="121" selection-start-column="0" selection-end-line="121" selection-end-column="0" />
+            <state relative-caret-position="167">
+              <caret line="42" column="0" lean-forward="false" selection-start-line="42" selection-start-column="0" selection-end-line="42" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -147,18 +162,21 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/cql/operators/cpu/Selection.java" />
-        <option value="$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestSelection.java" />
         <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/IQueryBuffer.java" />
         <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/RelationalTableQueryBuffer.java" />
         <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/ITaskDispatcher.java" />
-        <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultCollector.java" />
         <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/JoinTaskDispatcher.java" />
-        <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/CircularQueryBuffer.java" />
         <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/UnboundedQueryBufferFactory.java" />
         <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/TaskDispatcher.java" />
         <option value="$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestProjection.java" />
         <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/UnboundedQueryBuffer.java" />
         <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/cql/operators/cpu/Custom_Aggregation.java" />
+        <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/PartialWindowResults.java" />
+        <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultAggregator.java" />
+        <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/CircularQueryBuffer.java" />
+        <option value="$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestSelection.java" />
+        <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultCollector.java" />
+        <option value="$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/cql/operators/cpu/Aggregation.java" />
         <option value="$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestAggregation.java" />
       </list>
     </option>
@@ -185,8 +203,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
-      <pane id="PackagesPane" />
       <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
@@ -343,7 +359,9 @@
           <select />
         </subPane>
       </pane>
+      <pane id="PackagesPane" />
       <pane id="AndroidView" />
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -352,7 +370,7 @@
     <property name="project.structure.side.proportion" value="0.2" />
     <property name="settings.editor.selected.configurable" value="android.sdk-updates" />
     <property name="android.sdk.path" value="/media/george/DATA/android-sdk" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../original_saber/Saber" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
   </component>
   <component name="RecentsManager">
     <key name="CopyClassDialog.RECENTS_KEY">
@@ -556,24 +574,24 @@
       <window_info id="Capture Analysis" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24193548" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.24193548" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.26058275" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32903227" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.26663002" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Theme Preview" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32903227" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
   <component name="VcsContentAnnotationSettings">
@@ -589,17 +607,101 @@
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/UnboundedQueryBuffer.java</url>
-          <line>226</line>
+          <url>file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultAggregator.java</url>
+          <line>212</line>
           <properties />
-          <option name="timeStamp" value="16" />
+          <option name="timeStamp" value="21" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultAggregator.java</url>
+          <line>151</line>
+          <properties />
+          <option name="timeStamp" value="22" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultAggregator.java</url>
+          <line>159</line>
+          <properties />
+          <option name="timeStamp" value="23" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/cql/operators/cpu/Aggregation.java</url>
+          <line>523</line>
+          <properties />
+          <option name="timeStamp" value="24" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/cql/operators/cpu/Aggregation.java</url>
+          <line>435</line>
+          <properties />
+          <option name="timeStamp" value="25" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/PartialWindowResults.java</url>
+          <line>97</line>
+          <properties />
+          <option name="timeStamp" value="27" />
         </line-breakpoint>
       </breakpoints>
-      <option name="time" value="19" />
+      <option name="time" value="28" />
     </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/cql/operators/cpu/Aggregation.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="540">
+          <caret line="54" column="11" lean-forward="false" selection-start-line="54" selection-start-column="11" selection-end-line="54" selection-end-column="11" />
+          <folding>
+            <element signature="method#Aggregation#0;class#Aggregation#0" expanded="false" />
+            <element signature="method#Aggregation#2;class#Aggregation#0" expanded="false" />
+            <element signature="method#Aggregation#3;class#Aggregation#0" expanded="false" />
+            <element signature="method#toString#0;class#Aggregation#0" expanded="false" />
+            <element signature="method#processDataPerWindowIncrementally#0;class#Aggregation#0" expanded="false" />
+            <element signature="method#setGroupByKey#0;class#Aggregation#0" expanded="false" />
+            <element signature="method#processDataPerWindowWithGroupBy#0;class#Aggregation#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestAggregation.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="486">
+          <caret line="51" column="27" lean-forward="false" selection-start-line="51" selection-start-column="27" selection-end-line="51" selection-end-column="27" />
+          <folding>
+            <element signature="e#5572#5587#0" expanded="true" />
+            <element signature="e#5809#5816#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/CircularQueryBuffer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="6462">
+          <caret line="380" column="41" lean-forward="false" selection-start-line="380" selection-start-column="41" selection-end-line="380" selection-end-column="41" />
+          <folding>
+            <element signature="e#5469#5470#0" expanded="true" />
+            <element signature="e#5506#5507#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultCollector.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2070">
+          <caret line="121" column="0" lean-forward="false" selection-start-line="121" selection-start-column="0" selection-end-line="121" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/WindowBatch.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="5022">
+          <caret line="346" column="0" lean-forward="false" selection-start-line="346" selection-start-column="0" selection-end-line="346" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/TaskDispatcher.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1512">
@@ -623,7 +725,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3474">
           <caret line="215" column="0" lean-forward="false" selection-start-line="215" selection-start-column="0" selection-end-line="215" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -631,7 +732,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="774">
           <caret line="53" column="0" lean-forward="false" selection-start-line="53" selection-start-column="0" selection-end-line="53" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -639,7 +739,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="576">
           <caret line="40" column="0" lean-forward="false" selection-start-line="40" selection-start-column="0" selection-end-line="40" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -648,8 +747,8 @@
         <state relative-caret-position="6462">
           <caret line="380" column="41" lean-forward="false" selection-start-line="380" selection-start-column="41" selection-end-line="380" selection-end-column="41" />
           <folding>
-            <element signature="e#5470#5471#0" expanded="true" />
-            <element signature="e#5507#5508#0" expanded="true" />
+            <element signature="e#5469#5470#0" expanded="true" />
+            <element signature="e#5506#5507#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -667,11 +766,6 @@
         <state relative-caret-position="4176">
           <caret line="232" column="42" lean-forward="true" selection-start-line="232" selection-start-column="42" selection-end-line="232" selection-end-column="42" />
           <folding>
-            <element signature="e#2126#2154#0" expanded="true" />
-            <element signature="e#2418#2446#0" expanded="true" />
-            <element signature="e#2722#2750#0" expanded="true" />
-            <element signature="e#3019#3047#0" expanded="true" />
-            <element signature="e#3434#3462#0" expanded="true" />
             <element signature="e#3869#3870#0" expanded="true" />
             <element signature="e#3920#3921#0" expanded="true" />
           </folding>
@@ -682,7 +776,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="522">
           <caret line="51" column="34" lean-forward="false" selection-start-line="51" selection-start-column="34" selection-end-line="51" selection-end-column="34" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -691,8 +784,8 @@
         <state relative-caret-position="4464">
           <caret line="267" column="24" lean-forward="false" selection-start-line="267" selection-start-column="24" selection-end-line="267" selection-end-column="24" />
           <folding>
-            <element signature="e#5470#5471#0" expanded="true" />
-            <element signature="e#5507#5508#0" expanded="true" />
+            <element signature="e#5469#5470#0" expanded="true" />
+            <element signature="e#5506#5507#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -701,7 +794,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="576">
           <caret line="40" column="16" lean-forward="false" selection-start-line="40" selection-start-column="16" selection-end-line="40" selection-end-column="16" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -709,7 +801,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="918">
           <caret line="51" column="34" lean-forward="false" selection-start-line="51" selection-start-column="34" selection-end-line="51" selection-end-column="34" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -718,8 +809,8 @@
         <state relative-caret-position="4806">
           <caret line="267" column="24" lean-forward="false" selection-start-line="267" selection-start-column="24" selection-end-line="267" selection-end-column="24" />
           <folding>
-            <element signature="e#5470#5471#0" expanded="true" />
-            <element signature="e#5507#5508#0" expanded="true" />
+            <element signature="e#5469#5470#0" expanded="true" />
+            <element signature="e#5506#5507#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -728,7 +819,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="576">
           <caret line="40" column="16" lean-forward="false" selection-start-line="40" selection-start-column="16" selection-end-line="40" selection-end-column="16" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -736,7 +826,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="522">
           <caret line="51" column="34" lean-forward="false" selection-start-line="51" selection-start-column="34" selection-end-line="51" selection-end-column="34" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -745,8 +834,8 @@
         <state relative-caret-position="4464">
           <caret line="267" column="24" lean-forward="true" selection-start-line="267" selection-start-column="24" selection-end-line="267" selection-end-column="24" />
           <folding>
-            <element signature="e#5470#5471#0" expanded="true" />
-            <element signature="e#5507#5508#0" expanded="true" />
+            <element signature="e#5469#5470#0" expanded="true" />
+            <element signature="e#5506#5507#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -771,7 +860,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="216">
           <caret line="16" column="50" lean-forward="false" selection-start-line="16" selection-start-column="40" selection-end-line="16" selection-end-column="50" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -786,14 +874,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="533">
           <caret line="141" column="0" lean-forward="false" selection-start-line="141" selection-start-column="0" selection-end-line="141" selection-end-column="0" />
-          <folding>
-            <element signature="e#4291#4292#0" expanded="false" />
-            <element signature="e#4310#4311#0" expanded="false" />
-            <element signature="e#4396#4397#0" expanded="false" />
-            <element signature="e#4415#4416#0" expanded="false" />
-            <element signature="e#4502#4503#0" expanded="false" />
-            <element signature="e#4521#4522#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -829,7 +909,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="774">
           <caret line="53" column="0" lean-forward="false" selection-start-line="53" selection-start-column="0" selection-end-line="53" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -845,15 +924,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="176">
           <caret line="50" column="15" lean-forward="false" selection-start-line="50" selection-start-column="15" selection-end-line="50" selection-end-column="15" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultCollector.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="288">
-          <caret line="121" column="0" lean-forward="false" selection-start-line="121" selection-start-column="0" selection-end-line="121" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -861,18 +931,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="108">
           <caret line="7" column="16" lean-forward="false" selection-start-line="7" selection-start-column="16" selection-end-line="7" selection-end-column="16" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/CircularQueryBuffer.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="179">
-          <caret line="380" column="41" lean-forward="false" selection-start-line="380" selection-start-column="41" selection-end-line="380" selection-end-column="41" />
-          <folding>
-            <element signature="e#5470#5471#0" expanded="true" />
-            <element signature="e#5507#5508#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -880,7 +938,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="18">
           <caret line="24" column="13" lean-forward="true" selection-start-line="24" selection-start-column="13" selection-end-line="24" selection-end-column="13" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -888,7 +945,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="212">
           <caret line="40" column="0" lean-forward="false" selection-start-line="40" selection-start-column="0" selection-end-line="40" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -896,7 +952,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="252">
           <caret line="102" column="93" lean-forward="true" selection-start-line="102" selection-start-column="93" selection-end-line="102" selection-end-column="93" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -915,35 +970,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/UnboundedQueryBuffer.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="353">
-          <caret line="234" column="13" lean-forward="false" selection-start-line="234" selection-start-column="13" selection-end-line="234" selection-end-column="13" />
-          <folding>
-            <element signature="e#2126#2154#0" expanded="true" />
-            <element signature="e#2418#2446#0" expanded="true" />
-            <element signature="e#2722#2750#0" expanded="true" />
-            <element signature="e#3019#3047#0" expanded="true" />
-            <element signature="e#3434#3462#0" expanded="true" />
-            <element signature="e#3869#3870#0" expanded="true" />
-            <element signature="e#3920#3921#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/cql/operators/cpu/Projection.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="215">
           <caret line="49" column="0" lean-forward="false" selection-start-line="49" selection-start-column="0" selection-end-line="49" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestSelection.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="443">
-          <caret line="62" column="8" lean-forward="true" selection-start-line="62" selection-start-column="8" selection-end-line="62" selection-end-column="8" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -951,14 +981,94 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="467">
           <caret line="40" column="0" lean-forward="false" selection-start-line="40" selection-start-column="0" selection-end-line="40" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/TaskDispatcher.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="28" column="31" lean-forward="false" selection-start-line="28" selection-start-column="31" selection-end-line="28" selection-end-column="31" />
+          <folding>
+            <element signature="e#4084#4085#0" expanded="true" />
+            <element signature="e#4121#4122#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/WindowBatch.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="5022">
+          <caret line="346" column="0" lean-forward="false" selection-start-line="346" selection-start-column="0" selection-end-line="346" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/CircularQueryBuffer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-5166">
+          <caret line="15" column="35" lean-forward="false" selection-start-line="15" selection-start-column="35" selection-end-line="15" selection-end-column="35" />
+          <folding>
+            <element signature="e#5469#5470#0" expanded="true" />
+            <element signature="e#5506#5507#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestSelection.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1015">
+          <caret line="119" column="0" lean-forward="false" selection-start-line="119" selection-start-column="0" selection-end-line="139" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultCollector.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="167">
+          <caret line="42" column="0" lean-forward="false" selection-start-line="42" selection-start-column="0" selection-end-line="42" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/ResultAggregator.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1695">
+          <caret line="233" column="0" lean-forward="false" selection-start-line="233" selection-start-column="0" selection-end-line="233" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/UnboundedQueryBuffer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="329">
+          <caret line="235" column="0" lean-forward="false" selection-start-line="235" selection-start-column="0" selection-end-line="235" selection-end-column="0" />
+          <folding>
+            <element signature="e#3869#3870#0" expanded="true" />
+            <element signature="e#3920#3921#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/buffers/PartialWindowResults.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="185">
+          <caret line="104" column="0" lean-forward="false" selection-start-line="104" selection-start-column="0" selection-end-line="104" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/handlers/PartialResultSlot.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-859">
+          <caret line="216" column="0" lean-forward="false" selection-start-line="216" selection-start-column="0" selection-end-line="216" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/cql/operators/cpu/Aggregation.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-3398">
-          <caret line="54" column="11" lean-forward="false" selection-start-line="54" selection-start-column="11" selection-end-line="54" selection-end-column="11" />
+        <state relative-caret-position="527">
+          <caret line="504" column="35" lean-forward="true" selection-start-line="504" selection-start-column="35" selection-end-line="504" selection-end-column="35" />
           <folding>
             <element signature="method#Aggregation#0;class#Aggregation#0" expanded="false" />
             <element signature="method#Aggregation#2;class#Aggregation#0" expanded="false" />
@@ -971,30 +1081,14 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/dispatchers/TaskDispatcher.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="198">
-          <caret line="28" column="31" lean-forward="true" selection-start-line="28" selection-start-column="31" selection-end-line="28" selection-end-column="31" />
-          <folding>
-            <element signature="e#4084#4085#0" expanded="true" />
-            <element signature="e#4121#4122#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/test/java/uk/ac/imperial/lsds/saber/experiments/microbenchmarks/TestAggregation.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="51" column="27" lean-forward="false" selection-start-line="51" selection-start-column="27" selection-end-line="51" selection-end-column="27" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/uk/ac/imperial/lsds/saber/WindowBatch.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="216">
-          <caret line="346" column="0" lean-forward="false" selection-start-line="346" selection-start-column="0" selection-end-line="346" selection-end-column="0" />
-          <folding />
+        <state relative-caret-position="450">
+          <caret line="61" column="41" lean-forward="false" selection-start-line="61" selection-start-column="41" selection-end-line="61" selection-end-column="41" />
+          <folding>
+            <element signature="e#5572#5587#0" expanded="true" />
+            <element signature="e#5809#5816#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

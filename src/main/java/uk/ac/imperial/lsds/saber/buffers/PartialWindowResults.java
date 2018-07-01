@@ -101,7 +101,7 @@ public class PartialWindowResults {
 				throw new IndexOutOfBoundsException ("error: partial window result index out of bounds");
 			startPointers[count++] = offset + closingWindows.getStartPointer(wid);
 		}
-		buffer.put(closingWindows.getBuffer(), 0, closingWindows.getBuffer().position());
+		buffer.put(closingWindows.getBuffer().getByteBuffer(), 0, closingWindows.getBuffer().position());
 	}
 	
 	public void prepend (PartialWindowResults openingWindows, int start, int added, int windowSize) {

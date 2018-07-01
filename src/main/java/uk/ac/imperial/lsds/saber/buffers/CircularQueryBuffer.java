@@ -13,7 +13,7 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	
 	private int id;
 	
-	private boolean isDirect = false;
+	private boolean isDirect = true;
 	
 	private byte [] data = null;
 	

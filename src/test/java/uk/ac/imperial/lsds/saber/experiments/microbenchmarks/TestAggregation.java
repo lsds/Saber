@@ -43,17 +43,23 @@ public class TestAggregation {
 		try {
 		
 		/* Application-specific arguments */
-		
-		int batchSize = 1048576;
-		
+		SystemConf.CIRCULAR_BUFFER_SIZE = 32 * 1024 * 1024;
+		int batchSize = 32768*2;//1048576/2;//32768;//1048576/16;
+
+		SystemConf.THREADS = 1;
+
+		SystemConf.UNBOUNDED_BUFFER_SIZE = batchSize*2;
+		SystemConf.PARTIAL_WINDOWS = 64 * 1024;
+
+
 		WindowType windowType = WindowType.ROW_BASED;
-		
-		int windowSize = 100;
+
+		int windowSize = 1024;
 		int windowSlide = 1;
-		
-		int numberOfAttributes = 2;
-		
-		String aggregateExpression = "MIN";
+
+		int numberOfAttributes = 1;
+
+		String aggregateExpression = "AVG";
 		int numberOfGroups = 0;
 		
 		int tuplesPerInsert = 32768;

@@ -156,7 +156,7 @@ public class ResultAggregator {
 			// System.out.println(p);
 			
 			IQueryBuffer buffer = p.completeWindows.getBuffer();
-			byte [] arr = buffer.array();
+			//byte [] arr = buffer.array();
 			int length = buffer.position();
 			
 			/* Forward results */
@@ -180,9 +180,9 @@ public class ResultAggregator {
 						
 						boolean success = false;
 						if (query.isLeft())
-							success = query.getDownstreamQuery(q).getTaskDispatcher().tryDispatchToFirstStream  (arr, length);
+							success = query.getDownstreamQuery(q).getTaskDispatcher().tryDispatchToFirstStream  (buffer.getByteBuffer(), length);
 						else
-							success = query.getDownstreamQuery(q).getTaskDispatcher().tryDispatchToSecondStream (arr, length);
+							success = query.getDownstreamQuery(q).getTaskDispatcher().tryDispatchToSecondStream (buffer.getByteBuffer(), length);
 						
 						if (! success) {
 							p.latch = q;
