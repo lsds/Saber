@@ -1,6 +1,7 @@
 package uk.ac.imperial.lsds.saber.experiments.benchmarks.yahoo.utils;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.CountDownLatch;
 
 public class GeneratedBuffer {
@@ -11,6 +12,7 @@ public class GeneratedBuffer {
 	
 	public GeneratedBuffer (int capacity, boolean direct, int numberOfThreads) {
 		buffer = (direct) ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
+        buffer.order( ByteOrder.LITTLE_ENDIAN);
 		bufferFilledLatch = new Latch(numberOfThreads);
 		bufferReadLatch = new Latch(1);
 	}

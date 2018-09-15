@@ -60,24 +60,12 @@ public class ResultCollector {
 
         try {
 
-            boolean isPadded = false;
+            while (!handler.slots.compareAndSet(idx, -1, 0)) {
 
-            if (isPadded) {
-                while (!handler.paddedSlots[idx].compareAndSet(-1, 0)) {
+                System.err.println(String.format("warning: result collector (%s) blocked: query %d task %4d slot %4d",
+                        Thread.currentThread(), query.getId(), taskid, idx));
 
-                    System.err.println(String.format("warning: result collector (%s) blocked: query %d task %4d slot %4d",
-                            Thread.currentThread(), query.getId(), taskid, idx));
-
-                    LockSupport.parkNanos(1L);
-                }
-            } else {
-                while (!handler.slots.compareAndSet(idx, -1, 0)) {
-
-                    System.err.println(String.format("warning: result collector (%s) blocked: query %d task %4d slot %4d",
-                            Thread.currentThread(), query.getId(), taskid, idx));
-
-                    LockSupport.parkNanos(1L);
-                }
+                LockSupport.parkNanos(1L);
             }
 
             handler.freePointers1[idx] = freePtr1;
@@ -89,10 +77,7 @@ public class ResultCollector {
             handler.mark[idx] = mark;
 
             /* No other thread can modify this slot. */
-            if (isPadded)
-                handler.paddedSlots[idx].set(1);
-            else
-                handler.slots.set(idx, 1);
+            handler.slots.set(idx, 1);
 
             /* Forward and free */
 
@@ -102,16 +87,9 @@ public class ResultCollector {
             /* No other thread can enter this section */
 
             /* Is slot `next` occupied? */
-            if (isPadded) {
-                if (!handler.paddedSlots[handler.next].compareAndSet(1, 2)) {
-                    handler.semaphore.release();
-                    return;
-                }
-            } else {
-                if (!handler.slots.compareAndSet(handler.next, 1, 2)) {
-                    handler.semaphore.release();
-                    return;
-                }
+            if (!handler.slots.compareAndSet(handler.next, 1, 2)) {
+              handler.semaphore.release();
+                return;
             }
 
             boolean busy = true;
@@ -149,10 +127,7 @@ public class ResultCollector {
                             if (!success) {
                                 // System.out.println("[DBG] failed to forward results to next query...");
                                 handler.latch[handler.next] = q;
-                                if (isPadded)
-                                    handler.paddedSlots[handler.next].set(1);
-                                else
-                                    handler.slots.set(handler.next, 1);
+                                handler.slots.set(handler.next, 1);
 
                                 handler.semaphore.release();
                                 return;
@@ -190,10 +165,7 @@ public class ResultCollector {
                     handler.freeBuffer2.free(f2);
 
                 /* Release the current slot */
-                if (isPadded)
-                    handler.paddedSlots[handler.next].set(-1);
-                else
-                    handler.slots.set(handler.next, -1);
+                handler.slots.set(handler.next, -1);
 
 				/*
 				if (MonetDBExperimentalSetup.enabled) {
@@ -210,15 +182,8 @@ public class ResultCollector {
                 handler.next = handler.next % handler.numberOfSlots;
 
                 /* Check if next is ready to be pushed */
-
-                if (isPadded) {
-                    if (!handler.paddedSlots[handler.next].compareAndSet(1, 2)) {
-                        busy = false;
-                    }
-                } else {
-                    if (!handler.slots.compareAndSet(handler.next, 1, 2)) {
-                        busy = false;
-                    }
+                if (!handler.slots.compareAndSet(handler.next, 1, 2)) {
+                    busy = false;
                 }
 
             }

@@ -6,6 +6,7 @@ import sun.nio.ch.DirectBuffer;
 import java.lang.reflect.Field;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class UnboundedQueryBuffer implements IQueryBuffer {
 
@@ -40,6 +41,8 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 		} else {
 			buffer = ByteBuffer.allocateDirect(size);
 		}
+
+		buffer.order( ByteOrder.LITTLE_ENDIAN);
 	}
 	
 	public int getInt (int offset) {
@@ -69,8 +72,16 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 	
 	public byte [] array () {
 		
-		if (isDirect)
-			throw new UnsupportedOperationException("error: cannot get byte array from a direct buffer");
+		if (isDirect) {
+			//throw new UnsupportedOperationException("error: cannot get byte array from a direct buffer");
+            byte [] data = new byte [buffer.position()];
+            //int tempPos = buffer.position();
+            buffer.position(0);
+            buffer.get(data);
+            //buffer.position(tempPos);
+            return data;
+		}
+
 		
 		return buffer.array();
 	}
@@ -223,6 +234,9 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 	    //src.position(offset);
         //buffer.put(src);
         //src.position(tempPosition);
+
+		if (length == 0)
+			return 0;
 
         long addr1 = ((DirectBuffer) src).address();
         long addr2 = ((DirectBuffer) buffer).address();

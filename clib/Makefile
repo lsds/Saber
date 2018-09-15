@@ -8,9 +8,9 @@ CUDA_HOME = /usr/local/cuda
 CLASS_PATH = ../target/classes
 vpath %.class $(CLASS_PATH)
 
-CC = gcc
+CC = g++#gcc
 
-CFL_BASE = -W -Wall -DWARNING -fpic
+CFL_BASE = -O3 -W -Wall -DWARNING -fpic
 
 CFL_COMMON = $(CFL_BASE) -g
 
@@ -61,11 +61,12 @@ SABERLIBS += -lGPU
 
 OBJS = GPU.o timer.o openclerrorcode.o resulthandler.o inputbuffer.o outputbuffer.o gpucontext.o gpuquery.o
 
-all: libCPU.so libGPU.so
+all: libCPU.so #libGPU.so
 gpu: libGPU.so
 cpu: libCPU.so 
 
 libGPU.so: $(OBJS)
+	javah -classpath $(CLASS_PATH) uk.ac.imperial.lsds.saber.devices.TheCPU
 	$(CC) -shared -o libGPU.so $(OBJS) $(GLIBS) $(CLIBS)
 
 libCPU.so: CPU.o

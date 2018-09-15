@@ -48,7 +48,7 @@ public class GeneratorWorker implements Runnable {
 	public void run() {
 		
 		TheCPU.getInstance().bind(id);
-		System.out.println(String.format("[DBG] bind Worker Generator thread %2d to core %2d", id, id));
+		System.out.println(String.format("[DBG] bind Worker LRBGenerator thread %2d to core %2d", id, id));
 
 		int curr;
 		GeneratedBuffer buffer;

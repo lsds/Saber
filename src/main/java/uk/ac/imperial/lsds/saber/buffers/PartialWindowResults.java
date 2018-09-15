@@ -1,6 +1,7 @@
 package uk.ac.imperial.lsds.saber.buffers;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import uk.ac.imperial.lsds.saber.SystemConf;
 
@@ -17,7 +18,8 @@ public class PartialWindowResults {
 	int size;
 	public int count;
 	
-	int [] startPointers;
+	//int [] startPointers;
+	ByteBuffer startPointers;
 	
 	public PartialWindowResults (int pid) {
 		
@@ -27,9 +29,13 @@ public class PartialWindowResults {
 		size = 0;
 		count = 0;
 		// System.out.println("[DBG] new int []");
-		startPointers = new int [N];
+		//startPointers = new int [N];
+        startPointers = ByteBuffer.allocateDirect(4 * N);
+        startPointers.order( ByteOrder.LITTLE_ENDIAN);
 		for (int i = 0; i < N; i++)
-			startPointers[i] = -1;
+		    startPointers.putInt(i*4, -1);
+			//startPointers[i] = -1;
+		startPointers.position(0);
 	}
 	
 	public IQueryBuffer getBuffer () {
@@ -48,8 +54,10 @@ public class PartialWindowResults {
 	public void release () {
 		size = 0;
 		for (int i = 0; i < count; i++)
-			startPointers[i] = -1;
-		count = 0;
+            startPointers.putInt(i*4, -1);
+            //startPointers[i] = -1;
+        startPointers.position(0);
+        count = 0;
 		/* Release this object */
 		PartialWindowResultsFactory.free (pid, this);
 	}
@@ -64,8 +72,10 @@ public class PartialWindowResults {
 			buffer.clear();
 		size = 0;
 		for (int i = 0; i < count; i++)
-			startPointers[i] = -1;
+            startPointers.putInt(i*4,-1);
+            //startPointers[i] = -1;
 		count = 0;
+        startPointers.position(0);
 	}
 	
 	public void increment () {
@@ -73,13 +83,15 @@ public class PartialWindowResults {
 			throw new IllegalStateException ("error: buffer in partial window result is null");
 		if (count >= N)
 			throw new IndexOutOfBoundsException ("error: partial window result index out of bounds");
-		startPointers[count++] = buffer.position();
+        startPointers.putInt(buffer.position());
+        count++;
+		//startPointers[count++] = buffer.position();
 	}
 	
 	public int getStartPointer (int idx) {
 		if (idx < 0 || idx >= count)
 			throw new ArrayIndexOutOfBoundsException("error: partial window result index out of bounds");
-		return startPointers[idx];
+		return startPointers.getInt(idx*4); //startPointers[idx];
 	}
 	
 	public int numberOfWindows () {
@@ -89,9 +101,11 @@ public class PartialWindowResults {
 	public void append (ByteBuffer windowBuffer) {
 		if (count >= N)
 			throw new IndexOutOfBoundsException ("error: partial window result index out of bounds");
-			
-		startPointers[count++] = getBuffer().position();
-		buffer.put(windowBuffer.array(), 0, windowBuffer.position());
+
+        //startPointers[count++] = getBuffer().position();
+        startPointers.putInt(getBuffer().position());
+        count++;
+		buffer.put(windowBuffer, 0, windowBuffer.position()*4);
 	}
 	
 	public void append (PartialWindowResults closingWindows) {
@@ -99,7 +113,9 @@ public class PartialWindowResults {
 		for (int wid = 0; wid < closingWindows.numberOfWindows(); ++wid) {
 			if (count >= N)
 				throw new IndexOutOfBoundsException ("error: partial window result index out of bounds");
-			startPointers[count++] = offset + closingWindows.getStartPointer(wid);
+			//startPointers[count++] = offset + closingWindows.getStartPointer(wid);
+            startPointers.putInt(offset + closingWindows.getStartPointer(wid));
+            count++;
 		}
 		buffer.put(closingWindows.getBuffer().getByteBuffer(), 0, closingWindows.getBuffer().position());
 	}
@@ -122,19 +138,21 @@ public class PartialWindowResults {
 		int offset = openingWindows.getStartPointer(end) - norm + windowSize;
 		
 		for (int i = count - 1; i >= 0; i--) {
-			startPointers[i + added] = startPointers[i] + offset;
-			int src = startPointers[i];
-			int dst = startPointers[i + added];
+			//startPointers[i + added] = startPointers[i] + offset;
+            startPointers.putInt((i + added)*4, startPointers.getInt(i*4) + offset);
+			int src = startPointers.getInt(i*4);
+			int dst = startPointers.getInt((i + added)*4);
 			buffer.position(dst);
 			buffer.put(buffer, src, windowSize);
 		}
 		
 		for (int i = 0, w = start; i < added; ++i, ++w) {
-			startPointers[i] = openingWindows.getStartPointer(w) - norm;
-			int src = openingWindows.getStartPointer(w);
-			int dst = startPointers[i];
+			//startPointers[i] = openingWindows.getStartPointer(w) - norm;
+            startPointers.putInt(i*4, openingWindows.getStartPointer(w) - norm);
+            int src = openingWindows.getStartPointer(w);
+			int dst = startPointers.getInt(i*4);
 			buffer.position(dst);
-			buffer.put(openingWindows.getBuffer(), src, windowSize);
+			buffer.put(openingWindows.getBuffer().getByteBuffer(), src, windowSize);
 		}
 		
 		count = count_;
@@ -153,7 +171,18 @@ public class PartialWindowResults {
 		for (int i = 0; i < numberOfCompleteWindows; ++i) {
 			if (count >= N)
 				throw new IndexOutOfBoundsException ("error: partial window result index out of bounds");
-			startPointers[count++] = buffer.position();
+			//startPointers[count++] = buffer.position();
+            startPointers.putInt(buffer.position());
+            count++;
 		}
 	}
+
+	public ByteBuffer getStartPointers() {
+	    return startPointers;
+    }
+
+    public void setCount (int count) {
+        this.count = count;
+        startPointers.position(count * 4);
+    }
 }

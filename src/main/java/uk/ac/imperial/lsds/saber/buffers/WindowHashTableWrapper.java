@@ -39,6 +39,7 @@ public class WindowHashTableWrapper {
 		
 		if ((end - start) != N)
 			throw new IllegalStateException ("error: invalid window hash table content size");
+			//start = end - N;
 		
 		this.content = content;
 		

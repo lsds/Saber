@@ -444,7 +444,7 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 	private void hashJoin (WindowBatch batch, IWindowAPI api) {
 		
 		IQueryBuffer inputBuffer = batch.getBuffer();
-		byte[] bInputBuffer = inputBuffer.getByteBuffer().array();	
+		byte[] bInputBuffer = inputBuffer.getByteBuffer().array();
 		IQueryBuffer outputBuffer = UnboundedQueryBufferFactory.newInstance();				
 				
 		int column1 = isV2? ((LongColumnReference)joinPredicate.getFirstExpression()).getColumn() : 
@@ -488,7 +488,7 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 				System.arraycopy(inputBuffer.array(), pointer + offset1 + j, b.array(), 0,key.length);
 
 
-				
+
 				value = hashMap.get(key);
 				if (value != -1) {
 					// Write tuple to result buffer 

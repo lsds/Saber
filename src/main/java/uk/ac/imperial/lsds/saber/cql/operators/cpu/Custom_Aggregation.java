@@ -1,6 +1,7 @@
 package uk.ac.imperial.lsds.saber.cql.operators.cpu;
 
 import uk.ac.imperial.lsds.saber.ITupleSchema;
+import uk.ac.imperial.lsds.saber.SystemConf;
 import uk.ac.imperial.lsds.saber.WindowBatch;
 import uk.ac.imperial.lsds.saber.WindowDefinition;
 import uk.ac.imperial.lsds.saber.buffers.*;
@@ -17,10 +18,12 @@ import uk.ac.imperial.lsds.saber.cql.expressions.longs.LongExpression;
 import uk.ac.imperial.lsds.saber.cql.operators.AggregationType;
 import uk.ac.imperial.lsds.saber.cql.operators.IAggregateOperator;
 import uk.ac.imperial.lsds.saber.cql.operators.IOperatorCode;
+import uk.ac.imperial.lsds.saber.devices.TheCPU;
 import uk.ac.imperial.lsds.saber.processors.ThreadMap;
 import uk.ac.imperial.lsds.saber.tasks.IWindowAPI;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
 
@@ -40,7 +43,7 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
 
 	ITupleSchema outputSchema;
 
-	private int keyLength, valueLength;
+	private int keyLength, valueLength, tupleLength;
 
 	/* Thread local variables */
 	private ThreadLocal<float   []> tl_values;
@@ -88,6 +91,9 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
 				return new int [numberOfValues()];
 		    }
 		};
+
+        tupleLength =
+                1 << (32 - Integer.numberOfLeadingZeros((keyLength + valueLength + 20) - 1));
 	}
 
 	public Custom_Aggregation(WindowDefinition windowDefinition,
@@ -138,6 +144,9 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
 				return new int [numberOfValues()];
 		    }
 		};
+
+        tupleLength =
+                1 << (32 - Integer.numberOfLeadingZeros((keyLength + valueLength + 20) - 1));
 	}
 
 	public Custom_Aggregation(WindowDefinition windowDefinition,
@@ -194,6 +203,9 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
 				return new int [numberOfValues()];
 		    }
 		};
+
+        tupleLength =
+                1 << (32 - Integer.numberOfLeadingZeros((keyLength + valueLength + 20) - 1));
 	}
 
 	public Custom_Aggregation(WindowDefinition windowDefinition,
@@ -302,6 +314,9 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
 				}
 			};
 		}
+
+        tupleLength =
+                1 << (32 - Integer.numberOfLeadingZeros((keyLength + valueLength + 20) - 1));
 	}
 	
 	@Override
@@ -346,8 +361,9 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
 	}
 	
 	public void processData (WindowBatch batch, IWindowAPI api) {
-		
-		batch.initPartialWindowPointers();
+
+		// TODO: check if this works
+		//batch.initPartialWindowPointers();
 		
 		if (debug) {
 			System.out.println(
@@ -945,90 +961,46 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
 		PartialWindowResults  openingWindows = PartialWindowResultsFactory.newInstance (workerId);
 		
 		IQueryBuffer inputBuffer = batch.getBuffer();
-		IQueryBuffer outputBuffer;
-		
-		/* Current window start and end pointers */
-		int start, end;
-		/* Previous window start and end pointers */
-		int _start = -1;
-		int   _end = -1;
-		
-		WindowHashTable windowHashTable = WindowHashTableFactory.newInstance(workerId);
-		windowHashTable.setTupleLength(keyLength, valueLength);
-		byte [] tupleKey = (byte []) tl_tuplekey.get(); // new byte [keyLength];
-		boolean [] found = (boolean []) tl_found.get(); // new boolean[1];
-		boolean pack = false;
-		
-		for (int currentWindow = 0; currentWindow < startP.length; ++currentWindow) {
-			if (currentWindow > batch.getLastWindowIndex())
-				break;
-			
-			pack = false;
-			
-			start = startP [currentWindow];
-			end   = endP   [currentWindow];
-			
-			/* Check start and end pointers */
-			if (start < 0 && end < 0) {
-				start = batch.getBufferStartPointer();
-				end = batch.getBufferEndPointer();
-				if (batch.getStreamStartPointer() == 0) {
-					/* Treat this window as opening; there is no previous batch to open it */
-					outputBuffer = openingWindows.getBuffer();
-					openingWindows.increment();					
-				} else {
-					/* This is a pending window; compute a pending window once */
-					if (pendingWindows.numberOfWindows() > 0)
-						continue;
-					outputBuffer = pendingWindows.getBuffer();
-					pendingWindows.increment();
-				}
-			} else if (start < 0) {
-				outputBuffer = closingWindows.getBuffer();
-				closingWindows.increment();
-				start = batch.getBufferStartPointer();
-			} else if (end < 0) {
-				outputBuffer = openingWindows.getBuffer();
-				openingWindows.increment();
-				end = batch.getBufferEndPointer();
-			} else {
-				if (start == end) /* Empty window */
-					continue;
-				outputBuffer = completeWindows.getBuffer();
-				completeWindows.increment();
-				pack = true;
-			}
-			/* If the window is empty, skip it */
-			if (start == -1)
-				continue;
-			
-			/* Process tuples in current window that have not been in the previous window */
-			if (_start != -1) {
-				for (int i = _end; i < end; i += inputTupleSize) {
-					enterWindow (workerId, inputBuffer, inputSchema, i, windowHashTable, tupleKey, found);
-				}
-			} else {
-				for (int i = start; i < end; i += inputTupleSize) {
-					enterWindow (workerId, inputBuffer, inputSchema, i, windowHashTable, tupleKey, found);
-				}
-			}
-			
-			/* Process tuples in previous window that are not in current window */
-			if (_start != -1) {
-				for (int i = _start; i < start; i += inputTupleSize) {
-					exitWindow (inputBuffer, inputSchema, i, windowHashTable, tupleKey, found);
-				}
-			}
-			
-			/* Store window result and move to next window */
-			evaluateWindow (windowHashTable, outputBuffer, pack);
-			
-			_start = start;
-			_end = end;
-		}
-		
-		/* Release hash maps */
-		windowHashTable.release();
+		IQueryBuffer openingWindowsBuffer = openingWindows.getBuffer();
+        IQueryBuffer closingWindowsBuffer = closingWindows.getBuffer();
+        IQueryBuffer pendingWindowsBuffer = pendingWindows.getBuffer();
+        IQueryBuffer completeWindowsBuffer = completeWindows.getBuffer();
+
+
+        ByteBuffer arrayHelper = ByteBuffer.allocateDirect(4 * 8);
+        arrayHelper.order(ByteOrder.LITTLE_ENDIAN);
+
+        /*System.out.println("-----");
+        System.out.println("StartTimeStamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferStartPointer()));
+        System.out.println("EndTimeStamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferEndPointer()-32));
+        System.out.println("StartPointer: " + batch.getBufferStartPointer());
+        System.out.println("EndPointer: " + batch.getBufferEndPointer());*/
+        // REPLACE THE POSITIONS WITH THE CORRECT INDEX BY DIVIDING WITH 4!!!
+
+        TheCPU.getInstance().optimisedDistinct(inputBuffer.getByteBuffer(),  batch.getBufferStartPointer()/inputSchema.getTupleSize(),
+                    batch.getBufferEndPointer()/inputSchema.getTupleSize(),
+                    openingWindowsBuffer.getByteBuffer(), closingWindowsBuffer.getByteBuffer(),
+                    pendingWindowsBuffer.getByteBuffer(), completeWindowsBuffer.getByteBuffer(),
+                    openingWindows.getStartPointers(), closingWindows.getStartPointers(),
+                    pendingWindows.getStartPointers(), completeWindows.getStartPointers(),
+                    // TODO: replace the ints with longs!!!
+                    batch.getStreamStartPointer(), batch.getWindowDefinition().getSize(),
+                    batch.getWindowDefinition().getSlide(), batch.getWindowDefinition().getPaneSize(),
+                    openingWindowsBuffer.position()/tupleLength, closingWindowsBuffer.position()/tupleLength,
+                    pendingWindowsBuffer.position()/tupleLength, completeWindowsBuffer.position()/outputSchema.getTupleSize(),
+                    arrayHelper);
+
+        // FIX positions and Counters!
+        openingWindowsBuffer.position(arrayHelper.getInt(0)==0 ? 0 : SystemConf.HASH_TABLE_SIZE);
+        closingWindowsBuffer.position(arrayHelper.getInt(4)==0 ? 0 : SystemConf.HASH_TABLE_SIZE);
+        pendingWindowsBuffer.position(arrayHelper.getInt(8)==0 ? 0 : SystemConf.HASH_TABLE_SIZE);
+        completeWindowsBuffer.position(arrayHelper.getInt(12) * outputSchema.getTupleSize());
+
+        openingWindows.setCount(arrayHelper.getInt(16));
+        closingWindows.setCount(arrayHelper.getInt(20));
+        pendingWindows.setCount(arrayHelper.getInt(24));
+        completeWindows.setCount(arrayHelper.getInt(28));
+
 		
 		/* At the end of processing, set window batch accordingly */
 		batch.setClosingWindows  ( closingWindows);

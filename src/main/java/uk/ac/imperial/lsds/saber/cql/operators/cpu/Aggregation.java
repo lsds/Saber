@@ -713,8 +713,8 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 		boolean [] found = (boolean []) tl_found.get(); // new boolean[1];
 		boolean pack = false;
 		
-		float [] values = tl_values.get(); 
-		
+		float [] values = tl_values.get();
+
 		for (int currentWindow = 0; currentWindow < startP.length; ++currentWindow) {
 			if (currentWindow > batch.getLastWindowIndex())
 				break;
@@ -755,8 +755,21 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 				pack = true;
 			}
 			/* If the window is empty, skip it */
-			if (start == -1)
+			if (start == -1)// || start == end )
 				continue;
+
+			//
+            //if (start == end) {
+                //outputBuffer.putLong(0L);
+                /* Store "null" (zero-valued) tuple in output buffer */
+                //outputBuffer.putLong(0L);
+//                    for (int i = 0; i < numberOfValues(); ++i) {
+//                        outputBuffer.putFloat(0);
+//                    }
+//                    outputBuffer.putInt(0);
+                /* Move to next window */
+              //  continue;
+            //}
 			
 			windowHashTable = WindowHashTableFactory.newInstance(workerId);
 			windowHashTable.setTupleLength(keyLength, valueLength);
@@ -772,7 +785,7 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 						values[i] = aggregationAttributes[i].eval (inputBuffer, inputSchema, start);
 				}
 				
-				/* Check whether there is already an entry in the hash table for this key. 
+				/* Check whether there is already an entry in the hash table for this key.
 				 * If not, create a new entry */
 				found[0] = false;
 				int idx = windowHashTable.getIndex (tupleKey, found);

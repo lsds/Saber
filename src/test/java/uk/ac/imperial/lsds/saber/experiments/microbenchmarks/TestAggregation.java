@@ -54,8 +54,8 @@ public class TestAggregation {
 
 		WindowType windowType = WindowType.ROW_BASED;
 
-		int windowSize = 1024;
-		int windowSlide = 1;
+		int windowSize = 30;
+		int windowSlide = 30;
 
 		int numberOfAttributes = 1;
 
