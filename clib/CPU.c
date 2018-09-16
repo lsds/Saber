@@ -119,28 +119,25 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
     const long panesPerWindow = windowSize / windowPaneSize;
     const long panesPerSlide = windowSlide / windowPaneSize;
 
-
-printf("---- \n");
-printf("bufferStartPointer %d \n", bufferStartPointer);
-printf("bufferEndPointer %d \n", bufferEndPointer);
-printf("streamStartPointer %d \n", streamStartPointer);
-printf("data[bufferStartPointer].timestamp %lu, vehicle %d \n", data[bufferStartPointer].timestamp, data[bufferStartPointer].vehicle);
-printf("data[bufferEndPointer-1].timestamp %lu, vehicle %d \n", data[bufferEndPointer-1].timestamp, data[bufferEndPointer].vehicle);
-fflush(stdout);
-printf("windowSize %d \n", windowSize);
-printf("windowSlide %d \n", windowSlide);
-printf("openingWindowsPointer %d \n", openingWindowsPointer);
-printf("closingWindowsPointer %d \n", closingWindowsPointer);
-printf("pendingWindowsPointer %d \n", pendingWindowsPointer);
-printf("completeWindowsPointer %d \n", completeWindowsPointer);
-printf("panesPerWindow %ld \n", panesPerWindow);
-printf("panesPerSlide %ld \n", panesPerSlide);
-printf("windowPaneSize %ld \n", windowPaneSize);
-printf("---- \n");
-fflush(stdout);
-
-
-
+    /*printf("---- \n");
+    printf("bufferStartPointer %d \n", bufferStartPointer);
+    printf("bufferEndPointer %d \n", bufferEndPointer);
+    printf("streamStartPointer %d \n", streamStartPointer);
+    printf("data[bufferStartPointer].timestamp %lu, vehicle %d \n", data[bufferStartPointer].timestamp, data[bufferStartPointer].vehicle);
+    printf("data[bufferEndPointer-1].timestamp %lu, vehicle %d \n", data[bufferEndPointer-1].timestamp, data[bufferEndPointer].vehicle);
+    fflush(stdout);
+    printf("windowSize %d \n", windowSize);
+    printf("windowSlide %d \n", windowSlide);
+    printf("openingWindowsPointer %d \n", openingWindowsPointer);
+    printf("closingWindowsPointer %d \n", closingWindowsPointer);
+    printf("pendingWindowsPointer %d \n", pendingWindowsPointer);
+    printf("completeWindowsPointer %d \n", completeWindowsPointer);
+    printf("panesPerWindow %ld \n", panesPerWindow);
+    printf("panesPerSlide %ld \n", panesPerSlide);
+    printf("windowPaneSize %ld \n", windowPaneSize);
+    printf("---- \n");
+    fflush(stdout);
+*/
 
     int openingWindows = 0;
     int closingWindows = 0;
@@ -178,8 +175,10 @@ fflush(stdout);
     }
 
     //TODO: deal with equality by +1 ???
-    int resultCounter = 0;
+    //TODO: check the next curr position for the definition of window boundaries to deal with same values???
+    //TODO: fix the hasComplete
     long activePane;
+    bool hasComplete =  ((data[bufferEndPointer-1].timestamp - data[bufferStartPointer].timestamp) / windowPaneSize) >= panesPerWindow;
     // the beginning of the stream. Check if we have at least one complete window so far!
     if (streamStartPointer == 0) {
         tempPane = data[bufferStartPointer].timestamp / windowPaneSize;
@@ -203,13 +202,20 @@ fflush(stdout);
         }
 
     } else if ((data[bufferEndPointer-1].timestamp / windowPaneSize) < panesPerWindow) { //we still have a pending window until the first full window is closed.
-            while (currPos < bufferEndPointer) {
-                ht_insert_and_increment(hTable, data[currPos].vehicle, 1, mapSize);
-                currPos++;
+        tempPane = data[bufferStartPointer].timestamp / windowPaneSize;
+        while (currPos < bufferEndPointer) {
+            ht_insert_and_increment(hTable, data[currPos].vehicle, 1, mapSize);
+            activePane = data[currPos].timestamp/windowPaneSize;
+            if (activePane - tempPane >= panesPerSlide) { // there may be still opening windows
+                tempPane = activePane;
+                startPositions[currentSlide] = currPos;
+                currentSlide++;
             }
+            currPos++;
+        }
     } else { // this is not the first batch, so we get the previous panes for the closing and opening windows
-        tempPane = data[bufferStartPointer-1].timestamp / windowPaneSize;
-        bool hasComplete =  ((data[bufferEndPointer].timestamp - data[bufferStartPointer].timestamp) / windowPaneSize) >= panesPerWindow;
+        tempPane = (bufferStartPointer!=0) ? data[bufferStartPointer-1].timestamp / windowPaneSize :
+                                            data[bufferStartPointer].timestamp / windowPaneSize; // TODO: fix this!!
         // compute the closing windows util we reach the first complete window. After this point we start to remove slides!
         while (currPos < bufferEndPointer) {
             ht_insert_and_increment(hTable, data[currPos].vehicle, 1, mapSize);
@@ -220,17 +226,19 @@ fflush(stdout);
                 // count here and not with the closing windows the starting points of slides!!
                 startPositions[currentSlide] = currPos;
                 currentSlide++;
-                if (!hasComplete) { // we don't have complete windows, so everything is opening
-                    // write result to the opening windows
-                    std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
-                    openingWindowsPointer += mapSize;
-                    openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
-                    openingWindows++;
-                }
+                //if (!hasComplete) { // we don't have complete windows, so everything is opening
+                // write result to the opening windows
+                //    std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
+                //    openingWindowsPointer += mapSize;
+                //    openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
+                //    openingWindows++;
+                //}
             }
             if (activePane - tempCompletePane >= panesPerWindow) { // complete window
-                startPositions[currentSlide] = currPos;
-                currentSlide++;
+                if (startPositions[currentSlide-1] != currPos) { // check if I have already added this position in the previous step!
+                    startPositions[currentSlide] = currPos;
+                    currentSlide++;
+                }
                 endPositions[currentWindow] = currPos;
                 currentWindow++;
                 currPos++;
@@ -238,7 +246,7 @@ fflush(stdout);
                 break;
             }
             // Does the second check stand???
-            if (activePane - tempPane >= panesPerSlide && activePane - tempPane < panesPerWindow) { // closing window
+            if (activePane - tempPane >= panesPerSlide && activePane >= panesPerWindow) {//activePane - tempPane < panesPerWindow) { // closing window
                 tempPane = activePane;
 
                 // write result to the closing windows
@@ -252,20 +260,33 @@ fflush(stdout);
     }
 
     auto resultTimestamp = data[currPos-1].timestamp;
-    if (completeWindows == 0 && streamStartPointer == 0) { // We only have one opening window, so we write it and return...
-        // write results
-        std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
-        openingWindowsPointer += mapSize;
-        openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
-        openingWindows++;
-    } else if (completeWindows == 0 && closingWindows == 0) { // We have one pending window and maybe some opening results which are written
+    int tempStartPosition;
+    int tempEndPosition;
+    // Check if we have one pending window
+    if (streamStartPointer != 0 && !hasComplete) {  // (completeWindows == 0 && closingWindows == 0) {
         // write results
         std::memcpy(pendingWindowsResults + pendingWindowsPointer, hTable, mapSize * sizeof(ht_node));
         pendingWindowsPointer += mapSize;
         pendingWindowsPointers[pendingWindows] = pendingWindowsPointer - 1;
         pendingWindows++;
+    }
+
+    if (completeWindows == 0  && streamStartPointer == 0) { // We only have one opening window, so we write it and return...
+        // write results
+        std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
+        openingWindowsPointer += mapSize;
+        openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
+        openingWindows++;
+    // We only have one opening window if we start from a valid point in time (the last check in the next if statement)
+    } else if (completeWindows == 0  && currentSlide > 1 && data[startPositions[0]].timestamp%windowSlide==0) {
+        // write results
+        std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
+        openingWindowsPointer += mapSize;
+        openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
+        openingWindows++;
         //} else if (completeWindows == 0 && closingWindows > 0) { // We have only opening and closing windows which are already written
     } else if (completeWindows > 0) { // we have at least one complete window...
+
         // write results and pack them for the first complete window in the batch
         for (int i = 0; i < mapSize; i++) {
             completeWindowsResults[completeWindowsPointer].timestamp = resultTimestamp;
@@ -276,11 +297,8 @@ fflush(stdout);
         // write in the correct slot, as the value has already been incremented!
         completeWindowsPointers[completeWindows - 1] = completeWindowsPointer - 1;
         //completeWindows++;
-        resultCounter++;
 
         // compute the rest windows
-        int tempStartPosition;
-        int tempEndPosition;
         currPos = endPositions[0];
         tempPane = data[currPos].timestamp/windowPaneSize; //currStartPos = data[currPos].timestamp; //startPositions[currentWindow];
         while (currPos < bufferEndPointer) {
@@ -327,27 +345,26 @@ fflush(stdout);
                     break;
                 }
             }
-            resultCounter++;
         }
+    }
 
-        // compute the rest opening windows
-        currentWindow++; // TODO: why to I have to increment ???
-        while (currentWindow < currentSlide - 1) {
-            // remove previous slide
-            tempStartPosition = startPositions[currentWindow];
-            tempEndPosition = startPositions[currentWindow + 1];
-            for (int i = tempStartPosition; i < tempEndPosition; i++) {
-                ht_update_counter(hTable, data[i].vehicle, -1, mapSize);
-            }
-            // write result to the opening windows
-            std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
-            openingWindowsPointer += mapSize;
-            openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
-            openingWindows++;
 
-            resultCounter++;
-            currentWindow++;
+    // compute the rest opening windows
+    //currentWindow += (openingWindows==1); // if opening windows are already one, we have to compute one less
+    while (currentWindow < currentSlide - 1) {
+        // remove previous slide
+        tempStartPosition = startPositions[currentWindow];
+        tempEndPosition = startPositions[currentWindow + 1];
+        for (int i = tempStartPosition; i < tempEndPosition; i++) {
+            ht_update_counter(hTable, data[i].vehicle, -1, mapSize);
         }
+        // write result to the opening windows
+        std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
+        openingWindowsPointer += mapSize;
+        openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
+        openingWindows++;
+
+        currentWindow++;
     }
 
     // free resources!!!
@@ -365,7 +382,11 @@ fflush(stdout);
     arrayHelper[6] = pendingWindows;
     arrayHelper[7] = completeWindows;
 
-
+/*printf("bufferStartPointer %d \n", bufferStartPointer);
+printf("bufferEndPointer %d \n", bufferEndPointer);
+printf("streamStartPointer %d \n", streamStartPointer);
+printf("data[bufferStartPointer].timestamp %lu, vehicle %d \n", data[bufferStartPointer].timestamp, data[bufferStartPointer].vehicle);
+printf("data[bufferEndPointer-1].timestamp %lu, vehicle %d \n", data[bufferEndPointer-1].timestamp, data[bufferEndPointer].vehicle);
 printf("openingWindowsPointer %d \n", openingWindowsPointer);
 printf("closingWindowsPointer %d \n", closingWindowsPointer);
 printf("pendingWindowsPointer %d \n", pendingWindowsPointer);
@@ -375,7 +396,7 @@ printf("closingWindows %d \n", closingWindows);
 printf("pendingWindows %d \n", pendingWindows);
 printf("completeWindows %d \n", completeWindows);
 printf("---- \n");
-fflush(stdout);
+fflush(stdout);*/
 
     return 0;
 }

@@ -42,7 +42,7 @@ public class LRB1 extends LRB {
 	@Override
 	public void createApplication (QueryConf queryConf) {
 		
-		WindowDefinition window = new WindowDefinition (WindowType.RANGE_BASED, 300, 10);
+		WindowDefinition window = new WindowDefinition (WindowType.RANGE_BASED, 30, 10);
 		
 		/*Expression [] expressions = new Expression [] {
 			

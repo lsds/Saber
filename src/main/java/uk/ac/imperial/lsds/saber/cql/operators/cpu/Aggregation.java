@@ -976,7 +976,8 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 		byte [] tupleKey = (byte []) tl_tuplekey.get(); // new byte [keyLength];
 		boolean [] found = (boolean []) tl_found.get(); // new boolean[1];
 		boolean pack = false;
-		
+
+
 		for (int currentWindow = 0; currentWindow < startP.length; ++currentWindow) {
 			if (currentWindow > batch.getLastWindowIndex())
 				break;
@@ -1047,7 +1048,16 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 		
 		/* Release hash maps */
 		windowHashTable.release();
-		
+
+        System.out.println("first timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferStartPointer()));
+        System.out.println("last timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferEndPointer() - inputTupleSize));
+        System.out.println("streamStartPointer: " + batch.getStreamStartPointer());
+        System.out.println("opening windows "+ openingWindows.numberOfWindows());
+        System.out.println("closing windows "+ closingWindows.numberOfWindows());
+        System.out.println("pending windows "+ pendingWindows.numberOfWindows());
+        System.out.println("complete windows "+ completeWindows.numberOfWindows());
+        System.out.println("--------");
+
 		/* At the end of processing, set window batch accordingly */
 		batch.setClosingWindows  ( closingWindows);
 		batch.setPendingWindows  ( pendingWindows);

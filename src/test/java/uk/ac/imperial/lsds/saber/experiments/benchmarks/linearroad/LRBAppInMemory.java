@@ -72,8 +72,8 @@ public class LRBAppInMemory {
 		/* Generate input stream */
 		int numberOfGeneratorThreads = 1;
 
-		int bufferSize = 4 * 131072; // set the timestamps with this buffer size
-		int coreToBind = 3; //numberOfThreads + 1;
+		int bufferSize = 1 * 131072/2; // set the timestamps with this buffer size
+		int coreToBind = 3; //numberOfThre/ads + 1;
         int dataRange = 1024;
 
 		LRBGenerator generator = new LRBGenerator (bufferSize, numberOfGeneratorThreads, dataRange, coreToBind);
