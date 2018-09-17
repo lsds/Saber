@@ -15,19 +15,21 @@ import java.util.Iterator;
 import java.util.Set;
 
 public class LRBAppInMemory {
-	
+
 	public static final String usage = "usage: LRBApp";
-	
+
 	public static void main (String [] args) throws InterruptedException {
-		
+
 		BenchmarkQuery benchmarkQuery = null;
 		int queryId = 1;
-		
+
 		String executionMode = "cpu";
 		int numberOfThreads = 1;
-		int batchSize = 1048576;
+		int batchSize = 32*1048576;
 
-		
+		boolean jni = false;
+
+
 		/* Parse command line arguments */
 		int i, j;
 		for (i = 0; i < args.length; ) {
@@ -35,16 +37,19 @@ public class LRBAppInMemory {
 				System.err.println(usage);
 				System.exit(1);
 			}
-			if (args[i].equals("--mode")) { 
+			if (args[i].equals("--mode")) {
 				executionMode = args[j];
+			} else
+			if (args[i].equals("--jni")) {
+				jni = Boolean.parseBoolean(args[j]);
 			} else
 			if (args[i].equals("--threads")) {
 				numberOfThreads = Integer.parseInt(args[j]);
 			} else
-			if (args[i].equals("--batch-size")) { 
+			if (args[i].equals("--batch-size")) {
 				batchSize = Integer.parseInt(args[j]);
 			} else
-			if (args[i].equals("--query")) { 
+			if (args[i].equals("--query")) {
 				queryId = Integer.parseInt(args[j]);
 			} else {
 				System.err.println(String.format("error: unknown flag %s %s", args[i], args[j]));
@@ -52,29 +57,29 @@ public class LRBAppInMemory {
 			}
 			i = j + 1;
 		}
-		
+
 		SystemConf.CIRCULAR_BUFFER_SIZE = 128 * 1048576;
 		SystemConf.LATENCY_ON = false;
-		
+
 		SystemConf.PARTIAL_WINDOWS = 8 * 32 * 1024;
 		SystemConf.HASH_TABLE_SIZE = 32*1024; //1 * 32768;
-		
-		SystemConf.UNBOUNDED_BUFFER_SIZE = 16 * 1048576;
-		
+
+		SystemConf.UNBOUNDED_BUFFER_SIZE = 64 * 1048576;
+
 		SystemConf.CPU = true;
-		
+
 		SystemConf.THREADS = numberOfThreads;
-		
+
 		QueryConf queryConf = new QueryConf (batchSize);
-		
-		benchmarkQuery = new LRB1 (queryConf);
+
+		benchmarkQuery = new LRB1 (queryConf, jni);
 
 		/* Generate input stream */
 		int numberOfGeneratorThreads = 1;
 
 		int bufferSize = 1 * 131072/2; // set the timestamps with this buffer size
 		int coreToBind = 3; //numberOfThre/ads + 1;
-        int dataRange = 1024;
+		int dataRange = 1024;
 
 		LRBGenerator generator = new LRBGenerator (bufferSize, numberOfGeneratorThreads, dataRange, coreToBind);
 		long timeLimit = System.currentTimeMillis() + 10 * 10000;

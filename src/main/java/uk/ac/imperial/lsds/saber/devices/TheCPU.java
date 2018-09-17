@@ -28,7 +28,7 @@ public class TheCPU {
 	public native int bind (int cpu);
 	public native int unbind ();
 	public native int getCpuId ();
-	public native int optimisedDistinct (ByteBuffer buffer, int bufferStartPointer, int bufferEndPointer,
+	public native int optimisedDistinct (ByteBuffer buffer, int bufferSize, int bufferStartPointer, int bufferEndPointer,
 											ByteBuffer openingWindowsBuffer, ByteBuffer closingWindowsBuffer,
 											ByteBuffer pendingWindowsBuffer, ByteBuffer completeWindowsBuffer,
 											ByteBuffer openingWindowsStartPointers, ByteBuffer closingWindowsStartPointers,

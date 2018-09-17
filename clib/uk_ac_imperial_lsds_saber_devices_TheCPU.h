@@ -42,10 +42,10 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_getCpuId
 /*
  * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
  * Method:    optimisedDistinct
- * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;JJJJIIIILjava/nio/ByteBuffer;)I
+ * Signature: (Ljava/nio/ByteBuffer;IIILjava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;JJJJIIIILjava/nio/ByteBuffer;)I
  */
 JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDistinct
-  (JNIEnv *, jobject, jobject, jint, jint, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jlong, jlong, jlong, jlong, jint, jint, jint, jint, jobject);
+  (JNIEnv *, jobject, jobject, jint, jint, jint, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jlong, jlong, jlong, jlong, jint, jint, jint, jint, jobject);
 
 #ifdef __cplusplus
 }

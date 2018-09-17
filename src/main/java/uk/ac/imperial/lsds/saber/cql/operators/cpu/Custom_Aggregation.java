@@ -714,136 +714,38 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
 		PartialWindowResults  openingWindows = PartialWindowResultsFactory.newInstance (workerId);
 		
 		IQueryBuffer inputBuffer = batch.getBuffer();
-		IQueryBuffer outputBuffer;
-		
-		/* Current window start and end pointers */
-		int start, end;
-		
-		WindowHashTable windowHashTable;
-		byte [] tupleKey = (byte []) tl_tuplekey.get(); // new byte [keyLength];
-		boolean [] found = (boolean []) tl_found.get(); // new boolean[1];
-		boolean pack = false;
-		
-		float [] values = tl_values.get(); 
-		
-		for (int currentWindow = 0; currentWindow < startP.length; ++currentWindow) {
-			if (currentWindow > batch.getLastWindowIndex())
-				break;
-			
-			pack = false;
-			
-			start = startP [currentWindow];
-			end   = endP   [currentWindow];
-			
-			/* Check start and end pointers */
-			if (start < 0 && end < 0) {
-				start = batch.getBufferStartPointer();
-				end = batch.getBufferEndPointer();
-				if (batch.getStreamStartPointer() == 0) {
-					/* Treat this window as opening; there is no previous batch to open it */
-					outputBuffer = openingWindows.getBuffer();
-					openingWindows.increment();
-				} else {
-					/* This is a pending window; compute a pending window once */
-					if (pendingWindows.numberOfWindows() > 0)
-						continue;
-					outputBuffer = pendingWindows.getBuffer();
-					pendingWindows.increment();
-				}
-			} else if (start < 0) {
-				outputBuffer = closingWindows.getBuffer();
-				closingWindows.increment();
-				start = batch.getBufferStartPointer();
-			} else if (end < 0) {
-				outputBuffer = openingWindows.getBuffer();
-				openingWindows.increment();
-				end = batch.getBufferEndPointer();
-			} else {
-				if (start == end) /* Empty window */
-					continue;
-				outputBuffer = completeWindows.getBuffer();
-				completeWindows.increment();
-				pack = true;
-			}
-			/* If the window is empty, skip it */
-			if (start == -1)
-				continue;
-			
-			windowHashTable = WindowHashTableFactory.newInstance(workerId);
-			windowHashTable.setTupleLength(keyLength, valueLength);
-			
-			while (start < end) {
-				/* Get the group-by key */
-				setGroupByKey (inputBuffer, inputSchema, start, tupleKey);
-				/* Get values */
-				for (int i = 0; i < numberOfValues(); ++i) {
-					if (aggregationTypes[i] == AggregationType.CNT)
-						values[i] = 1;
-					else
-						values[i] = aggregationAttributes[i].eval (inputBuffer, inputSchema, start);
-				}
-				
-				/* Check whether there is already an entry in the hash table for this key. 
-				 * If not, create a new entry */
-				found[0] = false;
-				int idx = windowHashTable.getIndex (tupleKey, found);
-				if (idx < 0) {
-					System.out.println("error: open-adress hash table is full");
-					System.exit(1);
-				}
-				
-				ByteBuffer theTable = windowHashTable.getBuffer();
-				if (! found[0]) {
-					theTable.put (idx, (byte) 1);
-					int timestampOffset = windowHashTable.getTimestampOffset (idx);
-					theTable.position (timestampOffset);
-					/* Store timestamp */
-					theTable.putLong (inputBuffer.getLong(start));
-					/* Store key and value(s) */
-					theTable.put (tupleKey);
-					for (int i = 0; i < numberOfValues(); ++i)
-						theTable.putFloat(values[i]);
-					/* Store count */
-					theTable.putInt(1);
-				} else {
-					/* Update existing entry */
-					int valueOffset = windowHashTable.getValueOffset (idx);
-					int countOffset = windowHashTable.getCountOffset (idx);
-					/* Store value(s) */
-					float v;
-					int p;
-					for (int i = 0; i < numberOfValues(); ++i) {
-						p = valueOffset + i * 4;
-						switch (aggregationTypes[i]) {
-						case CNT:
-							theTable.putFloat(p, (theTable.getFloat(p) + 1));
-							break;
-						case SUM:
-						case AVG:
-							theTable.putFloat(p, (theTable.getFloat(p) + values[i]));
-						case MIN:
-							v = theTable.getFloat(p);
-							theTable.putFloat(p, ((v > values[i]) ? values[i] : v));
-							break;
-						case MAX:
-							v = theTable.getFloat(p);
-							theTable.putFloat(p, ((v < values[i]) ? values[i] : v));
-							break;
-						default:
-							throw new IllegalArgumentException ("error: invalid aggregation type");
-						}
-					}
-					/* Increment tuple count */
-					theTable.putInt(countOffset, theTable.getInt(countOffset) + 1);
-				}
-				/* Move to next tuple in window */
-				start += inputTupleSize;
-			}
-			/* Store window result and move to next window */
-			evaluateWindow (windowHashTable, outputBuffer, pack);
-			/* Release hash maps */
-			windowHashTable.release();
-		}
+		IQueryBuffer openingWindowsBuffer = openingWindows.getBuffer();
+		IQueryBuffer closingWindowsBuffer = closingWindows.getBuffer();
+		IQueryBuffer pendingWindowsBuffer = pendingWindows.getBuffer();
+		IQueryBuffer completeWindowsBuffer = completeWindows.getBuffer();
+
+		ByteBuffer arrayHelper = ByteBuffer.allocateDirect(4 * 8);
+		arrayHelper.order(ByteOrder.LITTLE_ENDIAN);
+
+		// REPLACE THE POSITIONS WITH THE CORRECT INDEX BY DIVIDING WITH 4!!!
+		TheCPU.getInstance().optimisedDistinct(inputBuffer.getByteBuffer(), inputBuffer.getByteBuffer().capacity(),
+                batch.getBufferStartPointer()/inputSchema.getTupleSize(),
+				batch.getBufferEndPointer()/inputSchema.getTupleSize(),
+				openingWindowsBuffer.getByteBuffer(), closingWindowsBuffer.getByteBuffer(),
+				pendingWindowsBuffer.getByteBuffer(), completeWindowsBuffer.getByteBuffer(),
+				openingWindows.getStartPointers(), closingWindows.getStartPointers(),
+				pendingWindows.getStartPointers(), completeWindows.getStartPointers(),
+				batch.getStreamStartPointer(), batch.getWindowDefinition().getSize(),
+				batch.getWindowDefinition().getSlide(), batch.getWindowDefinition().getPaneSize(),
+				openingWindowsBuffer.position()/tupleLength, closingWindowsBuffer.position()/tupleLength,
+				pendingWindowsBuffer.position()/tupleLength, completeWindowsBuffer.position()/outputSchema.getTupleSize(),
+				arrayHelper);
+
+		// FIX positions and Counters!
+		openingWindowsBuffer.position(arrayHelper.getInt(0)==0 ? 0 : SystemConf.HASH_TABLE_SIZE);
+		closingWindowsBuffer.position(arrayHelper.getInt(4)==0 ? 0 : SystemConf.HASH_TABLE_SIZE);
+		pendingWindowsBuffer.position(arrayHelper.getInt(8)==0 ? 0 : SystemConf.HASH_TABLE_SIZE);
+		completeWindowsBuffer.position(arrayHelper.getInt(12) * outputSchema.getTupleSize());
+
+		openingWindows.setCount(arrayHelper.getInt(16));
+		closingWindows.setCount(arrayHelper.getInt(20));
+		pendingWindows.setCount(arrayHelper.getInt(24));
+		completeWindows.setCount(arrayHelper.getInt(28));
 		
 		/* At the end of processing, set window batch accordingly */
 		batch.setClosingWindows  ( closingWindows);
@@ -977,18 +879,18 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
         System.out.println("EndPointer: " + batch.getBufferEndPointer());*/
         // REPLACE THE POSITIONS WITH THE CORRECT INDEX BY DIVIDING WITH 4!!!
 
-        TheCPU.getInstance().optimisedDistinct(inputBuffer.getByteBuffer(),  batch.getBufferStartPointer()/inputSchema.getTupleSize(),
-                    batch.getBufferEndPointer()/inputSchema.getTupleSize(),
-                    openingWindowsBuffer.getByteBuffer(), closingWindowsBuffer.getByteBuffer(),
-                    pendingWindowsBuffer.getByteBuffer(), completeWindowsBuffer.getByteBuffer(),
-                    openingWindows.getStartPointers(), closingWindows.getStartPointers(),
-                    pendingWindows.getStartPointers(), completeWindows.getStartPointers(),
-                    // TODO: replace the ints with longs!!!
-                    batch.getStreamStartPointer(), batch.getWindowDefinition().getSize(),
-                    batch.getWindowDefinition().getSlide(), batch.getWindowDefinition().getPaneSize(),
-                    openingWindowsBuffer.position()/tupleLength, closingWindowsBuffer.position()/tupleLength,
-                    pendingWindowsBuffer.position()/tupleLength, completeWindowsBuffer.position()/outputSchema.getTupleSize(),
-                    arrayHelper);
+        TheCPU.getInstance().optimisedDistinct(inputBuffer.getByteBuffer(), inputBuffer.getByteBuffer().capacity(),
+                batch.getBufferStartPointer()/inputSchema.getTupleSize(),
+                batch.getBufferEndPointer()/inputSchema.getTupleSize(),
+                openingWindowsBuffer.getByteBuffer(), closingWindowsBuffer.getByteBuffer(),
+                pendingWindowsBuffer.getByteBuffer(), completeWindowsBuffer.getByteBuffer(),
+                openingWindows.getStartPointers(), closingWindows.getStartPointers(),
+                pendingWindows.getStartPointers(), completeWindows.getStartPointers(),
+                batch.getStreamStartPointer(), batch.getWindowDefinition().getSize(),
+                batch.getWindowDefinition().getSlide(), batch.getWindowDefinition().getPaneSize(),
+                openingWindowsBuffer.position()/tupleLength, closingWindowsBuffer.position()/tupleLength,
+                pendingWindowsBuffer.position()/tupleLength, completeWindowsBuffer.position()/outputSchema.getTupleSize(),
+                arrayHelper);
 
         // FIX positions and Counters!
         openingWindowsBuffer.position(arrayHelper.getInt(0)==0 ? 0 : SystemConf.HASH_TABLE_SIZE);

@@ -13,23 +13,23 @@ import uk.ac.imperial.lsds.saber.QueryConf;
 import uk.ac.imperial.lsds.saber.SystemConf;
 
 public class LRBApp {
-	
+
 	public static final String usage = "usage: LRBApp";
-	
+
 	public static void main (String [] args) {
-		
+
 		BenchmarkQuery benchmarkQuery = null;
 		int queryId = 1;
-		
+
 		String executionMode = "cpu";
 		int numberOfThreads = 1;
 		int batchSize = 1048576;
-		
+
 		String hostname = "localhost";
 		int port = 6667;
-		
+
 		int bundle = 512;
-		
+
 		/* Parse command line arguments */
 		int i, j;
 		for (i = 0; i < args.length; ) {
@@ -37,25 +37,25 @@ public class LRBApp {
 				System.err.println(usage);
 				System.exit(1);
 			}
-			if (args[i].equals("--mode")) { 
+			if (args[i].equals("--mode")) {
 				executionMode = args[j];
 			} else
 			if (args[i].equals("--threads")) {
 				numberOfThreads = Integer.parseInt(args[j]);
 			} else
-			if (args[i].equals("--batch-size")) { 
+			if (args[i].equals("--batch-size")) {
 				batchSize = Integer.parseInt(args[j]);
 			} else
-			if (args[i].equals("--query")) { 
+			if (args[i].equals("--query")) {
 				queryId = Integer.parseInt(args[j]);
 			} else
-			if (args[i].equals("--host")) { 
+			if (args[i].equals("--host")) {
 				hostname = args[j];
 			} else
-			if (args[i].equals("--port")) { 
+			if (args[i].equals("--port")) {
 				port = Integer.parseInt(args[j]);
 			} else
-			if (args[i].equals("--bundle-size")) { 
+			if (args[i].equals("--bundle-size")) {
 				bundle = Integer.parseInt(args[j]);
 			} else {
 				System.err.println(String.format("error: unknown flag %s %s", args[i], args[j]));
@@ -63,32 +63,32 @@ public class LRBApp {
 			}
 			i = j + 1;
 		}
-		
+
 		SystemConf.CIRCULAR_BUFFER_SIZE = 64 * 1048576;
 		SystemConf.LATENCY_ON = false;
-		
+
 		SystemConf.PARTIAL_WINDOWS = 64;
 		SystemConf.HASH_TABLE_SIZE = 32768;
-		
+
 		SystemConf.UNBOUNDED_BUFFER_SIZE = 1048576;
-		
+
 		SystemConf.CPU = false;
 		SystemConf.GPU = false;
-		
+
 		if (executionMode.toLowerCase().contains("cpu") || executionMode.toLowerCase().contains("hybrid"))
 			SystemConf.CPU = true;
-		
+
 		if (executionMode.toLowerCase().contains("gpu") || executionMode.toLowerCase().contains("hybrid"))
 			SystemConf.GPU = true;
-		
+
 		SystemConf.HYBRID = SystemConf.CPU && SystemConf.GPU;
-		
+
 		SystemConf.THREADS = numberOfThreads;
-		
+
 		QueryConf queryConf = new QueryConf (batchSize);
-		
+
 		if (queryId == 1) {
-			benchmarkQuery = new LRB1 (queryConf);
+			benchmarkQuery = new LRB1 (queryConf, true);
 		} else
 		if (queryId == 2) {
 			//benchmarkQuery = new LRB2 (queryConf);
@@ -102,33 +102,33 @@ public class LRBApp {
 			System.err.println("error: invalid benchmark query id");
 			System.exit(1);
 		}
-		
+
 		int networkBufferSize = bundle * benchmarkQuery.getSchema().getTupleSize();
 		System.out.println(String.format("[DBG] %6d bytes/buffer", networkBufferSize));
-		
-		try {	
+
+		try {
 			ServerSocketChannel server = ServerSocketChannel.open();
 			server.bind(new InetSocketAddress (hostname, port));
 			server.configureBlocking(false);
-			
+
 			Selector selector = Selector.open();
 			/* (SelectionKey) */ server.register(selector, SelectionKey.OP_ACCEPT);
-			
+
 			System.out.println("[DBG] ^");
 			ByteBuffer buffer = ByteBuffer.allocate (networkBufferSize);
 			while (true) {
-			
+
 				if (selector.select() == 0)
 					continue;
-				
+
 				Set<SelectionKey> keys = selector.selectedKeys();
 				Iterator<SelectionKey> iterator = keys.iterator();
 				while (iterator.hasNext()) {
-					
+
 					SelectionKey key = iterator.next();
-					
+
 					if (key.isAcceptable()) {
-						
+
 						System.out.println("[DBG] key is acceptable");
 						ServerSocketChannel _server = (ServerSocketChannel) key.channel();
 						SocketChannel client = _server.accept();
@@ -138,11 +138,11 @@ public class LRBApp {
 							/* (SelectionKey) */ client.register(selector, SelectionKey.OP_READ);
 						}
 					} else if (key.isReadable()) {
-						
+
 						SocketChannel client = (SocketChannel) key.channel();
 						int bytes = 0;
 						if ((bytes = client.read(buffer)) > 0) {
-							
+
 							if (! buffer.hasRemaining()) {
 								buffer.rewind();
 								benchmarkQuery.getApplication().processData (buffer.array(), buffer.capacity());

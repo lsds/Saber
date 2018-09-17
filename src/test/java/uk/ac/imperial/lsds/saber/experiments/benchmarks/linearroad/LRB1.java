@@ -33,19 +33,19 @@ import uk.ac.imperial.lsds.saber.cql.operators.gpu.AggregationKernel;
 import uk.ac.imperial.lsds.saber.cql.operators.gpu.ProjectionKernel;
 
 public class LRB1 extends LRB {
-	
-	public LRB1 (QueryConf queryConf) {
+
+	public LRB1 (QueryConf queryConf, boolean jni) {
 		createSchema ();
-		createApplication (queryConf);
+		createApplication (queryConf, jni);
 	}
-	
+
 	@Override
-	public void createApplication (QueryConf queryConf) {
-		
-		WindowDefinition window = new WindowDefinition (WindowType.RANGE_BASED, 30, 10);
-		
+	public void createApplication (QueryConf queryConf, boolean jni) {
+
+		WindowDefinition window = new WindowDefinition (WindowType.RANGE_BASED, 300, 10);
+
 		/*Expression [] expressions = new Expression [] {
-			
+
 			new  LongColumnReference(0), *//* timestamp *//*
 			new   IntColumnReference(1), *//*   vehicle *//*
 			new FloatColumnReference(2), *//*     speed *//*
@@ -56,54 +56,56 @@ public class LRB1 extends LRB {
 				new IntColumnReference(6), new IntConstant(5280)
 			)
 		};
-		
+
 		IOperatorCode cpuCode = new Projection (expressions);
 		IOperatorCode gpuCode = new ProjectionKernel (schema, expressions, queryConf.getBatchSize(), 1);*/
 
 
-        // Code for computing the Distinct function over the window
-        AggregationType [] aggregationTypes = new AggregationType [1];
-        aggregationTypes[0] = AggregationType.fromString("cnt");
+		// Code for computing the Distinct function over the window
+		AggregationType [] aggregationTypes = new AggregationType [1];
+		aggregationTypes[0] = AggregationType.fromString("cnt");
 
-        FloatColumnReference [] aggregationAttributes = new FloatColumnReference [1];
-        aggregationAttributes[0] = new FloatColumnReference(1);
+		FloatColumnReference [] aggregationAttributes = new FloatColumnReference [1];
+		aggregationAttributes[0] = new FloatColumnReference(1);
 
-        Expression [] groupByAttributes = new Expression [] {
-                new IntColumnReference(1)
-        };
+		Expression [] groupByAttributes = new Expression [] {
+				new IntColumnReference(1)
+		};
 
-        IOperatorCode cpuCode = new Custom_Aggregation (window, aggregationTypes, aggregationAttributes, groupByAttributes);
-        System.out.println(cpuCode);
-        IOperatorCode gpuCode = null; /*new AggregationKernel
+		IOperatorCode cpuCode = (jni) ? new Custom_Aggregation (window, aggregationTypes, aggregationAttributes, groupByAttributes) :
+				new Aggregation (window, aggregationTypes, aggregationAttributes, groupByAttributes);
+
+		System.out.println(cpuCode);
+		IOperatorCode gpuCode = null; /*new AggregationKernel
                 (window, aggregationTypes, aggregationAttributes, groupByAttributes, schema, queryConf.getBatchSize());*/
 
-        QueryOperator operator;
+		QueryOperator operator;
 		operator = new QueryOperator (cpuCode, gpuCode);
-		
+
 		Set<QueryOperator> operators = new HashSet<QueryOperator>();
 		operators.add(operator);
-		
+
 		long timestampReference = System.nanoTime();
-		
+
 		Query query = new Query (0, operators, schema, window, null, null, queryConf, timestampReference);
-		
+
 		query.setName("SegSpeedStr");
 		query.setSQLExpression("SELECT DISTINCT car_id " +
-                                "FROM SegSpeedStr [RANGE 30 SECONDS];");
-		
+				"FROM SegSpeedStr [RANGE 30 SECONDS];");
+
 		Set<Query> queries = new HashSet<Query>();
 		queries.add(query);
-		
+
 		this.application = new QueryApplication(queries);
-		
+
 		application.setup();
 
-        /* The path is query -> dispatcher -> handler -> aggregator */
-        if (SystemConf.CPU)
-            query.setAggregateOperator((IAggregateOperator) cpuCode);
-        else
-            query.setAggregateOperator((IAggregateOperator) gpuCode);
-		
+		/* The path is query -> dispatcher -> handler -> aggregator */
+		if (SystemConf.CPU)
+			query.setAggregateOperator((IAggregateOperator) cpuCode);
+		else
+			query.setAggregateOperator((IAggregateOperator) gpuCode);
+
 		return;
 	}
 }

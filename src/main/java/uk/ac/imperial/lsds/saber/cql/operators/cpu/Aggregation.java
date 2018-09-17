@@ -846,7 +846,17 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 			/* Release hash maps */
 			windowHashTable.release();
 		}
-		
+
+
+		/*System.out.println("first timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferStartPointer()));
+		System.out.println("last timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferEndPointer() - inputTupleSize));
+		System.out.println("streamStartPointer: " + batch.getStreamStartPointer());
+		System.out.println("opening windows "+ openingWindows.numberOfWindows());
+		System.out.println("closing windows "+ closingWindows.numberOfWindows());
+		System.out.println("pending windows "+ pendingWindows.numberOfWindows());
+		System.out.println("complete windows "+ completeWindows.numberOfWindows());
+		System.out.println("--------");*/
+
 		/* At the end of processing, set window batch accordingly */
 		batch.setClosingWindows  ( closingWindows);
 		batch.setPendingWindows  ( pendingWindows);
@@ -1049,14 +1059,14 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 		/* Release hash maps */
 		windowHashTable.release();
 
-        System.out.println("first timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferStartPointer()));
+        /*System.out.println("first timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferStartPointer()));
         System.out.println("last timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferEndPointer() - inputTupleSize));
         System.out.println("streamStartPointer: " + batch.getStreamStartPointer());
         System.out.println("opening windows "+ openingWindows.numberOfWindows());
         System.out.println("closing windows "+ closingWindows.numberOfWindows());
         System.out.println("pending windows "+ pendingWindows.numberOfWindows());
         System.out.println("complete windows "+ completeWindows.numberOfWindows());
-        System.out.println("--------");
+        System.out.println("--------");*/
 
 		/* At the end of processing, set window batch accordingly */
 		batch.setClosingWindows  ( closingWindows);
