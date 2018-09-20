@@ -34,7 +34,17 @@ public class ExpressionsUtil {
 		
 		return (pivot + 4);
 	}
-	
+
+	public static int intToByteArray (int value, byte [] bytes, int pivot, boolean nativeOrder) {
+
+		bytes[pivot + 0] = (byte) (value);
+		bytes[pivot + 1] = (byte) (value >>> 8);
+		bytes[pivot + 2] = (byte) (value >>> 16);
+		bytes[pivot + 3] = (byte) (value >>> 24);
+
+		return (pivot + 4);
+	}
+
 	public static final byte [] floatToByteArray (float value) {
 		
 		int bits = Float.floatToIntBits(value);

@@ -241,9 +241,9 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
         long addr1 = ((DirectBuffer) src).address();
         long addr2 = ((DirectBuffer) buffer).address();
         int _position = buffer.position();
-        for (int i = offset;  i < (offset+length); i+=4)
-            unsafe.putInt(addr2 + _position, unsafe.getInt(addr1 + i));
-        //unsafe.copyMemory(addr1 + offset, addr2 + _position, length);
+        //for (int i = offset;  i < (offset+length); i+=4)
+        //    unsafe.putInt(addr2 + _position, unsafe.getInt(addr1 + i));
+        unsafe.copyMemory(addr1 + offset, addr2 + _position, length);
         int position = _position + length;
         position -= (offset == 0) ? 1 : 0;
         buffer.position(position);

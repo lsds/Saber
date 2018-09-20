@@ -82,8 +82,8 @@ public class LRBGeneratorWorker implements Runnable {
 
 			    buffer.putLong (timestamp);
 			    //buffer.putInt((this.rand.nextInt() & Integer.MAX_VALUE) % dataRange); // vehicle
-				//buffer.putInt(value % dataRange);
-				buffer.putInt(value % 4);
+				buffer.putInt(value % dataRange);
+				//buffer.putInt(value % 16);
                 buffer.putFloat((float) value);                 // speed
                 buffer.putInt(0);                               // highway
                 buffer.putInt(0);                               // lane

@@ -60,6 +60,6 @@ public class IntColumnReference implements IntExpression {
 	public int evalAsByteArray (IQueryBuffer buffer, ITupleSchema schema, int offset, byte[] bytes, int pivot) {
 		
 		int value = eval(buffer, schema, offset);
-		return ExpressionsUtil.intToByteArray(value, bytes, pivot);
+		return ExpressionsUtil.intToByteArray(value, bytes, pivot, true);
 	}
 }

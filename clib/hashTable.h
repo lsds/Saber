@@ -11,9 +11,10 @@
 
 // HashTable with integers as (key, value) for incremental distinct
 struct ht_node {
-    char status; // 1B
-    int key;     // 4B
-    int counter; // 4B  => 9B
+    char status;    // 1B
+    long timestamp; // 8B
+    int key;        // 4B
+    int counter;    // 4B  => 17B
     //int value;
     //char padding[3];
     //void operator=(ht_node1 const&) { }
@@ -70,7 +71,7 @@ void ht_insert (ht_node * table, const int key/*char * key*/, const int value, c
     table[hashIndex].counter++;
 }
 
-void ht_insert_and_increment (ht_node * table, const int key, const int value, const int size) {
+void ht_insert_and_increment (ht_node * table, const int key, const int value, const long timestamp, const int size) {
     int ind = ht_hash(size, key), i = ind;
     char tempStatus;
     for (; i < size; i++) {
@@ -82,6 +83,7 @@ void ht_insert_and_increment (ht_node * table, const int key, const int value, c
         }
         if (!tempStatus) { // first insert
             table[i].status = 1;
+            table[i].timestamp = timestamp;
             table[i].key = key;//strcpy(table[hashIndex].key, key);
             //table[i].value = value;
             table[i].counter++;
@@ -97,6 +99,7 @@ void ht_insert_and_increment (ht_node * table, const int key, const int value, c
         }
         if (tempStatus) {
             table[i].status = 1;
+            table[i].timestamp = timestamp;
             table[i].key = key;//strcpy(table[hashIndex].key, key);
             //table[i].value = value;
             table[i].counter++;

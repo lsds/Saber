@@ -1,6 +1,7 @@
 package uk.ac.imperial.lsds.saber.buffers;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import uk.ac.imperial.lsds.saber.SystemConf;
 
@@ -32,7 +33,8 @@ public class WindowHashTable {
 	
 	public WindowHashTable (int id, long autoIndex) {
 		
-		content = ByteBuffer.allocate(N);
+		content = ByteBuffer.allocateDirect(N);
+		content.order(ByteOrder.LITTLE_ENDIAN);
 		
 		for (int i = 0; i < content.capacity(); ++i)
 			content.put((byte) 0);

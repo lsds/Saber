@@ -49,7 +49,7 @@ public class PartialResultSlot {
         /* Initialize windows */
         closingWindows = openingWindows = pendingWindows = completeWindows = null;
 
-        w3 = new UnboundedQueryBuffer (666, SystemConf.HASH_TABLE_SIZE, true);//ByteBuffer.allocate(SystemConf.HASH_TABLE_SIZE);
+        w3 = new UnboundedQueryBuffer (index, SystemConf.HASH_TABLE_SIZE, true);//ByteBuffer.allocate(SystemConf.HASH_TABLE_SIZE);
 
         windowHashTable = new WindowHashTableWrapper ();
         mergedHashTable = new WindowHashTableWrapper ();
@@ -109,7 +109,7 @@ public class PartialResultSlot {
 
             if ((! p.closingWindows.isEmpty()) || (! p.pendingWindows.isEmpty())) {
 
-                //throw new RuntimeException ("error: there are no opening windows but next slot has closing or pending windows");
+                throw new RuntimeException ("error: there are no opening windows but next slot has closing or pending windows");
             }
 
             openingWindows.nullify();

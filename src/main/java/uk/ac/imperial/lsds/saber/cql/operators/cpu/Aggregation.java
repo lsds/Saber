@@ -1,8 +1,12 @@
 package uk.ac.imperial.lsds.saber.cql.operators.cpu;
 
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 import uk.ac.imperial.lsds.saber.ITupleSchema;
+import uk.ac.imperial.lsds.saber.SystemConf;
 import uk.ac.imperial.lsds.saber.WindowBatch;
 import uk.ac.imperial.lsds.saber.WindowDefinition;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
@@ -27,8 +31,20 @@ import uk.ac.imperial.lsds.saber.processors.ThreadMap;
 import uk.ac.imperial.lsds.saber.tasks.IWindowAPI;
 
 public class Aggregation implements IOperatorCode, IAggregateOperator {
-	
-	private static final boolean debug = false;
+
+    public static Unsafe getTheUnsafe() {
+        try {
+            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+            theUnsafe.setAccessible(true);
+            return (Unsafe) theUnsafe.get(null);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private Unsafe unsafe = getTheUnsafe();
+
+    private static final boolean debug = false;
 	WindowDefinition windowDefinition;
 	
 	private AggregationType [] aggregationTypes;
@@ -868,8 +884,13 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 		
 		/* Write current window results to output buffer; copy the entire hash table */
 		if (! pack) {
-			buffer.put(windowHashTable.getBuffer().array());
-			return;
+			//buffer.put(windowHashTable.getBuffer().array());
+            long src = ((DirectBuffer) windowHashTable.getBuffer()).address();
+            long length = SystemConf.HASH_TABLE_SIZE; //windowHashTable.getBuffer().position();
+            long dest = ((DirectBuffer) buffer.getByteBuffer()).address() + buffer.getByteBuffer().position();
+            unsafe.copyMemory(src, dest, length);
+            buffer.getByteBuffer().position(buffer.getByteBuffer().position() + (int) length);
+            return;
 		}
 		
 		/* Set complete windows */
@@ -938,7 +959,7 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 			
 			/* Store timestamp, and key */
 			int timestampOffset = windowHashTable.getTimestampOffset (idx);
-			buffer.put(theTable.array(), timestampOffset, (8 + keyLength));
+			buffer.put(theTable, timestampOffset, (8 + keyLength));
 			
 			int valueOffset = windowHashTable.getValueOffset (idx);
 			int countOffset = windowHashTable.getCountOffset (idx);
@@ -1063,10 +1084,67 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
         System.out.println("last timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferEndPointer() - inputTupleSize));
         System.out.println("streamStartPointer: " + batch.getStreamStartPointer());
         System.out.println("opening windows "+ openingWindows.numberOfWindows());
+        if (openingWindows.numberOfWindows() > 0) {
+            for (int i = 0; i < openingWindows.numberOfWindows(); i++) {
+                System.out.println("occupancy, timestamp, key, value");
+                int base = i * SystemConf.HASH_TABLE_SIZE;
+                for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
+                    int offset = j * 32;
+                    System.out.println(openingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
+                            openingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", "  +
+                            openingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
+                            openingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20));
+                }
+            }
+            System.out.println("-------------");
+        }
+
         System.out.println("closing windows "+ closingWindows.numberOfWindows());
+        if (closingWindows.numberOfWindows() > 0) {
+            for (int i = 0; i < closingWindows.numberOfWindows(); i++) {
+                System.out.println("occupancy, timestamp, key, value");
+                int base = i * SystemConf.HASH_TABLE_SIZE;
+                for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
+                    int offset = j * 32;
+                    System.out.println(closingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
+                            closingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", "  +
+                            closingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
+                            closingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20));
+                }
+            }
+            System.out.println("-------------");
+        }
+
         System.out.println("pending windows "+ pendingWindows.numberOfWindows());
+        if (pendingWindows.numberOfWindows() > 0) {
+            for (int i = 0; i < pendingWindows.numberOfWindows(); i++) {
+                System.out.println("occupancy, timestamp, key, value");
+                int base = i * SystemConf.HASH_TABLE_SIZE;
+                for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
+                    int offset = j * 32;
+                    System.out.println(pendingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
+                            pendingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", " +
+                            pendingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
+                            pendingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20));
+                }
+            }
+            System.out.println("-------------");
+        }
         System.out.println("complete windows "+ completeWindows.numberOfWindows());
-        System.out.println("--------");*/
+        if (completeWindows.numberOfWindows() > 0) {
+            for (int i = 0; i < completeWindows.numberOfWindows(); i++) {
+                System.out.println("timestamp, key, value");
+				int base = i * SystemConf.HASH_TABLE_SIZE/32 * 16;
+                for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
+                    int offset = j * 16;
+                    System.out.println(completeWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
+                            completeWindows.getBuffer().getByteBuffer().getInt(base + offset + 8) + ", " +
+                            completeWindows.getBuffer().getByteBuffer().getFloat(base + offset + 12));
+                }
+            }
+            System.out.println("-------------");
+        }
+        System.out.println("--------xxxxx---------");*/
 
 		/* At the end of processing, set window batch accordingly */
 		batch.setClosingWindows  ( closingWindows);
