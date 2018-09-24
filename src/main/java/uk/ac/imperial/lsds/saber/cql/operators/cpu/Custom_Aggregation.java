@@ -734,7 +734,8 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
 				batch.getWindowDefinition().getSlide(), batch.getWindowDefinition().getPaneSize(),
 				openingWindowsBuffer.position()/tupleLength, closingWindowsBuffer.position()/tupleLength,
 				pendingWindowsBuffer.position()/tupleLength, completeWindowsBuffer.position()/outputSchema.getTupleSize(),
-				arrayHelper);
+				arrayHelper,
+                SystemConf.C_HASH_TABLE_SIZE);
 
 		// FIX positions and Counters!
 		openingWindowsBuffer.position(arrayHelper.getInt(0)==0 ? 0 : SystemConf.HASH_TABLE_SIZE);
@@ -890,19 +891,20 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
                 batch.getWindowDefinition().getSlide(), batch.getWindowDefinition().getPaneSize(),
                 openingWindowsBuffer.position()/tupleLength, closingWindowsBuffer.position()/tupleLength,
                 pendingWindowsBuffer.position()/tupleLength, completeWindowsBuffer.position()/outputSchema.getTupleSize(),
-                arrayHelper);
+                arrayHelper,
+                SystemConf.C_HASH_TABLE_SIZE);
 
         // FIX positions and Counters!
-        openingWindowsBuffer.position(arrayHelper.getInt(0)==0 ? 0 : SystemConf.HASH_TABLE_SIZE);
-        closingWindowsBuffer.position(arrayHelper.getInt(4)==0 ? 0 : SystemConf.HASH_TABLE_SIZE);
-        pendingWindowsBuffer.position(arrayHelper.getInt(8)==0 ? 0 : SystemConf.HASH_TABLE_SIZE);
-        completeWindowsBuffer.position(arrayHelper.getInt(12) * outputSchema.getTupleSize());
+        // todo: check again this numbers
+        openingWindowsBuffer.position(arrayHelper.getInt(0));
+        closingWindowsBuffer.position(arrayHelper.getInt(4));
+        pendingWindowsBuffer.position(arrayHelper.getInt(8));
+        completeWindowsBuffer.position(arrayHelper.getInt(12));
 
         openingWindows.setCount(arrayHelper.getInt(16));
         closingWindows.setCount(arrayHelper.getInt(20));
         pendingWindows.setCount(arrayHelper.getInt(24));
         completeWindows.setCount(arrayHelper.getInt(28));
-
 		
 		/* At the end of processing, set window batch accordingly */
 		batch.setClosingWindows  ( closingWindows);

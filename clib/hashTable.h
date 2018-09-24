@@ -60,11 +60,19 @@ hashtable* ht_create (int size) {
 void ht_insert (ht_node * table, const int key/*char * key*/, const int value, const int size) {
     int hashIndex = ht_hash(size, key);
     //find next free space -> use two for loops
+    int numOfTrials = 0;
     while (table[hashIndex].status
-        && table[hashIndex].key != key) {
+           && table[hashIndex].key != key && numOfTrials < size) {
         hashIndex++;
         hashIndex %= size;
+        numOfTrials++;
     }
+
+    if (numOfTrials >= size) {
+        printf ("error: the hashtable is full \n");
+        exit(1);
+    }
+
     table[hashIndex].status = 1;
     table[hashIndex].key = key;    //strcpy(map->table[hashIndex].key, key);
     //table[hashIndex].value = value;
@@ -86,7 +94,7 @@ void ht_insert_and_increment (ht_node * table, const int key, const int value, c
             table[i].timestamp = timestamp;
             table[i].key = key;//strcpy(table[hashIndex].key, key);
             //table[i].value = value;
-            table[i].counter++;
+            table[i].counter = 1;
             return;
         }
     }
@@ -102,10 +110,13 @@ void ht_insert_and_increment (ht_node * table, const int key, const int value, c
             table[i].timestamp = timestamp;
             table[i].key = key;//strcpy(table[hashIndex].key, key);
             //table[i].value = value;
-            table[i].counter++;
+            table[i].counter = 1;
             return;
         }
     }
+
+    printf ("error: the hashtable is full \n");
+    exit(1);
 }
 
 void ht_update_value (ht_node * table, const int key/*char * key*/, const int value, const int size) {
@@ -148,6 +159,9 @@ void ht_update_counter (ht_node * table, const int key/*char * key*/, const int 
             return;
         }
     }
+
+    printf ("error: the hashtable is full \n");
+    exit(1);
 }
 
 int ht_delete (ht_node * table, const int key/*char * key*/, const int size) {
@@ -169,17 +183,47 @@ int ht_delete (ht_node * table, const int key/*char * key*/, const int size) {
     return INT_MIN;
 }
 
-int ht_get (ht_node * table, int key/*char * key*/, const int size) {
+bool ht_get_value (ht_node * table, int key/*char * key*/, const int size, int &result) {
     int ind = ht_hash(size, key), i = ind;
     for (; i < size; i++) {
-        if ((table[i].status) && table[i].key == key)
-            return table[i].counter; //value!!
+        if ((table[i].status) && table[i].key == key) {
+            result = table[i].counter; //value!!
+            return true;
+        }
     }
     for (i = 0; i < ind; i++) {
-        if ((table[i].status) && table[i].key == key)
-            return table[i].counter;
+        if ((table[i].status) && table[i].key == key) {
+            result = table[i].counter; //value!!
+            return true;
+        }
     }
-    return INT_MIN;
+    return false;
+}
+
+bool ht_get_index (ht_node * table, int key, const int size, int &index) {
+    int ind = ht_hash(size, key), i = ind;
+    for (; i < size; i++) {
+        if ((table[i].status) && table[i].key == key) {
+            index = i;
+            return true;
+        }
+        if (!table[i].status) {
+            index = i;
+            return false;
+        }
+    }
+    for (i = 0; i < ind; i++) {
+        if ((table[i].status) && table[i].key == key) {
+            index = i;
+            return true;
+        }
+        if (!table[i].status) {
+            index = i;
+            return false;
+        }
+    }
+    index = -1;
+    return false;
 }
 
 void ht_free (hashtable * map) {
@@ -253,7 +297,7 @@ void ht_insert_c (ht_node_c * table, char * key, const ht_value_c value, const i
     int hashIndex = ht_hash_c(size, key);
     //find next free space -> use two for loops
     while (table[hashIndex].status
-        && memcmp(table[hashIndex].key, key, KEY_SIZE) != 0) {
+           && memcmp(table[hashIndex].key, key, KEY_SIZE) != 0) {
         hashIndex++;
         hashIndex %= size;
     }

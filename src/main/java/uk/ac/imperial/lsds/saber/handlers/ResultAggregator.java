@@ -117,7 +117,7 @@ public class ResultAggregator {
 					throw new IllegalStateException("error: inconsistent state in next result slot to aggregate");
 				if (stateQ < AGGR)
 					break;
-				
+
 				/* Both p and q nodes are ready to aggregate. */
 				p.aggregate(q, operator);
 				

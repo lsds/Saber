@@ -95,7 +95,8 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
    jlong streamStartPointer, jlong windowSize, jlong windowSlide, jlong windowPaneSize,
    jint openingWindowsPointer, jint closingWindowsPointer,
    jint pendingWindowsPointer, jint completeWindowsPointer,
-   jobject arrayHelperBuffer) {
+   jobject arrayHelperBuffer,
+   jint mapSize) {
 
     (void) obj;
 
@@ -115,6 +116,12 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
     int *closingWindowsPointers = (int *) env->GetDirectBufferAddress(closingWindowsStartPointers);
     int *pendingWindowsPointers = (int *) env->GetDirectBufferAddress(pendingWindowsStartPointers);
     int *completeWindowsPointers = (int *) env->GetDirectBufferAddress(completeWindowsStartPointers);
+
+    // Set the first pointer for all types of windows
+    openingWindowsPointers[0] = openingWindowsPointer;
+    closingWindowsPointers[0] = closingWindowsPointer;
+    pendingWindowsPointers[0] = pendingWindowsPointer;
+    completeWindowsPointers[0] = completeWindowsPointer;
 
     const long panesPerWindow = windowSize / windowPaneSize;
     const long panesPerSlide = windowSlide / windowPaneSize;
@@ -159,7 +166,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
 
     // TODO: store properly the timestamp of the aggregated values...
     // TODO: add exceptions in the hashtable...
-    const int mapSize = 1024; // TODO: the size of the hashtable is hard-coded at the moment!
+    //const int mapSize = 16;//1024; // TODO: the size of the hashtable is hard-coded at the moment!
     hashtable *map = ht_create(mapSize);
     ht_node *hTable = map->table;
 
@@ -270,8 +277,8 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
                 // write result to the closing windows
                 std::memcpy(closingWindowsResults + closingWindowsPointer, hTable, mapSize * sizeof(ht_node));
                 closingWindowsPointer += mapSize;
-                closingWindowsPointers[closingWindows] = closingWindowsPointer - 1;
                 closingWindows++;
+                closingWindowsPointers[closingWindows] = closingWindowsPointer; //- 1;
                 //printf("activePane %d \n", activePane);
             }
             currPos++;
@@ -287,23 +294,23 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
         // write results
         std::memcpy(pendingWindowsResults + pendingWindowsPointer, hTable, mapSize * sizeof(ht_node));
         pendingWindowsPointer += mapSize;
-        pendingWindowsPointers[pendingWindows] = pendingWindowsPointer - 1;
         pendingWindows++;
+        pendingWindowsPointers[pendingWindows] = pendingWindowsPointer; // - 1;
     }
 
     if (completeWindows == 0  && streamStartPointer == 0) { // We only have one opening window, so we write it and return...
         // write results
         std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
         openingWindowsPointer += mapSize;
-        openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
         openingWindows++;
+        openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;
         // We only have one opening window if we start from a valid point in time (the last check in the next if statement)
     } else if (completeWindows == 0  && currentSlide > 1 && data[startPositions[0]].timestamp%windowSlide==0) {
         // write results
         std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
         openingWindowsPointer += mapSize;
-        openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
         openingWindows++;
+        openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;
         // todo: fix this!!
         currentWindow++; // in order to skip the check later
         //} else if (completeWindows == 0 && closingWindows > 0) { // We have only opening and closing windows which are already written
@@ -318,7 +325,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
             completeWindowsPointer += hTable[i].status; // pack items!!!
         }
         // write in the correct slot, as the value has already been incremented!
-        completeWindowsPointers[completeWindows - 1] = completeWindowsPointer - 1;
+        completeWindowsPointers[completeWindows] = completeWindowsPointer; // - 1;
         //completeWindows++;
 
         // compute the rest windows
@@ -352,8 +359,8 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
                         completeWindowsResults[completeWindowsPointer].count = hTable[i].counter;
                         completeWindowsPointer += hTable[i].status; // pack items!!!
                     }
-                    completeWindowsPointers[completeWindows] = completeWindowsPointer - 1;
                     completeWindows++;
+                    completeWindowsPointers[completeWindows] = completeWindowsPointer; // - 1;
                     // increment before exiting for a complete window
                     currPos++;
                     break;
@@ -365,8 +372,8 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
                                 (data[tempEndPosition].timestamp/windowPaneSize) < panesPerWindow) {
                         std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
                         openingWindowsPointer += mapSize;
-                        openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
                         openingWindows++;
+                        openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;
                     }
                     break;
                 }
@@ -387,8 +394,8 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
         // write result to the opening windows
         std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
         openingWindowsPointer += mapSize;
-        openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
         openingWindows++;
+        openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;
 
         currentWindow++;
     }
@@ -399,11 +406,12 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
     free(endPositions);
     ht_free(map);
 
+
     // return the variables required for consistent logic with the Java part
-    arrayHelper[0] = openingWindowsPointer;
-    arrayHelper[1] = closingWindowsPointer;
-    arrayHelper[2] = pendingWindowsPointer;
-    arrayHelper[3] = completeWindowsPointer;
+    arrayHelper[0] = openingWindowsPointer * sizeof(ht_node);
+    arrayHelper[1] = closingWindowsPointer * sizeof(ht_node);
+    arrayHelper[2] = pendingWindowsPointer * sizeof(ht_node);
+    arrayHelper[3] = completeWindowsPointer * sizeof(DistinctRes);
     arrayHelper[4] = openingWindows;
     arrayHelper[5] = closingWindows;
     arrayHelper[6] = pendingWindows;
@@ -427,8 +435,8 @@ printf("---- \n");
 fflush(stdout);
 */
 
-
-/*printf("bufferStartPointer %d \n", bufferStartPointer);
+/*
+printf("bufferStartPointer %d \n", bufferStartPointer);
 printf("bufferEndPointer %d \n", bufferEndPointer);
 
 printf("streamStartPointer %d \n", streamStartPointer);
@@ -488,8 +496,248 @@ if (completeWindows > 0) {
 }
 
 printf("----xxx---- \n");
-fflush(stdout);*/
-
+fflush(stdout);
+*/
 
     return 0;
+}
+
+JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAggregateHashTables
+  (JNIEnv * env, jobject obj,
+  jobject buff1, jint start1, jint end1,
+  jobject buff2, jint start2, jint end2,
+  jint keyLength, jint valueLength, jint intermediateTupleSize, jint mapSize,
+  jint numberOfValues,
+  jint outputSchemaPad, jboolean pack,
+  jobject openingWindowsBuffer, jobject completeWindowsBuffer, jint resultBufferPosition) {
+
+    (void) obj;
+
+    // Input Buffers
+    ht_node *buffer1= (ht_node *) env->GetDirectBufferAddress(buff1);
+    ht_node *buffer2= (ht_node *) env->GetDirectBufferAddress(buff2);
+    //int len = env->GetDirectBufferCapacity(buffer);
+    //const int inputSize = len/32; // 32 is the size of the tuple here
+
+    // temp variables for the merging
+    int posInB2;
+    bool isFound;
+    int resultIndex = (pack) ? resultBufferPosition/sizeof(DistinctRes) : resultBufferPosition; //sizeof(ht_node);
+    int posInRes = 0;
+    int *pendingValidPos; // keep the valid items from the pending window, as they will be reused by other opening windows!
+    int pendingIndex = 0;
+
+    // Output Buffers
+    ht_node *openingWindowsResults;
+    DistinctRes *completeWindowsResults; // the results here are packed
+
+    if (!pack) {
+        openingWindowsResults = (ht_node *) env->GetDirectBufferAddress(openingWindowsBuffer);
+        pendingValidPos = (int *) malloc(mapSize * sizeof(int));
+    } else {
+        completeWindowsResults = (DistinctRes *) env->GetDirectBufferAddress(completeWindowsBuffer);
+    }
+
+    // Normalise start and end pointers, as we have the struct ???
+    /*start1 = start1/sizeof(ht_node);
+    end1 = end1/sizeof(ht_node);
+    start2 = start2/sizeof(ht_node);
+    end2 = end2/sizeof(ht_node);*/
+
+
+
+    /*printf("fist hashtable \n");
+    printf("start1 %d, end1 %d \n", start1, end1);
+    printf("status, timestamp, key, value \n");
+    for (int j = start1; j < end1; j++) {
+        printf("%d, %ld, %d, %d \n", buffer1[j].status,
+               buffer1[j].timestamp, buffer1[j].key, buffer1[j].counter);
+    }
+    printf("--------- \n");
+
+    printf("second hashtable \n");
+    printf("start2 %d, end2 %d \n", start2, end2);
+    printf("status, timestamp, key, value \n");
+    for (int j = start2; j < end2; j++) {
+        printf("%d, %ld, %d, %d \n", buffer2[j].status,
+               buffer2[j].timestamp, buffer2[j].key, buffer2[j].counter);
+    }
+    printf("--------- \n");
+    fflush(stdout);*/
+
+    /* Iterate over tuples in first table. Search for key in the hash table.
+     * If found, merge the two entries. */
+    for (int idx = start1; idx < end1; idx++) {
+
+        if (buffer1[idx].status != 1) /* Skip empty slot */
+            continue;
+
+        // search in the correct hashtable by moving the respective pointer
+        isFound = ht_get_index(&buffer2[start2], buffer1[idx].key, mapSize, posInB2);
+        if (posInB2 < 0) {
+            printf ("error in C: open-adress hash table is full \n");
+            exit(1);
+        }
+        posInB2+=start2; // get the correct index;
+
+        if (!isFound) {
+            if (pack) {
+                /* Copy tuple based on output schema */
+
+                /* Put timestamp */
+                completeWindowsResults[resultIndex].timestamp = buffer1[idx].timestamp;
+                /* Put key */
+                completeWindowsResults[resultIndex].vehicle = buffer1[idx].key;
+                /* TODO: Put value(s) */
+                for (int i = 0; i < numberOfValues; i++) {
+                    completeWindowsResults[resultIndex].count = buffer1[idx].counter;
+                }
+                // Do I need padding here ???
+
+                resultIndex++;
+            } else {
+                // we operating already on the hashtable,
+                // as b1 and openingWindowsResults are the same, so we don't need to copy anything!
+
+                /* Create a new hash table entry */
+                /*isFound = ht_get_index(&openingWindowsResults[resultIndex], buffer1[idx].key, mapSize, posInRes);
+                if (posInRes < 0 || isFound) {
+                    printf ("error in C: failed to insert new key in intermediate hash table \n");
+                    exit(1);
+                }*/
+                /* Mark occupancy */
+                //openingWindowsResults[posInRes + resultIndex].status = 1;
+                /* Put timestamp */
+                //openingWindowsResults[posInRes + resultIndex].timestamp = buffer1[idx].timestamp;
+                /* Put key and TODO: value(s) */
+                /*openingWindowsResults[posInRes + resultIndex].key = buffer1[idx].key;
+                for (int i = 0; i < numberOfValues; i++) {
+                    openingWindowsResults[posInRes + resultIndex].counter = buffer1[idx].counter;
+                }*/
+                /* Put count */
+            }
+        } else { // merge values based on the number of aggregated values and their types!
+            // TODO: now is working only for count!
+            if (pack) {
+                /* Copy tuple based on output schema */
+
+                /* Put timestamp */
+                completeWindowsResults[resultIndex].timestamp = buffer1[idx].timestamp;
+                /* Put key */
+                completeWindowsResults[resultIndex].vehicle = buffer1[idx].key;
+                /* TODO: Put value(s) */
+                for (int i = 0; i < numberOfValues; i++) {
+                    // TODO: check for types
+
+                    completeWindowsResults[resultIndex].count = buffer1[idx].counter + buffer2[posInB2].counter;
+                }
+                // Do I need padding here ???
+
+                resultIndex++;
+            } else {
+                /* Create a new hash table entry */
+                /*isFound = ht_get_index(&openingWindowsResults[resultIndex], buffer1[idx].key, mapSize, posInRes);
+
+                if (posInRes < 0 || isFound) {
+                    printf ("error in C: failed to insert new key in intermediate hash table \n");
+                    exit(1);
+                }*/
+
+                /* Mark occupancy */
+                //openingWindowsResults[idx].status = 1;
+                /* Put timestamp */
+                //openingWindowsResults[idx].timestamp = buffer1[idx].timestamp;
+                /* Put key and TODO: value(s) */
+                //openingWindowsResults[idx].key = buffer1[idx].key;
+                for (int i = 0; i < numberOfValues; i++) {
+                    // TODO: check for types
+
+                    openingWindowsResults[idx].counter += buffer2[posInB2].counter; //buffer1[idx].counter ;
+                }
+                /* Put count */
+            }
+            // Unmark occupancy in second buffer
+            buffer2[posInB2].status = 0;
+            // if it is pending, keep the position in order to restore it later
+            if (!pack) {
+                pendingValidPos[pendingIndex++] = posInB2;
+            }
+        }
+    }
+
+    /* Iterate over the remaining tuples in the second table. */
+    for (int idx = start2; idx < end2; idx ++) {
+
+        if (buffer2[idx].status != 1) /* Skip empty slot */
+            continue;
+
+        if (pack) {
+            /* Copy tuple based on output schema */
+
+            /* Put timestamp */
+            completeWindowsResults[resultIndex].timestamp = buffer1[idx].timestamp;
+            /* Put key */
+            completeWindowsResults[resultIndex].vehicle = buffer1[idx].key;
+            /* TODO: Put value(s) */
+            for (int i = 0; i < numberOfValues; i++) {
+                completeWindowsResults[resultIndex].count = buffer1[idx].counter;
+            }
+            // Do I need padding here ???
+
+            resultIndex++;
+        } else {
+            /* Create a new hash table entry */
+            isFound = ht_get_index(&openingWindowsResults[resultIndex], buffer2[idx].key, mapSize, posInRes);
+
+            if (posInRes < 0 || isFound) {
+                printf ("error in C: failed to insert new key in intermediate hash table \n");
+                exit(1);
+            }
+
+            /* Mark occupancy */
+            openingWindowsResults[posInRes + resultIndex].status = 1;
+            /* Put timestamp */
+            openingWindowsResults[posInRes + resultIndex].timestamp = buffer2[idx].timestamp;
+            /* Put key and TODO: value(s) */
+            openingWindowsResults[posInRes + resultIndex].key = buffer2[idx].key;
+            for (int i = 0; i < numberOfValues; i++) {
+                openingWindowsResults[posInRes + resultIndex].counter = buffer2[idx].counter;
+            }
+            /* Put count */
+        }
+    }
+
+
+    if (!pack) {
+
+        resultIndex += mapSize;
+        // Remark occupancy in second buffer if it is a pending window
+        for (int i = 0; i < pendingIndex; i++) {
+            buffer2[pendingValidPos[i]].status = 1;
+        }
+        free(pendingValidPos);
+    }
+
+    /*printf("result \n");
+    int startIndex = (pack) ? resultBufferPosition/sizeof(DistinctRes) : resultBufferPosition;
+    printf("startIndex %d, resultIndex %d \n", startIndex, resultIndex);
+    if (!pack) {
+        printf("status, timestamp, key, value \n");
+        for (int j = startIndex; j < resultIndex; j++) {
+            printf("%d, %ld, %d, %d \n", openingWindowsResults[j].status,
+                   openingWindowsResults[j].timestamp, openingWindowsResults[j].key, openingWindowsResults[j].counter);
+        }
+    } else {
+        printf("timestamp, key, value \n");
+        for (int j = startIndex; j < resultIndex; j++) {
+            printf("%ld, %d, %d \n",
+                   completeWindowsResults[j].timestamp, completeWindowsResults[j].vehicle, completeWindowsResults[j].count);
+        }
+    }
+    printf("--------- \n");
+    fflush(stdout);*/
+
+
+    // return the variables required for consistent logic with the Java part
+    return (pack) ? resultIndex*sizeof(DistinctRes) : (resultIndex+mapSize)*sizeof(ht_node) ;
 }

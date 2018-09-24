@@ -98,14 +98,15 @@ public class PartialWindowResults {
 		return count;
 	}
 	
-	public void append (ByteBuffer windowBuffer) {
+	public void append (ByteBuffer windowBuffer, int newPosition, int tupleSize) {
 		if (count >= N)
 			throw new IndexOutOfBoundsException ("error: partial window result index out of bounds");
 
         //startPointers[count++] = getBuffer().position();
-        startPointers.putInt(getBuffer().position());
+        startPointers.putInt(getBuffer().position()/tupleSize);
         count++;
-		buffer.put(windowBuffer, 0, windowBuffer.position()*4);
+		//buffer.put(windowBuffer, 0, windowBuffer.position()*4);
+		buffer.position(newPosition);
 	}
 	
 	public void append (PartialWindowResults closingWindows) {
@@ -120,7 +121,7 @@ public class PartialWindowResults {
 		buffer.put(closingWindows.getBuffer().getByteBuffer(), 0, closingWindows.getBuffer().position());
 	}
 	
-	public void prepend (PartialWindowResults openingWindows, int start, int added, int windowSize) {
+	public void prepend (PartialWindowResults openingWindows, int start, int added, int windowSize, int tupleSize) {
 		
 		int count_ = count + added;
 		
@@ -129,34 +130,34 @@ public class PartialWindowResults {
 		
 		if (buffer == null)
 			getBuffer();
-		
+
 		/* Shift-down windows */
 		
-		int norm = openingWindows.getStartPointer(start);
+		int norm = openingWindows.getStartPointer(start) * tupleSize;
 		
 		int end = start + added - 1;
-		int offset = openingWindows.getStartPointer(end) - norm + windowSize;
+		int offset = (openingWindows.getStartPointer(end) * tupleSize) - norm + windowSize;
 		
 		for (int i = count - 1; i >= 0; i--) {
 			//startPointers[i + added] = startPointers[i] + offset;
-            startPointers.putInt((i + added)*4, startPointers.getInt(i*4) + offset);
-			int src = startPointers.getInt(i*4);
-			int dst = startPointers.getInt((i + added)*4);
+            startPointers.putInt((i + added)*4, startPointers.getInt(i*4) + offset/tupleSize);
+			int src = startPointers.getInt(i*4) * tupleSize;
+			int dst = startPointers.getInt((i + added)*4) * tupleSize;
 			buffer.position(dst);
 			buffer.put(buffer, src, windowSize);
 		}
-		
+
 		for (int i = 0, w = start; i < added; ++i, ++w) {
 			//startPointers[i] = openingWindows.getStartPointer(w) - norm;
-            startPointers.putInt(i*4, openingWindows.getStartPointer(w) - norm);
-            int src = openingWindows.getStartPointer(w);
-			int dst = startPointers.getInt(i*4);
+            //startPointers.putInt(i*4, (openingWindows.getStartPointer(w)*tupleSize - norm)/tupleSize);
+            int src = openingWindows.getStartPointer(w) * tupleSize;
+			int dst = startPointers.getInt(i*4) * tupleSize;
 			buffer.position(dst);
 			buffer.put(openingWindows.getBuffer().getByteBuffer(), src, windowSize);
 		}
-		
+
 		count = count_;
-		buffer.position(count * windowSize);
+		buffer.position((count * windowSize)/tupleSize);
 	}
 
 	/*

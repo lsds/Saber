@@ -7,6 +7,7 @@ import uk.ac.imperial.lsds.saber.SystemConf;
 import uk.ac.imperial.lsds.saber.Utils;
 import uk.ac.imperial.lsds.saber.WindowBatch;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
+import uk.ac.imperial.lsds.saber.buffers.PartialWindowResults;
 // import uk.ac.imperial.lsds.saber.monetdb.MonetDBExperimentalSetup;
 
 public class ResultCollector {
@@ -23,7 +24,15 @@ public class ResultCollector {
                 System.err.println("Null aggregator...");
                 System.exit(1);
             }
+            if (batch1.getOpeningWindows().getStartPointer(5) == 256 && batch1.getOpeningWindows().getStartPointer(4)==64) {
+                System.out.println("eee");
+            }
+
             handler.resultAggregator.add(batch1);
+
+            if (batch1.getOpeningWindows().getStartPointer(5) == 256 && batch1.getOpeningWindows().getStartPointer(4)==64) {
+                System.out.println("eee");
+            }
 
         } else {
 

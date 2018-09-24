@@ -29,7 +29,6 @@ public class LRBAppInMemory {
 
 		boolean jni = true;
 
-
 		/* Parse command line arguments */
 		int i, j;
 		for (i = 0; i < args.length; ) {
@@ -64,7 +63,7 @@ public class LRBAppInMemory {
 		SystemConf.PARTIAL_WINDOWS = 8 * 32 * 1024;
 
 		// manually change the c code every time!!!
-		SystemConf.HASH_TABLE_SIZE = 64*1024; //1 * 32768;
+		SystemConf.HASH_TABLE_SIZE = 32*1024; //1 * 32768;
 
 		SystemConf.UNBOUNDED_BUFFER_SIZE = 64 * 1048576;
 
@@ -81,7 +80,8 @@ public class LRBAppInMemory {
 
 		int bufferSize = 1 * 131072; // set the timestamps with this buffer size
 		int coreToBind = 3; //numberOfThre/ads + 1;
-		int dataRange = 16;
+		int dataRange = 1024;
+		SystemConf.C_HASH_TABLE_SIZE = dataRange;
 
 		LRBGenerator generator = new LRBGenerator (bufferSize, numberOfGeneratorThreads, dataRange, coreToBind);
 		long timeLimit = System.currentTimeMillis() + 16*10 * 10000;

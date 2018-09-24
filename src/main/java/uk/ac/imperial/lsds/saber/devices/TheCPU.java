@@ -36,5 +36,13 @@ public class TheCPU {
 											long streamStartPointer, long windowSize, long windowSlide, long windowPaneSize,
 											int openingWindowsPointer, int closingWindowsPointer, int pendingWindowsPointer,
 											int completeWindowsPointer,
-										 	ByteBuffer arrayHelper);
+										 	ByteBuffer arrayHelper,
+										 	int mapSize);
+	public native int optimisedAggregateHashTables (ByteBuffer buffer1, int start1, int end1,
+                                                    ByteBuffer buffer2, int start2, int end2,
+                                                    int keyLength, int valueLength, int intermediateTupleSize, int mapSize,
+                                                    int numberOfValues, /*ByteBuffer aggregationTypes,*/
+                                                    int outputSchemaPad, boolean pack,
+                                                    ByteBuffer openingWindowsBuffer, ByteBuffer completeWindowsBuffer,
+                                                    int resultBufferPosition);
 }

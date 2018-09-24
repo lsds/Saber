@@ -26,6 +26,8 @@ public class SystemConf {
 	public static int PARTIAL_WINDOWS = 0;
 	
 	public static int HASH_TABLE_SIZE = 1048576;
+
+	public static int C_HASH_TABLE_SIZE = 1024;
 	
 	public static long THROUGHPUT_MONITOR_INTERVAL = 1000L;
 	

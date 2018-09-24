@@ -42,10 +42,18 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_getCpuId
 /*
  * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
  * Method:    optimisedDistinct
- * Signature: (Ljava/nio/ByteBuffer;IIILjava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;JJJJIIIILjava/nio/ByteBuffer;)I
+ * Signature: (Ljava/nio/ByteBuffer;IIILjava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;JJJJIIIILjava/nio/ByteBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDistinct
-  (JNIEnv *, jobject, jobject, jint, jint, jint, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jlong, jlong, jlong, jlong, jint, jint, jint, jint, jobject);
+  (JNIEnv *, jobject, jobject, jint, jint, jint, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jlong, jlong, jlong, jlong, jint, jint, jint, jint, jobject, jint);
+
+/*
+ * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
+ * Method:    optimisedAggregateHashTables
+ * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;IIIIIIIIZLjava/nio/ByteBuffer;Ljava/nio/ByteBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAggregateHashTables
+  (JNIEnv *, jobject, jobject, jint, jint, jobject, jint, jint, jint, jint, jint, jint, jint, jint, jboolean, jobject, jobject, jint);
 
 #ifdef __cplusplus
 }
