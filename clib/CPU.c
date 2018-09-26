@@ -9,6 +9,9 @@
 #include "hashTable.h"
 #include "LRB_Utils.h"
 
+#include <stdint.h>
+#include <sys/time.h>
+
 /* Thread affinity library calls */
 
 #ifndef __APPLE__
@@ -27,6 +30,30 @@ static cpu_set_t *getFullSet (void) {
 	return &fullSet;
 }
 #endif
+
+typedef union {
+    uint64_t x;
+    char *y;
+} un_int_helper;
+
+
+/****************** rdtsc() related ******************/
+
+// the well-known rdtsc(), in 32 and 64 bits versions
+// has to be used with a uint_64t
+#ifdef __x86_64__
+#define rdtsc(val) { \
+    unsigned int __a,__d;                                        \
+    asm volatile("rdtsc" : "=a" (__a), "=d" (__d));              \
+    (val) = ((unsigned long)__a) | (((unsigned long)__d)<<32);   \
+}
+
+#else
+#define rdtsc(val) __asm__ __volatile__("rdtsc" : "=A" (val))
+#endif
+
+
+
 
 JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_getNumCores
 	(JNIEnv *env, jobject obj) {
@@ -740,4 +767,35 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAg
 
     // return the variables required for consistent logic with the Java part
     return (pack) ? resultIndex*sizeof(DistinctRes) : (resultIndex+mapSize)*sizeof(ht_node) ;
+}
+
+JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_init_1clock
+    (JNIEnv * env, jobject obj, jobject buffer) {
+
+    char *result = (char *) env->GetDirectBufferAddress(buffer);
+
+    uint64_t clock_mhz; // clock frequency in MHz (number of instructions per microseconds)
+
+    struct timeval t0, t1;
+    uint64_t c0, c1;
+
+    rdtsc(c0);
+    gettimeofday(&t0, 0);
+    sleep(1);
+    rdtsc(c1);
+    gettimeofday(&t1, 0);
+
+    //clock_mhz = number of instructions per microseconds
+    clock_mhz = (c1 - c0) / ((t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec
+      - t0.tv_usec);
+
+    printf("Number of instructions per microseconds: %lu \n", (clock_mhz));
+    for ( size_t j = 0; j < sizeof( long ); j++ ) {
+        // my characters are 8 bit
+        result[j] = (( clock_mhz >> ( j << 3 )) & 0xff );
+        //printf("result[%d]: %lu \n", j, result[j]);
+        fflush(stdout);
+    }
+
+    return 0;
 }

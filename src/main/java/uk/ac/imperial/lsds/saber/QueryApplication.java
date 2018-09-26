@@ -1,5 +1,8 @@
 package uk.ac.imperial.lsds.saber;
 
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -36,6 +39,9 @@ public class QueryApplication {
 	int [][] policy;
 	
 	private RESTfulHandler handler = null;
+
+	private ByteBuffer timeHelper;
+	private Long instructionsPerMicroseconds;
 	
 	public QueryApplication (Set<Query> queries) {
 		
@@ -46,6 +52,11 @@ public class QueryApplication {
 		dispatchers = new ITaskDispatcher [1];
 		
 		N = this.queries.size();
+
+		this.timeHelper = ByteBuffer.allocateDirect(8);
+		timeHelper.order(ByteOrder.LITTLE_ENDIAN);
+        TheCPU.getInstance().init_clock(timeHelper);
+        instructionsPerMicroseconds = timeHelper.getLong();
 	}
 	
 	public void processData (byte [] values) {
@@ -54,9 +65,18 @@ public class QueryApplication {
 	}
 	
 	public void processData (byte [] values, int length) {
-		
+		long start, end, microseconds;
 		for (int i = 0; i < dispatchers.length; ++i) {
-			dispatchers[i].dispatch (values, length);
+            start = System.nanoTime();
+
+            dispatchers[i].dispatch (values, length);
+
+            end = System.nanoTime();
+            microseconds = (end - start) / 1000;
+            System.out.println("Number of instructions per dispatch operation: " +
+                    microseconds*this.instructionsPerMicroseconds);
+
+
 		}
 	}
 	

@@ -25,7 +25,7 @@ public class LRBAppInMemory {
 
 		String executionMode = "cpu";
 		int numberOfThreads = 1;
-		int batchSize = 32*1048576;
+		int batchSize = 64*1048576;
 
 		boolean jni = true;
 
@@ -57,15 +57,15 @@ public class LRBAppInMemory {
 			i = j + 1;
 		}
 
-		SystemConf.CIRCULAR_BUFFER_SIZE = 128 * 1048576;
+		SystemConf.CIRCULAR_BUFFER_SIZE = 8 * 128 * 1048576;
 		SystemConf.LATENCY_ON = false;
 
 		SystemConf.PARTIAL_WINDOWS = 8 * 32 * 1024;
 
 		// manually change the c code every time!!!
-		SystemConf.HASH_TABLE_SIZE = 32*1024; //1 * 32768;
+		SystemConf.HASH_TABLE_SIZE = 2*32*1024; //1 * 32768;
 
-		SystemConf.UNBOUNDED_BUFFER_SIZE = 64 * 1048576;
+		SystemConf.UNBOUNDED_BUFFER_SIZE = 2*64 * 1048576;
 
 		SystemConf.CPU = true;
 
@@ -84,7 +84,7 @@ public class LRBAppInMemory {
 		SystemConf.C_HASH_TABLE_SIZE = dataRange;
 
 		LRBGenerator generator = new LRBGenerator (bufferSize, numberOfGeneratorThreads, dataRange, coreToBind);
-		long timeLimit = System.currentTimeMillis() + 16*10 * 10000;
+		long timeLimit = System.currentTimeMillis() + 10 * 10000;
 
 		long tempTime = -1;
 		while (true) {

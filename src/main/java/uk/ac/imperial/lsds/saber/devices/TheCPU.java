@@ -45,4 +45,6 @@ public class TheCPU {
                                                     int outputSchemaPad, boolean pack,
                                                     ByteBuffer openingWindowsBuffer, ByteBuffer completeWindowsBuffer,
                                                     int resultBufferPosition);
+
+	public native int init_clock (ByteBuffer result);
 }

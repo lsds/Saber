@@ -55,6 +55,14 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
 JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAggregateHashTables
   (JNIEnv *, jobject, jobject, jint, jint, jobject, jint, jint, jint, jint, jint, jint, jint, jint, jboolean, jobject, jobject, jint);
 
+/*
+ * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
+ * Method:    init_clock
+ * Signature: (Ljava/nio/ByteBuffer;)I
+ */
+JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_init_1clock
+  (JNIEnv *, jobject, jobject);
+
 #ifdef __cplusplus
 }
 #endif
