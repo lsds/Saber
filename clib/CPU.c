@@ -469,9 +469,9 @@ printf("bufferEndPointer %d \n", bufferEndPointer);
 printf("streamStartPointer %d \n", streamStartPointer);
 printf("first timestamp %lu \n", data[bufferStartPointer].timestamp);
 printf("second timestamp %lu \n", data[bufferEndPointer-1].timestamp);
-printf("streamStartPointer %d \n", streamStartPointer);
-printf("openingWindows %d \n", openingWindows);
-if (openingWindows > 0) {
+printf("streamStartPointer %d \n", streamStartPointer);*/
+//printf("openingWindows %d \n", openingWindows);
+/*if (openingWindows > 0) {
     printf("occupancy, timestamp, key, value \n");
     for (int i = 0;  i < openingWindows; i++) {
         int base = i * mapSize;
@@ -481,10 +481,10 @@ if (openingWindows > 0) {
         }
         printf("------ \n");
     }
-}
+}*/
 
-printf("closingWindows %d \n", closingWindows);
-if (closingWindows > 0) {
+//printf("closingWindows %d \n", closingWindows);
+/*if (closingWindows > 0) {
     printf("occupancy, timestamp, key, value \n");
     for (int i = 0;  i < closingWindows; i++) {
         int base = i * mapSize;
@@ -494,10 +494,10 @@ if (closingWindows > 0) {
         }
         printf("------ \n");
     }
-}
+}*/
 
-printf("pendingWindows %d \n", pendingWindows);
-if (pendingWindows > 0) {
+//printf("pendingWindows %d \n", pendingWindows);
+/*if (pendingWindows > 0) {
     printf("occupancy, timestamp, key, value \n");
     for (int i = 0;  i < pendingWindows; i++) {
         int base = i * mapSize;
@@ -507,10 +507,12 @@ if (pendingWindows > 0) {
         }
         printf("------ \n");
     }
-}
+}*/
 
-printf("completeWindows %d \n", completeWindows);
-if (completeWindows > 0) {
+//printf("completeWindows %d \n", completeWindows);
+//fflush(stdout);
+
+/*if (completeWindows > 0) {
     printf("timestamp, key, value \n");
     for (int i = 0;  i < completeWindows; i++) {
         int base = i * mapSize;

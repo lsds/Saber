@@ -140,7 +140,9 @@ public class PartialWindowResults {
 		
 		for (int i = count - 1; i >= 0; i--) {
 			//startPointers[i + added] = startPointers[i] + offset;
-            startPointers.putInt((i + added)*4, startPointers.getInt(i*4) + offset/tupleSize);
+            int previousPointer = startPointers.getInt(0) == 0 ? startPointers.getInt(i*4) :
+                    startPointers.getInt(i*4) - startPointers.getInt(0);
+            startPointers.putInt((i + added)*4, previousPointer + offset/tupleSize);
 			int src = startPointers.getInt(i*4) * tupleSize;
 			int dst = startPointers.getInt((i + added)*4) * tupleSize;
 			buffer.position(dst);
@@ -150,6 +152,7 @@ public class PartialWindowResults {
 		for (int i = 0, w = start; i < added; ++i, ++w) {
 			//startPointers[i] = openingWindows.getStartPointer(w) - norm;
             //startPointers.putInt(i*4, (openingWindows.getStartPointer(w)*tupleSize - norm)/tupleSize);
+            startPointers.putInt(i*4, openingWindows.getStartPointer(i));
             int src = openingWindows.getStartPointer(w) * tupleSize;
 			int dst = startPointers.getInt(i*4) * tupleSize;
 			buffer.position(dst);

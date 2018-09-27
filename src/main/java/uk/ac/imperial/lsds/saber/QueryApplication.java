@@ -67,14 +67,14 @@ public class QueryApplication {
 	public void processData (byte [] values, int length) {
 		long start, end, microseconds;
 		for (int i = 0; i < dispatchers.length; ++i) {
-            start = System.nanoTime();
+            //start = System.nanoTime();
 
             dispatchers[i].dispatch (values, length);
 
-            end = System.nanoTime();
+            /*end = System.nanoTime();
             microseconds = (end - start) / 1000;
             System.out.println("Number of instructions per dispatch operation: " +
-                    microseconds*this.instructionsPerMicroseconds);
+                    microseconds*this.instructionsPerMicroseconds);*/
 
 
 		}
