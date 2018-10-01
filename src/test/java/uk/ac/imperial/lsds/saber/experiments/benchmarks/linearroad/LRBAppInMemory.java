@@ -2,7 +2,9 @@ package uk.ac.imperial.lsds.saber.experiments.benchmarks.linearroad;
 
 import uk.ac.imperial.lsds.saber.QueryConf;
 import uk.ac.imperial.lsds.saber.SystemConf;
+import uk.ac.imperial.lsds.saber.buffers.CircularQueryBuffer;
 import uk.ac.imperial.lsds.saber.experiments.benchmarks.linearroad.utils.LRBGenerator;
+import uk.ac.imperial.lsds.saber.experiments.benchmarks.linearroad.utils.LRBRewriter;
 import uk.ac.imperial.lsds.saber.experiments.benchmarks.yahoo.utils.GeneratedBuffer;
 
 import java.net.InetSocketAddress;
@@ -78,13 +80,40 @@ public class LRBAppInMemory {
 		/* Generate input stream */
 		int numberOfGeneratorThreads = 1;
 
-		int bufferSize = 8 * 131072; // set the timestamps with this buffer size
-		int coreToBind = 3; //numberOfThre/ads + 1;
+		int bufferSize = 1 * 131072; // set the timestamps with this buffer size
+		int coreToBind = 1; //numberOfThre/ads + 1;
 		int dataRange = 1024;
 		SystemConf.C_HASH_TABLE_SIZE = dataRange;
 
-		LRBGenerator generator = new LRBGenerator (bufferSize, numberOfGeneratorThreads, dataRange, coreToBind);
-		long timeLimit = System.currentTimeMillis() + 10 * 10000;
+		//LRBGenerator generator = new LRBGenerator (bufferSize, numberOfGeneratorThreads, dataRange, coreToBind);
+
+		// Generate Data
+        int dispatcherID = 0;
+        CircularQueryBuffer circularBuffer = benchmarkQuery.getApplication().getCircularQueryBuffer(dispatcherID);
+        int value = 0;
+        long timestamp = 0;
+        while (circularBuffer.getByteBuffer().position()  < circularBuffer.getByteBuffer().capacity()) {
+            if (value%bufferSize==0)
+                timestamp++;
+            circularBuffer.getByteBuffer().putLong (timestamp);
+            //buffer.putInt((this.rand.nextInt() & Integer.MAX_VALUE) % dataRange); // vehicle
+            circularBuffer.getByteBuffer().putInt(value % dataRange);
+            circularBuffer.getByteBuffer().putFloat((float) value);                 // speed
+            circularBuffer.getByteBuffer().putInt(0);                         // highway
+            circularBuffer.getByteBuffer().putInt(0);                         // lane
+            circularBuffer.getByteBuffer().putInt(0);                         // direction
+            circularBuffer.getByteBuffer().putInt(value);                           // position
+            value ++;
+        }
+        // set the end
+        circularBuffer.getEnd().lazySet(circularBuffer.getByteBuffer().position());
+
+
+        Thread generator = new Thread(new LRBRewriter (coreToBind, circularBuffer, dataRange, bufferSize, timestamp));
+        generator.start();
+
+
+		long timeLimit = System.currentTimeMillis() + 4 * 10 * 10000;
 
 		long tempTime = -1;
 		while (true) {
@@ -94,14 +123,15 @@ public class LRBAppInMemory {
 				System.exit(0);
 			}
 
-			GeneratedBuffer b = generator.getNext();
+			//GeneratedBuffer b = generator.getNext();
 			/*if (b.getBuffer().getLong(0) < tempTime)
 			    System.exit(-1);
 			tempTime = b.getBuffer().getLong(0);
             System.out.println("tempTime \n" + tempTime);*/
 
-			benchmarkQuery.getApplication().processData (b.getBuffer().array());
-			b.unlock();
+            //benchmarkQuery.getApplication().processData (b.getBuffer().array());
+            benchmarkQuery.getApplication().processData (batchSize);
+			//b.unlock();
 		}
 
 	}

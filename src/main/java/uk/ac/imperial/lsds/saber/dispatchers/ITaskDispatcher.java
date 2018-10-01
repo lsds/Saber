@@ -17,7 +17,11 @@ public interface ITaskDispatcher {
     public void dispatch               (ByteBuffer buffer, int length);
     public void dispatchToFirstStream  (ByteBuffer buffer, int length);
     public void dispatchToSecondStream (ByteBuffer buffer, int length);
-	
+
+	public void dispatch               (int length);
+	public void dispatchToFirstStream  (int length);
+	public void dispatchToSecondStream (int length);
+
 	public IQueryBuffer getBuffer      ();
 	public IQueryBuffer getFirstBuffer ();
 	public IQueryBuffer getSecondBuffer();

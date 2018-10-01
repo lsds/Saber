@@ -146,7 +146,7 @@ public class PartialWindowResults {
 			int src = startPointers.getInt(i*4) * tupleSize;
 			int dst = startPointers.getInt((i + added)*4) * tupleSize;
 			buffer.position(dst);
-			buffer.put(buffer, src, windowSize);
+			buffer.put(buffer.getByteBuffer(), src, windowSize);
 		}
 
 		for (int i = 0, w = start; i < added; ++i, ++w) {

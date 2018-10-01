@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import uk.ac.imperial.lsds.saber.buffers.CircularQueryBuffer;
 import uk.ac.imperial.lsds.saber.devices.TheCPU;
 import uk.ac.imperial.lsds.saber.devices.TheGPU;
 import uk.ac.imperial.lsds.saber.dispatchers.ITaskDispatcher;
@@ -79,7 +80,21 @@ public class QueryApplication {
 
 		}
 	}
-	
+
+    public void processData (int length) {
+        long start, end, microseconds;
+        for (int i = 0; i < dispatchers.length; ++i) {
+            //start = System.nanoTime();
+
+            dispatchers[i].dispatch (length);
+
+            /*end = System.nanoTime();
+            microseconds = (end - start) / 1000;
+            System.out.println("Number of instructions per dispatch operation: " +
+                    microseconds*this.instructionsPerMicroseconds);*/
+        }
+    }
+
 	public void processFirstStream (byte [] values) {
 		
 		processFirstStream (values, values.length);
@@ -232,5 +247,9 @@ public class QueryApplication {
 	
 	public int numberOfUpstreamQueries () {
 		return numberOfUpstreamQueries;
+	}
+
+	public CircularQueryBuffer getCircularQueryBuffer (int dispatcherId) {
+	    return (CircularQueryBuffer) this.dispatchers[dispatcherId].getBuffer();
 	}
 }

@@ -470,8 +470,8 @@ printf("streamStartPointer %d \n", streamStartPointer);
 printf("first timestamp %lu \n", data[bufferStartPointer].timestamp);
 printf("second timestamp %lu \n", data[bufferEndPointer-1].timestamp);
 printf("streamStartPointer %d \n", streamStartPointer);*/
-//printf("openingWindows %d \n", openingWindows);
-/*if (openingWindows > 0) {
+/*printf("openingWindows %d \n", openingWindows);
+if (openingWindows > 0) {
     printf("occupancy, timestamp, key, value \n");
     for (int i = 0;  i < openingWindows; i++) {
         int base = i * mapSize;
@@ -483,8 +483,8 @@ printf("streamStartPointer %d \n", streamStartPointer);*/
     }
 }*/
 
-//printf("closingWindows %d \n", closingWindows);
-/*if (closingWindows > 0) {
+/*printf("closingWindows %d \n", closingWindows);
+if (closingWindows > 0) {
     printf("occupancy, timestamp, key, value \n");
     for (int i = 0;  i < closingWindows; i++) {
         int base = i * mapSize;
@@ -496,8 +496,8 @@ printf("streamStartPointer %d \n", streamStartPointer);*/
     }
 }*/
 
-//printf("pendingWindows %d \n", pendingWindows);
-/*if (pendingWindows > 0) {
+/*printf("pendingWindows %d \n", pendingWindows);
+if (pendingWindows > 0) {
     printf("occupancy, timestamp, key, value \n");
     for (int i = 0;  i < pendingWindows; i++) {
         int base = i * mapSize;
@@ -563,6 +563,14 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAg
     if (!pack) {
         openingWindowsResults = (ht_node *) env->GetDirectBufferAddress(openingWindowsBuffer);
         pendingValidPos = (int *) malloc(mapSize * sizeof(int));
+
+/*                        printf("--------------buffer1-------------- \n");
+                        printf("start1: %d, end1: %d \n", start1, end1);
+                        for (int i = start1; i < end1; i++)
+                            printf ("idx: %d, status: %d, timestamp: %ld, key: %d, counter: %d \n", i, buffer1[i].status,
+                            buffer1[i].timestamp, buffer1[i].key, buffer1[i].counter);
+
+                        fflush(stdout);*/
     } else {
         completeWindowsResults = (DistinctRes *) env->GetDirectBufferAddress(completeWindowsBuffer);
     }
@@ -719,6 +727,25 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAg
             isFound = ht_get_index(&openingWindowsResults[resultIndex], buffer2[idx].key, mapSize, posInRes);
 
             if (posInRes < 0 || isFound) {
+                printf ("idx: %d, key: %d, posInRes %d, resultIndex %d \n", idx, buffer2[idx].key, posInRes, resultIndex);
+
+                /*for (int i = resultIndex; i < resultIndex+mapSize; i++)
+                    printf ("idx: %d, status: %d, timestamp: %ld, key: %d, counter: %d \n", i, openingWindowsResults[i].status,
+                    openingWindowsResults[i].timestamp, openingWindowsResults[i].key, openingWindowsResults[i].counter);
+
+                printf("--------------buffer2-------------- \n");
+                for (int i = start2; i < end2; i++)
+                    printf ("idx: %d, status: %d, timestamp: %ld, key: %d, counter: %d \n", i, buffer2[i].status,
+                    buffer2[i].timestamp, buffer2[i].key, buffer2[i].counter);
+
+                printf("--------------buffer1-------------- \n");
+                printf("start1: %d, end1: %d \n", start1, end1);
+                for (int i = start1; i < end1; i++)
+                    printf ("idx: %d, status: %d, timestamp: %ld, key: %d, counter: %d \n", i, buffer1[i].status,
+                    buffer1[i].timestamp, buffer1[i].key, buffer1[i].counter);
+
+                fflush(stdout);*/
+
                 printf ("error in C: failed to insert new key in intermediate hash table \n");
                 exit(1);
             }

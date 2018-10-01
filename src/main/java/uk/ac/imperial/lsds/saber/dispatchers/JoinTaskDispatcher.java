@@ -152,6 +152,21 @@ public class JoinTaskDispatcher implements ITaskDispatcher {
 
 	}
 
+	@Override
+	public void dispatch(int length) {
+		throw new UnsupportedOperationException("error: cannot dispatch to a Join operator");
+	}
+
+	@Override
+	public void dispatchToFirstStream(int length) {
+		throw new UnsupportedOperationException("error: cannot dispatch to a Join operator");
+	}
+
+	@Override
+	public void dispatchToSecondStream(int length) {
+		throw new UnsupportedOperationException("error: cannot dispatch to a Join operator");
+	}
+
 	public boolean tryDispatchToSecondStream (byte [] data, int length) {
 		int idx;
 		if ((idx = secondBuffer.put(data, length)) < 0) {

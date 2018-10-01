@@ -889,8 +889,9 @@ public class Custom_Aggregation implements IOperatorCode, IAggregateOperator {
                 pendingWindows.getStartPointers(), completeWindows.getStartPointers(),
                 batch.getStreamStartPointer(), batch.getWindowDefinition().getSize(),
                 batch.getWindowDefinition().getSlide(), batch.getWindowDefinition().getPaneSize(),
-                openingWindowsBuffer.position()/tupleLength, closingWindowsBuffer.position()/tupleLength,
-                pendingWindowsBuffer.position()/tupleLength, completeWindowsBuffer.position()/outputSchema.getTupleSize(),
+                0,0,0,0,
+                //openingWindowsBuffer.position()/tupleLength, closingWindowsBuffer.position()/tupleLength,
+                //pendingWindowsBuffer.position()/tupleLength, completeWindowsBuffer.position()/outputSchema.getTupleSize(),
                 arrayHelper,
                 SystemConf.C_HASH_TABLE_SIZE);
 

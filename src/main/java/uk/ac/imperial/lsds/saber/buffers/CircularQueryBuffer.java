@@ -29,6 +29,7 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	private ByteBuffer buffer;
 	
 	private AtomicLong bytesProcessed;
+	private AtomicLong bytesDispatched;
 	
 	private PaddedLong h;
 	
@@ -84,8 +85,9 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		mask = this.size - 1;
 		
 		wraps = 0;
-		
+
 		bytesProcessed = new AtomicLong (0L);
+        bytesDispatched = new AtomicLong (0L);
 		
 		h = new PaddedLong (0L);
 
@@ -171,6 +173,14 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		else
 			return size - (int) (tail - head);
 	}
+
+    public int 	remainingForProcess () {
+
+        long tail =   end.get();
+        long head = bytesDispatched.get(); //start.get();
+
+        return (int) (tail - head);
+    }
 	
 	public boolean hasRemaining () {
 		return (remaining() > 0);
@@ -419,4 +429,20 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		
 		return this.id;
 	}
+
+	public PaddedAtomicLong getStart () {
+		return this.start;
+	}
+
+	public PaddedAtomicLong getEnd () {
+		return this.end;
+	}
+
+    public void incrementWraps () {
+        wraps++;
+    }
+
+    public void incrementBytesDispatched (long bytes) {
+        bytesDispatched.addAndGet(bytes);
+    }
 }

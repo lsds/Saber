@@ -358,6 +358,9 @@ public class PartialResultSlot {
                 end2 = start2 + mapSize;
             }
 
+            //System.out.println("start1: " + start1 + ", end1: " + end1);
+            //System.out.println("start2: " + start2 + ", end2: " + end2);
+
             if (start1 == end1)
                 throw new IllegalStateException ("error: empty opening window partial result");
 
@@ -421,6 +424,9 @@ public class PartialResultSlot {
                     end1 = start1 + mapSize;
                 }
 
+                //System.out.println("aaa start1: " + start1 + ", end1: " + end1);
+                //System.out.println("start2: " + start2 + ", end2: " + end2);
+
                 if (start1 == end1)
                     throw new IllegalStateException ("error: empty opening window partial result");
 
@@ -450,8 +456,51 @@ public class PartialResultSlot {
              * There are `count` new windows. The window size equal the hash table size:
              */
             int windowSize = w3.capacity();
+
+            int tempPos = openingWindows.getBuffer().getByteBuffer().position();
+            /*openingWindows.getBuffer().getByteBuffer().position(0);
+            for (int i=0; i < openingWindows.numberOfWindows(); i++) {
+                //if (openingWindows.getBuffer().getByteBuffer().getLong(openingWindows.getBuffer().getByteBuffer().position()+8) == 385)
+                    for (int j = 0; j<tupleSize*mapSize; j+=tupleSize)
+                        System.out.println(openingWindows.getBuffer().getByteBuffer().getLong() + ", " + openingWindows.getBuffer().getByteBuffer().getLong() + ", "
+                                + ", " + openingWindows.getBuffer().getByteBuffer().getInt() + ", " + openingWindows.getBuffer().getByteBuffer().getInt());
+                //else
+                //    openingWindows.getBuffer().getByteBuffer().position(openingWindows.getBuffer().getByteBuffer().position()+tupleSize*mapSize);
+
+            }
+            openingWindows.getBuffer().position(tempPos);
+            System.out.println("----");
+
+            tempPos = p.openingWindows.getBuffer().getByteBuffer().position();
+            p.openingWindows.getBuffer().getByteBuffer().position(0);
+            for (int i=0; i < p.openingWindows.numberOfWindows(); i++) {
+                //if (p.openingWindows.getBuffer().getByteBuffer().getLong(p.openingWindows.getBuffer().getByteBuffer().position()+8) == 385)
+                    for (int j = 0; j<tupleSize*mapSize; j+=tupleSize)
+                        System.out.println(p.openingWindows.getBuffer().getByteBuffer().getLong() + ", " + p.openingWindows.getBuffer().getByteBuffer().getLong() + ", "
+                                + ", " + p.openingWindows.getBuffer().getByteBuffer().getInt() + ", " + p.openingWindows.getBuffer().getByteBuffer().getInt());
+                //else
+                //    p.openingWindows.getBuffer().getByteBuffer().position(p.openingWindows.getBuffer().getByteBuffer().position()+tupleSize*mapSize);
+
+            }
+            p.openingWindows.getBuffer().position(tempPos);
+            System.out.println("--aa--");*/
+
+
             // todo: check this!
             p.openingWindows.prepend(openingWindows, wid, count, tupleSize*mapSize/*windowSize*/, tupleSize);
+
+            /*tempPos = p.openingWindows.getBuffer().getByteBuffer().position();
+            p.openingWindows.getBuffer().getByteBuffer().position(0);
+            for (int i=0; i < p.openingWindows.numberOfWindows(); i++) {
+                if (p.openingWindows.getBuffer().getByteBuffer().getLong(p.openingWindows.getBuffer().getByteBuffer().position()+8) == 385)
+                    for (int j = 0; j<tupleSize*mapSize; j+=tupleSize)
+                        System.out.println(p.openingWindows.getBuffer().getByteBuffer().getLong() + ", " + p.openingWindows.getBuffer().getByteBuffer().getLong() + ", "
+                            + ", " + p.openingWindows.getBuffer().getByteBuffer().getInt() + ", " + p.openingWindows.getBuffer().getByteBuffer().getInt());
+                else
+                    p.openingWindows.getBuffer().getByteBuffer().position(p.openingWindows.getBuffer().getByteBuffer().position()+tupleSize*mapSize);
+
+            }
+            p.openingWindows.getBuffer().position(tempPos);*/
 
             p.pendingWindows.nullify();
         }

@@ -164,6 +164,31 @@ public class TaskDispatcher implements ITaskDispatcher {
 		throw new UnsupportedOperationException("error: cannot dispatch to a second stream buffer");
 	}
 
+	@Override
+	public void dispatch(int length) {
+		int idx = (int) thisBatchStartPointer%((CircularQueryBuffer) buffer).size; //((CircularQueryBuffer) buffer).getStart().intValue();
+		/*while ((idx = buffer.put(data, length)) < 0) {
+			Thread.yield();
+		}*/
+
+		//System.out.println(" remainingForProcess: " + ((CircularQueryBuffer) buffer).remainingForProcess());
+		while (((CircularQueryBuffer) buffer).remainingForProcess() < length) {
+		    Thread.yield();
+        }
+		//System.out.println(" start processing: " + ((CircularQueryBuffer) buffer).remainingForProcess());
+		assemble (idx, length);
+	}
+
+	@Override
+	public void dispatchToFirstStream(int length) {
+		dispatch(length);
+	}
+
+	@Override
+	public void dispatchToSecondStream(int length) {
+		throw new UnsupportedOperationException("error: cannot dispatch to a Join operator");
+	}
+
 	public boolean tryDispatchToSecondStream (ByteBuffer inputBuffer, int length) {
 
 		throw new UnsupportedOperationException("error: cannot dispatch to a second stream buffer");
@@ -222,6 +247,8 @@ public class TaskDispatcher implements ITaskDispatcher {
 			
 			thisBatchStartPointer += batchSize;
 			nextBatchEndPointer   += batchSize;
+
+			((CircularQueryBuffer) buffer).incrementBytesDispatched(batchSize);
 		}
 	}
 	
