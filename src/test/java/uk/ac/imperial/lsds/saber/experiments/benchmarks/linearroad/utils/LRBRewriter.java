@@ -72,10 +72,14 @@ public class LRBRewriter implements Runnable {
 
             } else {
 
-                for (long idx = index; idx < dataToWrite+index; idx+=dataLength) {
-                    this.finalTimestamp++;
-                    generate((int) idx, (int) idx + dataLength, this.finalTimestamp);
-                }
+                //for (long idx = index; idx < dataToWrite+index; idx+=dataLength) {
+                //    this.finalTimestamp++;
+                //    generate((int) idx, (int) idx + dataLength, this.finalTimestamp);
+                //}
+                finalTimestamp = TheCPU.getInstance().changeTimestamps(this.buffer.getByteBuffer(), index, (int)(dataToWrite+index), dataLength, finalTimestamp);
+                this.buffer.getByteBuffer().position((int)(dataToWrite+index));
+
+
 
             }
 

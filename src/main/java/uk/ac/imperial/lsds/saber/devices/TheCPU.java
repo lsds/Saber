@@ -47,4 +47,6 @@ public class TheCPU {
                                                     int resultBufferPosition);
 
 	public native int init_clock (ByteBuffer result);
+
+	public native long changeTimestamps (ByteBuffer result, int startPos, int endPos, int dataLength, long timestamp);
 }

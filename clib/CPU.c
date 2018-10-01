@@ -828,3 +828,31 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_init_1clock
 
     return 0;
 }
+
+JNIEXPORT jlong JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_changeTimestamps
+  (JNIEnv *env, jobject obj, jobject buffer, jint startPos, jint endPos, jint dataLength, jlong timestamp) {
+
+    (void) obj;
+
+    // Input Buffer
+    PosSpeedStr *inputBuffer= (PosSpeedStr *) env->GetDirectBufferAddress(buffer);
+
+    int start = startPos/sizeof(PosSpeedStr);
+    int end = endPos/sizeof(PosSpeedStr);
+    int changeOffset = dataLength/sizeof(PosSpeedStr);
+
+    int temp = 0;
+    //timestamp++;
+
+    //printf("%d, %d, %ld \n", start, end, timestamp);
+    //fflush(stdout);
+    for (int i = start; i < end; i++) {
+        if (temp%changeOffset==0)
+            timestamp++;
+        inputBuffer[i].timestamp = timestamp;
+        temp++;
+    }
+
+    return timestamp;
+
+}

@@ -63,6 +63,14 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAg
 JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_init_1clock
   (JNIEnv *, jobject, jobject);
 
+/*
+ * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
+ * Method:    changeTimestamps
+ * Signature: (Ljava/nio/ByteBuffer;IIIJ)J
+ */
+JNIEXPORT jlong JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_changeTimestamps
+  (JNIEnv *, jobject, jobject, jint, jint, jint, jlong);
+
 #ifdef __cplusplus
 }
 #endif
