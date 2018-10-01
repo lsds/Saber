@@ -27,7 +27,7 @@ public class LRBAppInMemory {
 
 		String executionMode = "cpu";
 		int numberOfThreads = 1;
-		int batchSize = 32*1048576;
+		int batchSize = 16*1048576;
 
 		boolean jni = true;
 
@@ -59,15 +59,15 @@ public class LRBAppInMemory {
 			i = j + 1;
 		}
 
-		SystemConf.CIRCULAR_BUFFER_SIZE = 4 * 128 * 1048576;
+		SystemConf.CIRCULAR_BUFFER_SIZE = 8 * 128 * 1048576;
 		SystemConf.LATENCY_ON = false;
 
-		SystemConf.PARTIAL_WINDOWS = 8 * 32 * 1024;
+		SystemConf.PARTIAL_WINDOWS = 4 * 32 * 1024;
 
 		// manually change the c code every time!!!
 		SystemConf.HASH_TABLE_SIZE = 2*32*1024; //1 * 32768;
 
-		SystemConf.UNBOUNDED_BUFFER_SIZE = 1*64 * 1048576;
+		SystemConf.UNBOUNDED_BUFFER_SIZE = 1 * 64 * 1048576;
 
 		SystemConf.CPU = true;
 
@@ -80,37 +80,39 @@ public class LRBAppInMemory {
 		/* Generate input stream */
 		int numberOfGeneratorThreads = 1;
 
-		int bufferSize = 1 * 131072; // set the timestamps with this buffer size
-		int coreToBind = 1; //numberOfThre/ads + 1;
+		int bufferSize = 8 * 131072; // set the timestamps with this buffer size
+		int coreToBind = 1; //nuberOfThre/ads + 1;
 		int dataRange = 1024;
 		SystemConf.C_HASH_TABLE_SIZE = dataRange;
+
+		SystemConf.dump();
 
 		//LRBGenerator generator = new LRBGenerator (bufferSize, numberOfGeneratorThreads, dataRange, coreToBind);
 
 		// Generate Data
-        int dispatcherID = 0;
-        CircularQueryBuffer circularBuffer = benchmarkQuery.getApplication().getCircularQueryBuffer(dispatcherID);
-        int value = 0;
-        long timestamp = 0;
-        while (circularBuffer.getByteBuffer().position()  < circularBuffer.getByteBuffer().capacity()) {
-            if (value%bufferSize==0)
-                timestamp++;
-            circularBuffer.getByteBuffer().putLong (timestamp);
-            //buffer.putInt((this.rand.nextInt() & Integer.MAX_VALUE) % dataRange); // vehicle
-            circularBuffer.getByteBuffer().putInt(value % dataRange);
-            circularBuffer.getByteBuffer().putFloat((float) value);                 // speed
-            circularBuffer.getByteBuffer().putInt(0);                         // highway
-            circularBuffer.getByteBuffer().putInt(0);                         // lane
-            circularBuffer.getByteBuffer().putInt(0);                         // direction
-            circularBuffer.getByteBuffer().putInt(value);                           // position
-            value ++;
-        }
-        // set the end
-        circularBuffer.getEnd().lazySet(circularBuffer.getByteBuffer().position());
+		int dispatcherID = 0;
+		CircularQueryBuffer circularBuffer = benchmarkQuery.getApplication().getCircularQueryBuffer(dispatcherID);
+		int value = 0;
+		long timestamp = 0;
+		while (circularBuffer.getByteBuffer().position()  < circularBuffer.getByteBuffer().capacity()) {
+			if (value%bufferSize==0)
+				timestamp++;
+			circularBuffer.getByteBuffer().putLong (timestamp);
+			//buffer.putInt((this.rand.nextInt() & Integer.MAX_VALUE) % dataRange); // vehicle
+			circularBuffer.getByteBuffer().putInt(value % dataRange);
+			circularBuffer.getByteBuffer().putFloat((float) value);                 // speed
+			circularBuffer.getByteBuffer().putInt(0);                         // highway
+			circularBuffer.getByteBuffer().putInt(0);                         // lane
+			circularBuffer.getByteBuffer().putInt(0);                         // direction
+			circularBuffer.getByteBuffer().putInt(value);                           // position
+			value ++;
+		}
+		// set the end
+		circularBuffer.getEnd().lazySet(circularBuffer.getByteBuffer().position());
 
 
-        Thread generator = new Thread(new LRBRewriter (coreToBind, circularBuffer, dataRange, bufferSize, timestamp));
-        generator.start();
+		Thread generator = new Thread(new LRBRewriter (coreToBind, circularBuffer, dataRange, bufferSize, timestamp));
+		generator.start();
 
 
 		long timeLimit = System.currentTimeMillis() + 4 * 10 * 10000;
@@ -129,8 +131,8 @@ public class LRBAppInMemory {
 			tempTime = b.getBuffer().getLong(0);
             System.out.println("tempTime \n" + tempTime);*/
 
-            //benchmarkQuery.getApplication().processData (b.getBuffer().array());
-            benchmarkQuery.getApplication().processData (batchSize);
+			//benchmarkQuery.getApplication().processData (b.getBuffer().array());
+			benchmarkQuery.getApplication().processData (batchSize);
 			//b.unlock();
 		}
 
