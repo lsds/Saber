@@ -63,7 +63,7 @@ public class TaskProcessor implements Runnable {
 			System.out.println ("[DBG] GPU thread is " + Thread.currentThread());
 			TheCPU.getInstance().bind(1);
 		} else {
-			int core = ((pid - (min - 1)) % total) + min + 4;
+			int core = ((pid - (min - 1)) % total) + min;// + 4;
 			System.out.println(String.format("[DBG] bind worker %2d to core %2d", pid, core));
 			TheCPU.getInstance().bind(core);
 		}

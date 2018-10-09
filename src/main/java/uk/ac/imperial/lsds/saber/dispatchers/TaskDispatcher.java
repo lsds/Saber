@@ -172,7 +172,8 @@ public class TaskDispatcher implements ITaskDispatcher {
 		}*/
 
 		//System.out.println(" remainingForProcess: " + ((CircularQueryBuffer) buffer).remainingForProcess());
-		while (((CircularQueryBuffer) buffer).remainingForProcess() < length) {
+		//while (((CircularQueryBuffer) buffer).remainingForProcess() < length) {
+		while ((idx = ((CircularQueryBuffer) buffer).put(length)) < 0) {
 		    Thread.yield();
         }
 		//System.out.println(" start processing: " + ((CircularQueryBuffer) buffer).remainingForProcess());

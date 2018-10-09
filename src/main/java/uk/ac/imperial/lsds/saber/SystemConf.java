@@ -42,7 +42,9 @@ public class SystemConf {
 	public static int RELATIONAL_TABLE_BUFFER_SIZE = 1048576;
 	
 	public static int UNBOUNDED_BUFFER_SIZE = 1048576;
-	
+
+	public static int BATCH_SIZE = 1048576;
+
 	public static int THREADS = 1;
 	
 	public static int SLOTS = 1024;

@@ -38,8 +38,8 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	private CircularBufferWorker [] workers;
 	public AtomicInteger isReady;
 	public Latch isBufferFilledLatch;
-	public long timestamp = 0;
-	public long timestampBase = 0;
+	public long timestamp = 0L;
+	public long timestampBase = 0L;
 	public int globalIndex;
 	public int globalLength;
 	public int numberOfThreads;
@@ -48,6 +48,9 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	public byte[] inputBuffer;
 	public CountDownLatch latch; 
 	/* 												*/
+
+    private LRBRewriterInCircular [] workersLRB;
+    public int dataLength = SystemConf.BATCH_SIZE / 8;
 
 	private static int nextPowerOfTwo (int size) {
 		
@@ -63,14 +66,14 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		
 		this (id, capacity, false);
 	}
-	
-	public CircularQueryBuffer (int id, int _size, boolean isDirect) { 
+
+	public CircularQueryBuffer (int id, int _size, boolean isDirect) {
 		
 		if (_size <= 0)
 			throw new IllegalArgumentException("error: buffer size must be greater than 0");
 		
 		this.size = nextPowerOfTwo (_size); /* Set size to the next power of 2 */
-		
+
 		if (Integer.bitCount(this.size) != 1)
 			throw new IllegalArgumentException("error: buffer size must be a power of 2");
 		
@@ -117,6 +120,18 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		} else {
 			
 			buffer = ByteBuffer.allocateDirect(this.size);
+
+            numberOfThreads = 4;
+            int coreToBind = SystemConf.THREADS + 1;
+            isReady = new AtomicInteger(-1);
+            workersLRB = new LRBRewriterInCircular[numberOfThreads];
+            for (int i = 0; i < workersLRB.length; i++) {
+                workersLRB[i] = new LRBRewriterInCircular(this, i + 1, i + coreToBind);
+                Thread thread = new Thread(workersLRB[i]);
+                thread.start();
+            }
+            isBufferFilledLatch = new Latch(numberOfThreads);
+            latch = new CountDownLatch(numberOfThreads);
 		}
 
 		buffer.order( ByteOrder.LITTLE_ENDIAN);
@@ -322,7 +337,48 @@ public class CircularQueryBuffer implements IQueryBuffer {
 		/* debug (); */
 		return index;
 	}
-	
+
+    public int put (int length) {
+
+        final long _end = end.get();
+        final long wrapPoint = (_end + length - 1) - size;
+        if (h.value <= wrapPoint) {
+            h.value = start.get();
+            if (h.value <= wrapPoint) {
+                /* debug (); */
+                return -1;
+            }
+        }
+
+        int index = normalise (_end);
+
+        //set the pointers
+        globalIndex = index;
+        //globalLength = length/numberOfThreads;
+
+
+        if (this.isReady.get() == Integer.MAX_VALUE)
+            this.isReady.set(-1);
+        else
+            this.isReady.incrementAndGet();//compareandswap
+
+        while (this.isBufferFilledLatch.getCount()!=0)
+            Thread.yield();
+
+        timestamp = timestamp + length/this.dataLength;
+
+        this.isBufferFilledLatch.setLatch(numberOfThreads);
+
+
+        int p = normalise (_end + length);
+        if (p <= index)
+            wraps ++;
+        /* buffer.position(p); */
+        end.lazySet(_end + length);
+        /* debug (); */
+        return index;
+    }
+
 	public int put (IQueryBuffer buffer) {
 		
 		return put (buffer.array());
