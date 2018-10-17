@@ -330,9 +330,9 @@ public class PartialResultSlot {
         b2 = p.closingWindows.getBuffer();
 
 
-        int intermediateTupleSize = 17;
+        int intermediateTupleSize = TheCPU.getInstance().getIntermediateTupleSize();
         int mapSize = SystemConf.C_HASH_TABLE_SIZE; // todo: This is defined manually now...
-        int tupleSize = 24; // todo: fix how to define the tuple size
+        int tupleSize = TheCPU.getInstance().getIntermediateTupleSize();
         int resultTupleSize = 16;
         int newPosition;
         //System.out.println("----starting to merge opening and closing------");
@@ -369,6 +369,7 @@ public class PartialResultSlot {
             }
 
             // todo: What timestamp do I want to save in the aggregated value???
+            //newPosition = completeWindows.getBuffer().position();
             newPosition = TheCPU.getInstance().optimisedAggregateHashTables(b1.getByteBuffer(), start1, end1,
                     b2.getByteBuffer(), start2, end2,
                     operator.getKeyLength(), operator.getValueLength(), intermediateTupleSize, mapSize,
@@ -431,6 +432,7 @@ public class PartialResultSlot {
                     throw new IllegalStateException ("error: empty opening window partial result");
 
                 // The buffer b1 is the same as the part of the opening windows where we rewrite the results!
+                //newPosition = 0;
                 newPosition = TheCPU.getInstance().optimisedAggregateHashTables(b1.getByteBuffer(), start1, end1,
                         b2.getByteBuffer(), start2, end2,
                         operator.getKeyLength(), operator.getValueLength(), intermediateTupleSize, mapSize,

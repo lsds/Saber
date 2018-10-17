@@ -20,7 +20,7 @@ public class IntConstant implements IntExpression {
 	@Override
 	public String toString() {
 		final StringBuilder s = new StringBuilder();
-		s.append("Constant ").append(constant);
+		s.append(constant); //s.append("Constant ").append(constant);
 		return s.toString();
 	}
 	

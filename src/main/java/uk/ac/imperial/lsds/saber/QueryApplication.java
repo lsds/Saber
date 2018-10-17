@@ -53,11 +53,6 @@ public class QueryApplication {
 		dispatchers = new ITaskDispatcher [1];
 		
 		N = this.queries.size();
-
-		this.timeHelper = ByteBuffer.allocateDirect(8);
-		timeHelper.order(ByteOrder.LITTLE_ENDIAN);
-        TheCPU.getInstance().init_clock(timeHelper);
-        instructionsPerMicroseconds = timeHelper.getLong();
 	}
 	
 	public void processData (byte [] values) {
@@ -132,7 +127,23 @@ public class QueryApplication {
 		// policy[1][0] = 0;
 		
 		queue = new TaskQueue (N);
-		
+
+        for (Query q: queries) {
+            for (QueryOperator op: q.getOperators()) {
+                if (op.getCpuCode() != null && SystemConf.GENERATE)
+                    op.getCpuCode().setup();
+            }
+        }
+
+		// Load the CPU library. Generate Code before this point...
+        TheCPU.getInstance().load ();
+
+        // Measure the instructions per microsecond for later metrics
+        this.timeHelper = ByteBuffer.allocateDirect(8);
+        timeHelper.order(ByteOrder.LITTLE_ENDIAN);
+        TheCPU.getInstance().init_clock(timeHelper);
+        instructionsPerMicroseconds = timeHelper.getLong();
+
 		/* Bind main thread to CPU core 0 */
 		TheCPU.getInstance().bind(0);
 		
@@ -140,11 +151,11 @@ public class QueryApplication {
 			TheGPU.getInstance().load ();
 			TheGPU.getInstance().init (N, SystemConf.PIPELINE_DEPTH);
 		}
-		
+
 		workerPool = new TaskProcessorPool(threads, queue, policy, SystemConf.GPU, SystemConf.HYBRID);
 		executor = Executors.newCachedThreadPool();
 		queue = workerPool.start(executor);
-		
+
 		for (Query q: queries) {
 			q.setParent(this);
 			q.setup();

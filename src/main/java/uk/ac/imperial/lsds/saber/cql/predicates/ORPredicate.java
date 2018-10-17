@@ -31,7 +31,7 @@ public class ORPredicate implements IPredicate {
 			s.append("(").append(predicates[i]).append(")");
 			
 			if (i != predicates.length - 1)
-				s.append(" OR ");
+                s.append(" || "); //s.append(" OR ");
 		}
 		return s.toString();
 	}
@@ -56,5 +56,9 @@ public class ORPredicate implements IPredicate {
 	
 	public Expression getSecondExpression () {
 		return null;
+	}
+
+	public IPredicate[] getPredicates() {
+		return predicates;
 	}
 }

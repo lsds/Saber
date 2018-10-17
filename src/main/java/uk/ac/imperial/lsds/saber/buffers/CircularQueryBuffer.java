@@ -121,7 +121,7 @@ public class CircularQueryBuffer implements IQueryBuffer {
 			
 			buffer = ByteBuffer.allocateDirect(this.size);
 
-            numberOfThreads = 4;
+            numberOfThreads = 1;
             int coreToBind = SystemConf.THREADS + 1;
             isReady = new AtomicInteger(-1);
             workersLRB = new LRBRewriterInCircular[numberOfThreads];

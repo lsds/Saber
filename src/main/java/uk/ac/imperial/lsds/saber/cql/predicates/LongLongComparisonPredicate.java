@@ -120,4 +120,8 @@ public class LongLongComparisonPredicate implements IPredicate {
 	public Expression getSecondExpression() {	
 		return this.v2;
 	}
+
+	public IPredicate[] getPredicates() {
+		throw new UnsupportedOperationException("error: only complex expressions return a array of predicates");
+	}
 }

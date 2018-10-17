@@ -30,7 +30,7 @@ public class ANDPredicate implements IPredicate {
 			s.append("(").append(predicates[i]).append(")");
 			
 			if (i != predicates.length - 1)
-				s.append(" AND ");
+				s.append(" && "); //s.append(" AND ");
 		}
 		return s.toString();
 	}
@@ -55,5 +55,9 @@ public class ANDPredicate implements IPredicate {
 	
 	public Expression getSecondExpression () {
 		return null;
+	}
+
+	public IPredicate[] getPredicates() {
+		return predicates;
 	}
 }

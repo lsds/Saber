@@ -61,21 +61,31 @@ SABERLIBS += -lGPU
 
 OBJS = GPU.o timer.o openclerrorcode.o resulthandler.o inputbuffer.o outputbuffer.o gpucontext.o gpuquery.o
 
-all: libCPU.so #libGPU.so
+all: libCPU.so libCPUGen.so #libGPU.so
 gpu: libGPU.so
-cpu: libCPU.so 
+cpu: libCPU.so
+codeGen: libCPUGen.so
 
 libGPU.so: $(OBJS)
 	javah -classpath $(CLASS_PATH) uk.ac.imperial.lsds.saber.devices.TheCPU
 	$(CC) -shared -o libGPU.so $(OBJS) $(GLIBS) $(CLIBS)
 
-libCPU.so: CPU.o
-	$(CC) -shared -o libCPU.so CPU.o
+libCPU.so: CPU.o generated.o
+	$(CC) -shared -o libCPU.so CPU.o generated.o
 
-GPU.o: GPU.c GPU.h uk_ac_imperial_lsds_saber_devices_TheGPU.h timer.h openclerrorcode.h 
+libCPUGen.so: CPU.o new_generated.o
+	$(CC) -shared -o libCPUGen.so CPU.o new_generated.o
+
+GPU.o: GPU.c GPU.h uk_ac_imperial_lsds_saber_devices_TheGPU.h timer.h openclerrorcode.h
 	$(CC) $(CFLAGS) $(GFLAGS) -c $< -o $@
 
 CPU.o: CPU.c uk_ac_imperial_lsds_saber_devices_TheCPU.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+generated.o: generated.c uk_ac_imperial_lsds_saber_devices_TheCPU.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+new_generated.o: new_generated.c uk_ac_imperial_lsds_saber_devices_TheCPU.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 #

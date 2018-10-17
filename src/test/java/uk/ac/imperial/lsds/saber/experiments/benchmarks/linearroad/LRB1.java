@@ -29,8 +29,10 @@ import uk.ac.imperial.lsds.saber.cql.operators.IOperatorCode;
 import uk.ac.imperial.lsds.saber.cql.operators.cpu.Aggregation;
 import uk.ac.imperial.lsds.saber.cql.operators.cpu.Custom_Aggregation;
 import uk.ac.imperial.lsds.saber.cql.operators.cpu.Projection;
+import uk.ac.imperial.lsds.saber.cql.operators.cpuCodegen.OperatorKernel;
 import uk.ac.imperial.lsds.saber.cql.operators.gpu.AggregationKernel;
 import uk.ac.imperial.lsds.saber.cql.operators.gpu.ProjectionKernel;
+import uk.ac.imperial.lsds.saber.cql.predicates.IPredicate;
 
 public class LRB1 extends LRB {
 
@@ -72,8 +74,11 @@ public class LRB1 extends LRB {
 				new IntColumnReference(1)
 		};
 
-		IOperatorCode cpuCode = (jni) ? new Custom_Aggregation (window, aggregationTypes, aggregationAttributes, groupByAttributes) :
-				new Aggregation (window, aggregationTypes, aggregationAttributes, groupByAttributes);
+		IOperatorCode cpuCode = (jni) ?
+                ((SystemConf.GENERATE) ?
+                        new OperatorKernel(window, null, null, aggregationTypes, aggregationAttributes, groupByAttributes, null, null, schema) :
+                        new Custom_Aggregation (window, aggregationTypes, aggregationAttributes, groupByAttributes) )
+                : new Aggregation (window, aggregationTypes, aggregationAttributes, groupByAttributes);
 
 		System.out.println(cpuCode);
 		IOperatorCode gpuCode = null; /*new AggregationKernel

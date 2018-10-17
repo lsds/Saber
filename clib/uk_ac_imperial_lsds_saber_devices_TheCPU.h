@@ -41,6 +41,14 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_getCpuId
 
 /*
  * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
+ * Method:    init_clock
+ * Signature: (Ljava/nio/ByteBuffer;)I
+ */
+JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_init_1clock
+  (JNIEnv *, jobject, jobject);
+
+/*
+ * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
  * Method:    optimisedDistinct
  * Signature: (Ljava/nio/ByteBuffer;IIILjava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;JJJJIIIILjava/nio/ByteBuffer;I)I
  */
@@ -57,19 +65,27 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAg
 
 /*
  * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
- * Method:    init_clock
- * Signature: (Ljava/nio/ByteBuffer;)I
- */
-JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_init_1clock
-  (JNIEnv *, jobject, jobject);
-
-/*
- * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
  * Method:    changeTimestamps
  * Signature: (Ljava/nio/ByteBuffer;IIIJ)J
  */
 JNIEXPORT jlong JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_changeTimestamps
   (JNIEnv *, jobject, jobject, jint, jint, jint, jlong);
+
+/*
+ * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
+ * Method:    singleOperatorComputation
+ * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;JIIIILjava/nio/ByteBuffer;)I
+ */
+JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOperatorComputation
+  (JNIEnv *, jobject, jobject, jint, jint, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jlong, jint, jint, jint, jint, jobject);
+
+/*
+ * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
+ * Method:    getIntermediateTupleSize
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_getIntermediateTupleSize
+  (JNIEnv *, jobject);
 
 #ifdef __cplusplus
 }

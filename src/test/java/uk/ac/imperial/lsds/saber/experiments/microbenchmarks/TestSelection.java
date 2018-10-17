@@ -157,7 +157,7 @@ public class TestSelection {
 					new IntComparisonPredicate(IntComparisonPredicate.GREATER_OP, new IntColumnReference(1), new IntConstant(0));
 			}
 			predicate = new ANDPredicate (predicates);
-			
+
 		} else {
 			System.err.println(String.format("error: invalid configuration: %d%% selectivity and %d comparisons", 
 					selectivity, numberOfComparisons));

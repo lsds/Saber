@@ -19,5 +19,7 @@ public interface IPredicate {
 	
 	public Expression getFirstExpression ();
 	
-	public Expression getSecondExpression ();		
+	public Expression getSecondExpression ();
+
+	public IPredicate [] getPredicates ();
 }

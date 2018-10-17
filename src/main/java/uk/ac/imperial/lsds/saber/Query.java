@@ -298,4 +298,6 @@ public class Query {
 	public void setAggregateOperator (IAggregateOperator operator) {
 		dispatcher.setAggregateOperator (operator);
 	}
+
+	public Set<QueryOperator> getOperators () { return operators; }
 }

@@ -2,9 +2,10 @@ package uk.ac.imperial.lsds.saber.cql.expressions.longs;
 
 import uk.ac.imperial.lsds.saber.ITupleSchema;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
+import uk.ac.imperial.lsds.saber.cql.expressions.ColumnReference;
 import uk.ac.imperial.lsds.saber.cql.expressions.ExpressionsUtil;
 
-public class LongColumnReference implements LongExpression {
+public class LongColumnReference implements LongExpression, ColumnReference {
 
 	private int column;
 	
@@ -25,7 +26,7 @@ public class LongColumnReference implements LongExpression {
 	@Override
 	public String toString() {
 		final StringBuilder s = new StringBuilder();
-		s.append("\"").append(column).append("\"");
+		s.append("data[currPos]._").append(column); //s.append("\"").append(column).append("\"");
 		return s.toString();
 	}
 	

@@ -8,17 +8,31 @@ public class TheCPU {
 
 	// set this to use the correct library
 	private static final String cpuLibrary = /*SystemConf.SABER_HOME*/
-			"/home/george/idea/workspace/row_saber/Saber" + "/clib/libCPU.so";
+			"/home/grt17/Caber/Saber" + "/clib/libCPU.so";
+    private static final String cpuGenLibrary = /*SystemConf.SABER_HOME*/
+            "/home/grt17/Caber/Saber" + "/clib/libCPUGen.so";
 	
-	static {
+	/*static {
 		try {
 			System.load (cpuLibrary);
 		} catch (final UnsatisfiedLinkError e) {
 			System.err.println("error: failed to load CPU library from " + cpuLibrary);
 			System.exit(1);
 		}
+	}*/
+
+	public void load () {
+		try {
+		    if (SystemConf.GENERATE)
+		    	System.load (cpuGenLibrary);
+		    else
+                System.load (cpuLibrary);
+		} catch (final UnsatisfiedLinkError e) {
+			System.err.println("error: failed to load CPU");
+			System.exit(1);
+		}
 	}
-	
+
 	private static final TheCPU cpuInstance = new TheCPU ();
 	
 	public static TheCPU getInstance () { return cpuInstance; }
@@ -28,6 +42,7 @@ public class TheCPU {
 	public native int bind (int cpu);
 	public native int unbind ();
 	public native int getCpuId ();
+	public native int init_clock (ByteBuffer result);
 	public native int optimisedDistinct (ByteBuffer buffer, int bufferSize, int bufferStartPointer, int bufferEndPointer,
 											ByteBuffer openingWindowsBuffer, ByteBuffer closingWindowsBuffer,
 											ByteBuffer pendingWindowsBuffer, ByteBuffer completeWindowsBuffer,
@@ -46,7 +61,17 @@ public class TheCPU {
                                                     ByteBuffer openingWindowsBuffer, ByteBuffer completeWindowsBuffer,
                                                     int resultBufferPosition);
 
-	public native int init_clock (ByteBuffer result);
-
 	public native long changeTimestamps (ByteBuffer result, int startPos, int endPos, int dataLength, long timestamp);
+
+
+	public native int singleOperatorComputation (ByteBuffer buffer, int bufferStartPointer, int bufferEndPointer,
+                                                 ByteBuffer openingWindowsBuffer, ByteBuffer closingWindowsBuffer,
+                                                 ByteBuffer pendingWindowsBuffer, ByteBuffer completeWindowsBuffer,
+                                                 ByteBuffer openingWindowsStartPointers, ByteBuffer closingWindowsStartPointers,
+                                                 ByteBuffer pendingWindowsStartPointers, ByteBuffer completeWindowsStartPointers,
+                                                 long streamStartPointer, int openingWindowsPointer, int closingWindowsPointer,
+                                                 int pendingWindowsPointer, int completeWindowsPointer,
+                                                 ByteBuffer arrayHelper);
+
+	public native int getIntermediateTupleSize ();
 }

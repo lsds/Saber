@@ -115,4 +115,8 @@ public class FloatComparisonPredicate implements IPredicate {
 	public Expression getSecondExpression () {
 		return v2;
 	}
+
+	public IPredicate[] getPredicates() {
+		throw new UnsupportedOperationException("error: only complex expressions return a array of predicates");
+	}
 }

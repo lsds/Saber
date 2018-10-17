@@ -6,7 +6,7 @@ public class SystemConf {
 
 	public static boolean WWW = false;
 
-	public static String SABER_HOME = "/home/george/saber/yahoo_benchmark_saber";
+	public static String SABER_HOME = "/home/grt17/Caber/Saber";
 	
 	static {
 		
@@ -51,6 +51,8 @@ public class SystemConf {
 	
 	public static boolean CPU =  true;
 	public static boolean GPU = false;
+
+	public static boolean GENERATE = false;
 	
 	public static boolean HYBRID = false;
 	

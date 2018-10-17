@@ -19,7 +19,11 @@ public class QueryOperator {
 		this.gpuCode = gpuCode;
 		downstream = upstream = null;
 	}
-	
+
+	public IOperatorCode getCpuCode() {
+		return cpuCode;
+	}
+
 	public IOperatorCode getGpuCode() {
 		return gpuCode;
 	}

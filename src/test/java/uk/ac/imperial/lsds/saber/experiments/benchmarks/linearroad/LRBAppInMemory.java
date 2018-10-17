@@ -26,7 +26,7 @@ public class LRBAppInMemory {
 		int queryId = 1;
 
 		String executionMode = "cpu";
-		int numberOfThreads = 9;
+		int numberOfThreads = 2;
 		int batchSize = 32*1048576;
 
 		boolean jni = true;
@@ -75,6 +75,13 @@ public class LRBAppInMemory {
 
 		SystemConf.THREADS = numberOfThreads;
 
+        int dataRange = 1024;
+        SystemConf.C_HASH_TABLE_SIZE = dataRange;
+
+        SystemConf.GENERATE = true;
+
+        SystemConf.dump();
+
 		QueryConf queryConf = new QueryConf (batchSize);
 
 		benchmarkQuery = new LRB1 (queryConf, jni);
@@ -82,12 +89,8 @@ public class LRBAppInMemory {
 		/* Generate input stream */
 		int numberOfGeneratorThreads = 1;
 
-		int bufferSize = 4 * 131072; // set the timestamps with this buffer size
+		int bufferSize = 1 * 131072; // set the timestamps with this buffer size
 		int coreToBind = numberOfThreads+1; //nuberOfThre/ads + 1;
-		int dataRange = 1024;
-		SystemConf.C_HASH_TABLE_SIZE = dataRange;
-
-		SystemConf.dump();
 
 		//LRBGenerator generator = new LRBGenerator (bufferSize, numberOfGeneratorThreads, dataRange, coreToBind);
 
