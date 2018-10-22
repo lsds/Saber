@@ -38,7 +38,7 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	private CircularBufferWorker [] workers;
 	public AtomicInteger isReady;
 	public Latch isBufferFilledLatch;
-	public long timestamp = 0L;
+	public volatile long timestamp = 0L;
 	public long timestampBase = 0L;
 	public int globalIndex;
 	public int globalLength;
@@ -50,7 +50,8 @@ public class CircularQueryBuffer implements IQueryBuffer {
 	/* 												*/
 
     private LRBRewriterInCircular [] workersLRB;
-    public int dataLength = SystemConf.BATCH_SIZE / 8;
+    public int dataLength = SystemConf.BATCH_SIZE;
+    public int bufferSize = SystemConf.TIME_BOUNDARY;
 
 	private static int nextPowerOfTwo (int size) {
 		
@@ -121,7 +122,7 @@ public class CircularQueryBuffer implements IQueryBuffer {
 			
 			buffer = ByteBuffer.allocateDirect(this.size);
 
-            numberOfThreads = 1;
+            numberOfThreads = 2;
             int coreToBind = SystemConf.THREADS + 1;
             isReady = new AtomicInteger(-1);
             workersLRB = new LRBRewriterInCircular[numberOfThreads];
@@ -365,8 +366,9 @@ public class CircularQueryBuffer implements IQueryBuffer {
         while (this.isBufferFilledLatch.getCount()!=0)
             Thread.yield();
 
-        timestamp = timestamp + length/this.dataLength;
+        timestamp = timestamp + length/this.bufferSize;
 
+        //System.out.println("timestamp in CB: " + timestamp);
         this.isBufferFilledLatch.setLatch(numberOfThreads);
 
 

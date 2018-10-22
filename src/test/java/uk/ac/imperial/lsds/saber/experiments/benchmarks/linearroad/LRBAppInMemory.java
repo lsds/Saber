@@ -26,7 +26,7 @@ public class LRBAppInMemory {
 		int queryId = 1;
 
 		String executionMode = "cpu";
-		int numberOfThreads = 2;
+		int numberOfThreads = 7;
 		int batchSize = 32*1048576;
 
 		boolean jni = true;
@@ -61,13 +61,13 @@ public class LRBAppInMemory {
 
 		SystemConf.BATCH_SIZE = batchSize;
 
+        SystemConf.JNI = jni;
+        SystemConf.GENERATE = true;
+
 		SystemConf.CIRCULAR_BUFFER_SIZE = 8 * 128 * 1048576;
 		SystemConf.LATENCY_ON = false;
 
 		SystemConf.PARTIAL_WINDOWS = 2 * 32 * 1024;
-
-		// manually change the c code every time!!!
-		SystemConf.HASH_TABLE_SIZE = 1*32*1024; //1 * 32768;
 
 		SystemConf.UNBOUNDED_BUFFER_SIZE = 1 * 32 * 1048576;
 
@@ -75,10 +75,14 @@ public class LRBAppInMemory {
 
 		SystemConf.THREADS = numberOfThreads;
 
-        int dataRange = 1024;
+        int dataRange = 4 * 1024;
+        // manually change the c code every time!!!
+        SystemConf.HASH_TABLE_SIZE = 1*32*dataRange; //1 * 32768;
         SystemConf.C_HASH_TABLE_SIZE = dataRange;
 
-        SystemConf.GENERATE = true;
+
+        int bufferSize = 16 * 131072; // set the timestamps with this buffer size
+        SystemConf.TIME_BOUNDARY = bufferSize;
 
         SystemConf.dump();
 
@@ -88,8 +92,6 @@ public class LRBAppInMemory {
 
 		/* Generate input stream */
 		int numberOfGeneratorThreads = 1;
-
-		int bufferSize = 1 * 131072; // set the timestamps with this buffer size
 		int coreToBind = numberOfThreads+1; //nuberOfThre/ads + 1;
 
 		//LRBGenerator generator = new LRBGenerator (bufferSize, numberOfGeneratorThreads, dataRange, coreToBind);
@@ -116,8 +118,8 @@ public class LRBAppInMemory {
 		//circularBuffer.getEnd().lazySet(circularBuffer.getByteBuffer().position());
         circularBuffer.getByteBuffer().position(0);
 
-		circularBuffer.timestamp = 0;
-		//circularBuffer.dataLength = bufferSize;
+		circularBuffer.timestamp = -1;
+		//circularBuffer.dataLength = batchSize/bufferSize;
 
 		//Thread generator = new Thread(new LRBRewriter (coreToBind, circularBuffer, dataRange, bufferSize, timestamp));
 		//generator.start();

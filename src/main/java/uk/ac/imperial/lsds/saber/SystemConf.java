@@ -4,7 +4,7 @@ import java.util.Map;
 
 public class SystemConf {
 
-	public static boolean WWW = false;
+    public static boolean WWW = false;
 
 	public static String SABER_HOME = "/home/grt17/Caber/Saber";
 	
@@ -44,6 +44,10 @@ public class SystemConf {
 	public static int UNBOUNDED_BUFFER_SIZE = 1048576;
 
 	public static int BATCH_SIZE = 1048576;
+
+	public static int TIME_BOUNDARY = 1048576;
+
+    public static boolean JNI = false;
 
 	public static int THREADS = 1;
 	

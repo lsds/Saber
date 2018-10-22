@@ -39,7 +39,7 @@ public class LRBRewriterInCircular implements Runnable {
 		long timestamp;
 
         int step = SystemConf.BATCH_SIZE/this.circularBuffer.numberOfThreads; // power of two
-        long timeBase = (long)(id-1)*step/this.circularBuffer.dataLength;
+        long timeBase = (long)(id-1)*step/this.circularBuffer.bufferSize;
 
 		started = true;
 
@@ -73,7 +73,7 @@ public class LRBRewriterInCircular implements Runnable {
 				//writeToBuffer(this.circularBuffer.getByteBuffer(), startPos, endPos, timestamp);
 
 			} else {
-			    TheCPU.getInstance().changeTimestamps(buffer, startPos, endPos, this.circularBuffer.dataLength, timestamp);
+			    TheCPU.getInstance().changeTimestamps(buffer, startPos, endPos, this.circularBuffer.bufferSize, timestamp);
 				//System.arraycopy(this.circularBuffer.inputBuffer, startIndex, buffer.array(), startPos, step);
 				//writeToBuffer(this.circularBuffer.getByteBuffer(), startPos, endPos, timestamp);
 			}

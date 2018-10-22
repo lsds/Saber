@@ -351,7 +351,9 @@ public class CpuKernelGenerator {
                 "\n" +
                 "    long activePane;\n" +
                 "    bool hasComplete = ((data[bufferEndPointer - 1].timestamp - data[bufferStartPointer].timestamp) / PANE_SIZE) >=\n" +
-                "                       PANES_PER_WINDOW;";
+                "                       PANES_PER_WINDOW;\n" +
+                "    int firstPane = data[bufferStartPointer].timestamp / PANE_SIZE;\n" +
+                "    bool startingFromPane = (bufferStartPointer==0) ? true : (data[bufferStartPointer].timestamp % firstPane == 0);\n";
 
         b.append(s).append("\n");
         return b.toString();
@@ -485,8 +487,7 @@ public class CpuKernelGenerator {
             "    if (streamStartPointer == 0) {\n" +
             "        tempPane = data[bufferStartPointer].timestamp / PANE_SIZE;\n" +
             "        // compute the first window and check if it is complete!\n" +
-            "        while (currPos < bufferEndPointer) {\n";
-    public static String sw_p2 =
+            "        while (currPos < bufferEndPointer) {\n" +
             "            activePane = data[currPos].timestamp / PANE_SIZE;\n" +
             "            if (activePane - tempPane >= PANES_PER_SLIDE) {\n" +
             "                tempPane = activePane;\n" +
@@ -496,17 +497,18 @@ public class CpuKernelGenerator {
             "            if (activePane - tempCompletePane >= PANES_PER_WINDOW) {\n" +
             "                endPositions[currentWindow] = currPos;\n" +
             "                currentWindow++;\n" +
-            "                currPos++;\n" +
+            "                //currPos++;\n" +
             "                completeWindows++;\n" +
             "                break;\n" +
-            "            }\n" +
+            "            }\n";
+    public static String sw_p2 =
             "            currPos++;\n" +
             "        }\n" +
             "\n" +
             "    } else if ((data[bufferEndPointer - 1].timestamp / PANE_SIZE) <\n" +
             "               PANES_PER_WINDOW) { //we still have a pending window until the first full window is closed.\n" +
             "        tempPane = (bufferStartPointer != 0) ? data[bufferStartPointer - 1].timestamp / PANE_SIZE :\n" +
-            "                   data[BUFFER_SIZE / 32 - 1].timestamp / PANE_SIZE;\n" +
+            "                   data[BUFFER_SIZE / sizeof(input_tuple_t) - 1].timestamp / PANE_SIZE;\n" +
             "        while (currPos < bufferEndPointer) {\n";
     public static String sw_p3 =
             "            activePane = data[currPos].timestamp / PANE_SIZE;\n" +
@@ -519,20 +521,12 @@ public class CpuKernelGenerator {
             "        }\n" +
             "    } else { // this is not the first batch, so we get the previous panes for the closing and opening windows\n" +
             "        tempPane = (bufferStartPointer != 0) ? data[bufferStartPointer - 1].timestamp / PANE_SIZE :\n" +
-            "                   data[BUFFER_SIZE / 32 - 1].timestamp / PANE_SIZE; // TODO: fix this!!\n" +
+            "                   data[BUFFER_SIZE / sizeof(input_tuple_t) - 1].timestamp / PANE_SIZE; // TODO: fix this!!\n" +
             "        // compute the closing windows util we reach the first complete window. After this point we start to remove slides!\n" +
             "        // There are two discrete cases depending on the starting timestamp of this batch. In the first we don't count the last closing window, as it is complete.\n" +
             "        //printf(\"data[bufferStartPointer].timestamp %ld \\n\", data[bufferStartPointer].timestamp);\n" +
-            "\n" +
-            "        while (currPos < bufferEndPointer) {\n";
-    public static String sw_p4 =
+            "        while (currPos < bufferEndPointer) {\n" +
             "            activePane = data[currPos].timestamp / PANE_SIZE;\n" +
-            "            if (activePane - tempOpenPane >= PANES_PER_SLIDE) { // new slide and possible opening windows\n" +
-            "                tempOpenPane = activePane;\n" +
-            "                // count here and not with the closing windows the starting points of slides!!\n" +
-            "                startPositions[currentSlide] = currPos;\n" +
-            "                currentSlide++;\n" +
-            "            }\n" +
             "            if (activePane - tempCompletePane >= PANES_PER_WINDOW) { // complete window\n" +
             "                if (startPositions[currentSlide - 1] !=\n" +
             "                    currPos) { // check if I have already added this position in the previous step!\n" +
@@ -541,7 +535,7 @@ public class CpuKernelGenerator {
             "                }\n" +
             "                endPositions[currentWindow] = currPos;\n" +
             "                currentWindow++;\n" +
-            "                currPos++;\n" +
+            "                //currPos++;\n" +
             "                completeWindows++;\n" +
             "                break;\n" +
             "            }\n" +
@@ -556,10 +550,27 @@ public class CpuKernelGenerator {
             "                closingWindows++;\n" +
             "                closingWindowsPointers[closingWindows] = closingWindowsPointer; //- 1;\n" +
             "                //printf(\"activePane %d \\n\", activePane);\n" +
+            "            }\n" ;
+    public static String sw_p4 =
+            "            if (activePane - tempOpenPane >= PANES_PER_SLIDE) { // new slide and possible opening windows\n" +
+            "                tempOpenPane = activePane;\n" +
+            "                // count here and not with the closing windows the starting points of slides!!\n" +
+            "                //startPositions[currentSlide] = currPos;\n" +
+            "                //currentSlide++;\n" +
+            "                if (startPositions[currentSlide - 1] !=\n" +
+            "                    currPos) { // check if I have already added this position in the previous step!\n" +
+            "                    startPositions[currentSlide] = currPos;\n" +
+            "                    currentSlide++;\n" +
+            "                }\n" +
             "            }\n" +
             "            currPos++;\n" +
             "        }\n" +
-            "\n" +
+            "        // remove the extra values so that we have the first complete window\n" +
+            "        if (completeWindows > 0 && !startingFromPane) {\n" +
+            "            for (int i = bufferStartPointer; i < startPositions[1]; i++ ) {\n" ;
+    public static String sw_p5 =
+            "            }\n" +
+            "        }\n" +
             "    }\n" +
             "\n" +
             "    int tempStartPosition;\n" +
@@ -586,30 +597,32 @@ public class CpuKernelGenerator {
             "        openingWindowsPointer += MAP_SIZE;\n" +
             "        openingWindows++;\n" +
             "        openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;\n" +
-            "        currentWindow++; // in order to skip the check later\n" +
+            "        //currentWindow++; // in order to skip the check later\n" +
             "    } else if (completeWindows > 0) { // we have at least one complete window...\n" +
             "\n" +
             "        // write results and pack them for the first complete window in the batch\n" +
             "        for (int i = 0; i < MAP_SIZE; i++) {\n";
-    public static String sw_p5 =
+    public static String sw_p6 =
             "        }\n" +
             "        // write in the correct slot, as the value has already been incremented!\n" +
-            "        completeWindowsPointers[completeWindows] = completeWindowsPointer; // - 1;\n" +
+            "        completeWindowsPointers[completeWindows] = completeWindowsPointer; // - 1;\n";
+    public static String sw_p7 =
+            "        currPos++;\n" +
             "\n" +
             "        // compute the rest windows\n" +
             "        currPos = endPositions[0];\n" +
             "        tempPane = data[currPos].timestamp/PANE_SIZE; //currStartPos = data[currPos].timestamp; //startPositions[currentWindow];\n" +
+            "        int removalIndex = (startingFromPane) ? currentWindow : currentWindow + 1;" +
             "        while (currPos < bufferEndPointer) {\n" +
             "            // remove previous slide\n" +
-            "            tempStartPosition = startPositions[currentWindow - 1];\n" +
-            "            tempEndPosition = startPositions[currentWindow];\n" +
+            "            tempStartPosition = startPositions[removalIndex - 1];\n" +
+            "            tempEndPosition = startPositions[removalIndex];\n" +
             "            for (int i = tempStartPosition; i < tempEndPosition; i++) {\n";
-    public static String sw_p6 =
+    public static String sw_p8 =
             "            }\n" +
             "            // add elements from the next slide\n" +
             "            currPos = endPositions[currentWindow - 1] + 1; // take the next position, as we have already computed this value\n" +
-            "            while (true) {\n";
-    public static String sw_p7 =
+            "            while (true) {\n" +
             "\n" +
             "                activePane = data[currPos].timestamp/PANE_SIZE;\n" +
             "                // complete windows\n" +
@@ -621,14 +634,16 @@ public class CpuKernelGenerator {
             "                    currentWindow++;\n" +
             "                    // write and pack the complete window result\n" +
             "                    for (int i = 0; i < MAP_SIZE; i++) {\n";
-    public static String sw_p8 =
+    public static String sw_p9 =
             "                    }\n" +
             "                    completeWindows++;\n" +
             "                    completeWindowsPointers[completeWindows] = completeWindowsPointer; // - 1;\n" +
-            "                    // increment before exiting for a complete window\n" +
+            "                    // increment before exiting for a complete window\n";
+    public static String sw_p10 =
             "                    currPos++;\n" +
             "                    break;\n" +
-            "                }\n" +
+            "                }\n";
+    public static String sw_p11 =
             "                currPos++;\n" +
             "                if (currPos >= bufferEndPointer) { // we have reached the first open window after all the complete ones\n" +
             "                    // write the first open window if we have already computed the result, otherwise remove the respective tuples\n" +
@@ -642,17 +657,23 @@ public class CpuKernelGenerator {
             "                    break;\n" +
             "                }\n" +
             "            }\n" +
+            "            removalIndex++;\n" +
             "        }\n" +
             "    }\n" +
             "\n" +
             "    // compute the rest opening windows\n" +
             "    //currentWindow += (openingWindows==1); // if opening windows are already one, we have to compute one less\n" +
+            "    if (completeWindows > 0) {\n" +
+            "        currentWindow = (startingFromPane) ? currentWindow : currentWindow + 1;\n" +
+            "    }\n" +
             "    while (currentWindow < currentSlide - 1) {\n" +
             "        // remove previous slide\n" +
             "        tempStartPosition = startPositions[currentWindow];\n" +
             "        tempEndPosition = startPositions[currentWindow + 1];\n" +
+            "        currentWindow++;\n" +
+            "        if (tempStartPosition == tempEndPosition) continue;" +
             "        for (int i = tempStartPosition; i < tempEndPosition; i++) {\n";
-    public static String sw_p9 =
+    public static String sw_p12 =
             "        }\n" +
             "        // write result to the opening windows\n" +
             "        std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, MAP_SIZE * ht_node_size);\n" +
@@ -660,7 +681,6 @@ public class CpuKernelGenerator {
             "        openingWindows++;\n" +
             "        openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;\n" +
             "\n" +
-            "        currentWindow++;\n" +
             "    }\n" +
             "\n" +
                     "\n" +

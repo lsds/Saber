@@ -268,6 +268,85 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
         pendingWindows.setCount(arrayHelper.getInt(24));
         completeWindows.setCount(arrayHelper.getInt(28));
 
+
+        /*System.out.println("first timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferStartPointer()));
+        System.out.println("last timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferEndPointer() - inputTupleSize));
+        System.out.println("streamStartPointer: " + batch.getStreamStartPointer());
+        System.out.println("opening windows "+ openingWindows.numberOfWindows());
+        if (openingWindows.numberOfWindows() > 0) {
+            for (int i = 0; i < openingWindows.numberOfWindows(); i++) {
+                System.out.println("occupancy, timestamp, key, value");
+                int base = i * SystemConf.HASH_TABLE_SIZE;
+                for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
+                    int offset = j * 32;
+                    System.out.println(openingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
+                            openingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", "  +
+                            openingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
+                            //openingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20) + ", "  +
+                            openingWindows.getBuffer().getByteBuffer().getInt(base + offset + 24));
+                }
+            }
+            System.out.println("-------------");
+        }
+
+        System.out.println("closing windows "+ closingWindows.numberOfWindows());
+        if (closingWindows.numberOfWindows() > 0) {
+            for (int i = 0; i < closingWindows.numberOfWindows(); i++) {
+                System.out.println("occupancy, timestamp, key, value");
+                int base = i * SystemConf.HASH_TABLE_SIZE;
+                for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
+                    int offset = j * 32;
+                    System.out.println(closingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
+                            closingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", "  +
+                            closingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
+                            //closingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20) + ", "  +
+                            closingWindows.getBuffer().getByteBuffer().getInt(base + offset + 24));
+                }
+            }
+            System.out.println("-------------");
+        }
+
+        System.out.println("pending windows "+ pendingWindows.numberOfWindows());
+        if (pendingWindows.numberOfWindows() > 0) {
+            for (int i = 0; i < pendingWindows.numberOfWindows(); i++) {
+                System.out.println("occupancy, timestamp, key, value");
+                int base = i * SystemConf.HASH_TABLE_SIZE;
+                for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
+                    int offset = j * 32;
+                    System.out.println(pendingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
+                            pendingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", " +
+                            pendingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
+                            //pendingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20) + ", "  +
+                            pendingWindows.getBuffer().getByteBuffer().getInt(base + offset + 24));
+                }
+            }
+            System.out.println("-------------");
+        }
+        System.out.println("complete windows "+ completeWindows.numberOfWindows());
+        if (completeWindows.numberOfWindows() > 0) {
+            for (int i = 0; i < completeWindows.numberOfWindows(); i++) {
+                System.out.println("timestamp, key, value");
+                int base = i * SystemConf.HASH_TABLE_SIZE/32 * 16;
+                for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
+                    int offset = j * 16;
+                    System.out.println(completeWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
+                            completeWindows.getBuffer().getByteBuffer().getInt(base + offset + 8) + ", " +
+                            (int) completeWindows.getBuffer().getByteBuffer().getFloat(base + offset + 12));
+                }
+            }
+            System.out.println("-------------");
+        }
+        System.out.println("--------xxxxx---------");
+
+        System.out.println("first timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferStartPointer()));
+        System.out.println("last timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferEndPointer() - inputTupleSize));
+        System.out.println("streamStartPointer: " + batch.getStreamStartPointer());
+        System.out.println("opening windows "+ openingWindows.numberOfWindows());
+        System.out.println("closing windows "+ closingWindows.numberOfWindows());
+        System.out.println("pending windows "+ pendingWindows.numberOfWindows());
+        System.out.println("complete windows "+ completeWindows.numberOfWindows());
+        System.out.println("--------");*/
+
         /* At the end of processing, set window batch accordingly */
         batch.setClosingWindows  ( closingWindows);
         batch.setPendingWindows  ( pendingWindows);
@@ -295,7 +374,7 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
 
         String headers_and_structs = CpuKernelGenerator.getHeader(inputSchema, null, outputSchema);
         String windowDef = CpuKernelGenerator.getWindowDefinition(windowDefinition);
-        String hashtable = CpuKernelGenerator.getHashTableDefinition(SystemConf.SABER_HOME + "/clib/cpu_templates/hashtable.txt",
+        String hashtable = CpuKernelGenerator.getHashTableDefinition(SystemConf.SABER_HOME + "/clib/cpu_templates/hashtable_tmpl",
                 aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes, keyLength, valueLength);
 
         String templateTypes = CpuKernelGenerator.getTemplateTypes (aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes);
@@ -312,29 +391,39 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
         String sw_p3 = CpuKernelGenerator.sw_p3;
         //String computationBlockForInsert = CpuKernelGenerator.getComputationBlock ();
         String sw_p4 = CpuKernelGenerator.sw_p4;
+        String computationBlockForEvict_t4 = CpuKernelGenerator.getComputationBlockForEvict (windowDefinition, aggregationTypes,
+                aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,
+                expressions, predicate, inputSchema, 4);
+        String sw_p5 = CpuKernelGenerator.sw_p5;
 
         // todo: this is where having or self join should happen
         String writeCompleteWindows_t3 = CpuKernelGenerator.getWriteCompleteWindowsBlock (aggregationGroupByTypes, aggregationGroupByAttributes,
                 groupByAttributes, outputSchema, 3);
-        String sw_p5 = CpuKernelGenerator.sw_p5;
-        String computationBlockForEvict_t4 = CpuKernelGenerator.getComputationBlockForEvict (windowDefinition, aggregationTypes,
-                aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,
-                expressions, predicate, inputSchema, 4);
-        String sw_p6 = CpuKernelGenerator.sw_p6;
-        String computationBlockForInsert_t4 = CpuKernelGenerator.getComputationBlockForInsert (windowDefinition, aggregationTypes,
-                aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,
-                expressions, predicate, inputSchema, 4);
-        String sw_p7 = CpuKernelGenerator.sw_p7;
 
+        String sw_p6 = CpuKernelGenerator.sw_p6;
+        String computationBlockForInsert_t2 = CpuKernelGenerator.getComputationBlockForInsert (windowDefinition, aggregationTypes,
+                aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,
+                expressions, predicate, inputSchema, 2);
+        String sw_p7 = CpuKernelGenerator.sw_p7;
+        // String computationBlockForEvict_t4
+
+        String sw_p8 = CpuKernelGenerator.sw_p8;
         // todo: this is where having or self join should happen
         String writeCompleteWindows_t6 = CpuKernelGenerator.getWriteCompleteWindowsBlock (aggregationGroupByTypes, aggregationGroupByAttributes,
                 groupByAttributes, outputSchema, 6);
-        String sw_p8 = CpuKernelGenerator.sw_p8;
+        String sw_p9 = CpuKernelGenerator.sw_p9;
+        String computationBlockForInsert_t5 = CpuKernelGenerator.getComputationBlockForInsert (windowDefinition, aggregationTypes,
+                aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,
+                expressions, predicate, inputSchema, 5);
+        String sw_p10 = CpuKernelGenerator.sw_p10;
+        String computationBlockForInsert_t4 = CpuKernelGenerator.getComputationBlockForInsert (windowDefinition, aggregationTypes,
+                aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,
+                expressions, predicate, inputSchema, 4);
+        String sw_p11 = CpuKernelGenerator.sw_p11;
         String computationBlockForEvict_t3 = CpuKernelGenerator.getComputationBlockForEvict (windowDefinition, aggregationTypes,
                 aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,
                 expressions, predicate, inputSchema, 3);
-        String sw_p9 = CpuKernelGenerator.sw_p9;
-
+        String sw_p12 = CpuKernelGenerator.sw_p12;
 
         // merge code
         String mergeFunction_p1 = CpuKernelGenerator.getMergeFunction_p1 (templateTypes);
@@ -362,8 +451,10 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
 
         String source = headers_and_structs + windowDef + hashtable + signature + initializeAggregationVariables +
                 sw_p1 + computationBlockForInsert_t3 + sw_p2 + computationBlockForInsert_t3 + sw_p3 + computationBlockForInsert_t3 +
-                sw_p4 + writeCompleteWindows_t3 + sw_p5 + computationBlockForEvict_t4 + sw_p6 + computationBlockForInsert_t4 +
-                sw_p7 + writeCompleteWindows_t6 + sw_p8 + computationBlockForEvict_t3 + sw_p9 +
+                sw_p4 + computationBlockForEvict_t4 + sw_p5 + writeCompleteWindows_t3 + sw_p6 +
+                computationBlockForInsert_t2 + sw_p7 + computationBlockForEvict_t4 + sw_p8 + writeCompleteWindows_t6 + sw_p9 +
+                computationBlockForInsert_t5 +sw_p10 + computationBlockForInsert_t4 + sw_p11 + computationBlockForEvict_t3 + sw_p12 +
+
                 mergeFunction_p1 + writeCompleteWindowsForMerge_b1_t4_not_found + mergeFunction_p2 + writeCompleteWindowsForMerge_b1_t4_found + mergeFunction_p3 + mergeOpeningWindowsBlock_b1_t4 +
                 mergeFunction_p4 + writeCompleteWindowsForMerge_b2_t3 + mergeFunction_p5 + mergeOpeningWindowsBlock_b2_t3 + mergeFunction_p6 +
                 mergeHelperFunction + changeTimestampsFunction;

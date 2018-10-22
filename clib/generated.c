@@ -106,7 +106,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
     //const int mapSize = 16;//1024; // TODO: the size of the hashtable is hard-coded at the moment!
     //hashtable *map = ht_create(mapSize);
     //ht_node *hTable = map->table;
-    hashtable<int, int> map;
+    hashtable<int, int> map(mapSize);
     ht_node<int, int> *hTable = map.getTable();
 
     long tempPane;
@@ -134,13 +134,17 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
     long activePane;
     bool hasComplete = ((data[bufferEndPointer - 1].timestamp - data[bufferStartPointer].timestamp) / windowPaneSize) >=
                        panesPerWindow;
+    int firstPane = data[bufferStartPointer].timestamp / windowPaneSize;
+    bool startingFromPane = (bufferStartPointer==0) ? true : (data[bufferStartPointer].timestamp % firstPane == 0);
+    int removalIndex;
+
     // the beginning of the stream. Check if we have at least one complete window so far!
     if (streamStartPointer == 0) {
         tempPane = data[bufferStartPointer].timestamp / windowPaneSize;
         // compute the first window and check if it is complete!
         while (currPos < bufferEndPointer) {
-            map.insert_and_increment_counter(&data[currPos].vehicle, data[currPos].timestamp); //ht_insert_and_increment(hTable, data[currPos].vehicle, 1, data[currPos].timestamp, mapSize);
             activePane = data[currPos].timestamp / windowPaneSize;
+
             if (activePane - tempPane >= panesPerSlide) {
                 tempPane = activePane;
                 startPositions[currentSlide] = currPos;
@@ -149,17 +153,19 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
             if (activePane - tempCompletePane >= panesPerWindow) {
                 endPositions[currentWindow] = currPos;
                 currentWindow++;
-                currPos++;
+                //currPos++;
                 completeWindows++;
                 break;
             }
+
+            map.insert_and_increment_counter(&data[currPos].vehicle, data[currPos].timestamp); //ht_insert_and_increment(hTable, data[currPos].vehicle, 1, data[currPos].timestamp, mapSize);
             currPos++;
         }
 
     } else if ((data[bufferEndPointer - 1].timestamp / windowPaneSize) <
                panesPerWindow) { //we still have a pending window until the first full window is closed.
         tempPane = (bufferStartPointer != 0) ? data[bufferStartPointer - 1].timestamp / windowPaneSize :
-                   data[bufferSize / 32 - 1].timestamp / windowPaneSize;
+                   data[bufferSize / sizeof(PosSpeedStr) - 1].timestamp / windowPaneSize;
         while (currPos < bufferEndPointer) {
             map.insert_and_increment_counter(&data[currPos].vehicle, data[currPos].timestamp); //ht_insert_and_increment(hTable, data[currPos].vehicle, 1, data[currPos].timestamp, mapSize);
             activePane = data[currPos].timestamp / windowPaneSize;
@@ -172,43 +178,31 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
         }
     } else { // this is not the first batch, so we get the previous panes for the closing and opening windows
         tempPane = (bufferStartPointer != 0) ? data[bufferStartPointer - 1].timestamp / windowPaneSize :
-                   data[bufferSize / 32 - 1].timestamp / windowPaneSize; // TODO: fix this!!
+                   data[bufferSize / sizeof(PosSpeedStr) - 1].timestamp / windowPaneSize; // TODO: fix this!!
         // compute the closing windows util we reach the first complete window. After this point we start to remove slides!
         // There are two discrete cases depending on the starting timestamp of this batch. In the first we don't count the last closing window, as it is complete.
         //printf("data[bufferStartPointer].timestamp %ld \n", data[bufferStartPointer].timestamp);
 
         //startPositions[currentSlide] = currPos;
         //currentSlide++;
-        while (currPos < bufferEndPointer) {
-            map.insert_and_increment_counter(&data[currPos].vehicle, data[currPos].timestamp); //ht_insert_and_increment(hTable, data[currPos].vehicle, 1, data[currPos].timestamp, mapSize);
 
-            activePane = data[currPos].timestamp / windowPaneSize;
-            if (activePane - tempOpenPane >= panesPerSlide) { // new slide and possible opening windows
-                tempOpenPane = activePane;
-                // count here and not with the closing windows the starting points of slides!!
-                startPositions[currentSlide] = currPos;
-                currentSlide++;
-                //if (!hasComplete) { // we don't have complete windows, so everything is opening
-                // write result to the opening windows
-                //    std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
-                //    openingWindowsPointer += mapSize;
-                //    openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
-                //    openingWindows++;
-                //}
-            }
+        while (currPos < bufferEndPointer) {
+           activePane = data[currPos].timestamp / windowPaneSize;
+
             if (activePane - tempCompletePane >= panesPerWindow) { // complete window
                 if (startPositions[currentSlide - 1] !=
                     currPos) { // check if I have already added this position in the previous step!
                     startPositions[currentSlide] = currPos;
                     currentSlide++;
                 }
+
                 endPositions[currentWindow] = currPos;
                 currentWindow++;
-                currPos++;
+                //currPos++;
                 completeWindows++;
                 break;
             }
-            // Does the second check stand???
+           // Does the second check stand???
             if (activePane - tempPane >= panesPerSlide &&
                 activePane >= panesPerWindow) {//activePane - tempPane < panesPerWindow) { // closing window
                 tempPane = activePane;
@@ -220,9 +214,36 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
                 closingWindowsPointers[closingWindows] = closingWindowsPointer; //- 1;
                 //printf("activePane %d \n", activePane);
             }
+
+            map.insert_and_increment_counter(&data[currPos].vehicle, data[currPos].timestamp); //ht_insert_and_increment(hTable, data[currPos].vehicle, 1, data[currPos].timestamp, mapSize);
+
+            if (activePane - tempOpenPane >= panesPerSlide) { // new slide and possible opening windows
+                tempOpenPane = activePane;
+                // count here and not with the closing windows the starting points of slides!!
+                //startPositions[currentSlide] = currPos;
+                //currentSlide++;
+                if (startPositions[currentSlide - 1] !=
+                    currPos) { // check if I have already added this position in the previous step!
+                    startPositions[currentSlide] = currPos;
+                    currentSlide++;
+                }
+                //if (!hasComplete) { // we don't have complete windows, so everything is opening
+                // write result to the opening windows
+                //    std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node));
+                //    openingWindowsPointer += mapSize;
+                //    openingWindowsPointers[openingWindows] = openingWindowsPointer - 1;
+                //    openingWindows++;
+                //}
+            }
             currPos++;
         }
 
+        // remove the extra values so that we have the first complete window
+        if (completeWindows > 0 && !startingFromPane) {
+            for (int i = bufferStartPointer; i < startPositions[1]; i++ ) {
+                map.evict_and_decrement_counter(&data[i].vehicle);
+            }
+        }
     }
 
 
@@ -251,7 +272,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
         openingWindows++;
         openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;
         // todo: fix this!!
-        currentWindow++; // in order to skip the check later
+        //currentWindow++; // in order to skip the check later
         //} else if (completeWindows == 0 && closingWindows > 0) { // We have only opening and closing windows which are already written
     } else if (completeWindows > 0) { // we have at least one complete window...
 
@@ -267,22 +288,28 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
         completeWindowsPointers[completeWindows] = completeWindowsPointer; // - 1;
         //completeWindows++;
 
+        map.insert_and_increment_counter(&data[currPos].vehicle, data[currPos].timestamp);
+        currPos++;
+
         // compute the rest windows
         currPos = endPositions[0];
         tempPane = data[currPos].timestamp/windowPaneSize; //currStartPos = data[currPos].timestamp; //startPositions[currentWindow];
+        removalIndex = (startingFromPane) ? currentWindow : currentWindow + 1;
         while (currPos < bufferEndPointer) {
             // remove previous slide
-            tempStartPosition = startPositions[currentWindow - 1];
-            tempEndPosition = startPositions[currentWindow];
+            tempStartPosition = startPositions[removalIndex - 1];
+            tempEndPosition = startPositions[removalIndex];
+
+            //printf("tempStartPosition %d, tempEndPosition %d \n", tempStartPosition, tempEndPosition);
+            //fflush(stdout);
             for (int i = tempStartPosition; i < tempEndPosition; i++) {
                 map.evict_and_decrement_counter(&data[i].vehicle); //ht_update_counter(hTable, data[i].vehicle, -1, mapSize);
             }
             // add elements from the next slide
             currPos = endPositions[currentWindow - 1] + 1; // take the next position, as we have already computed this value
             while (true) {
-                map.insert_and_increment_counter(&data[currPos].vehicle, data[currPos].timestamp); //ht_insert_and_increment(hTable, data[currPos].vehicle, 1, data[currPos].timestamp, mapSize);
 
-                activePane = data[currPos].timestamp/windowPaneSize;
+                 activePane = data[currPos].timestamp/windowPaneSize;
                 // complete windows
                 if (activePane - tempPane >= panesPerSlide ) { //&& (data[bufferEndPointer-1].timestamp/windowPaneSize) - activePane>= panesPerWindow-1
                     tempPane = data[currPos].timestamp/windowPaneSize;
@@ -301,9 +328,14 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
                     completeWindows++;
                     completeWindowsPointers[completeWindows] = completeWindowsPointer; // - 1;
                     // increment before exiting for a complete window
+
+                    map.insert_and_increment_counter(&data[currPos].vehicle, data[currPos].timestamp);
+
                     currPos++;
                     break;
                 }
+                map.insert_and_increment_counter(&data[currPos].vehicle, data[currPos].timestamp); //ht_insert_and_increment(hTable, data[currPos].vehicle, 1, data[currPos].timestamp, mapSize);
+
                 currPos++;
                 if (currPos >= bufferEndPointer) { // we have reached the first open window after all the complete ones
                     // write the first open window if we have already computed the result, otherwise remove the respective tuples
@@ -317,16 +349,21 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
                     break;
                 }
             }
+            removalIndex ++;
         }
     }
 
 
     // compute the rest opening windows
     //currentWindow += (openingWindows==1); // if opening windows are already one, we have to compute one less
+    if (completeWindows > 0)
+        currentWindow = (startingFromPane) ? currentWindow : currentWindow + 1;
     while (currentWindow < currentSlide - 1) {
         // remove previous slide
         tempStartPosition = startPositions[currentWindow];
         tempEndPosition = startPositions[currentWindow + 1];
+        currentWindow++;
+        if (tempStartPosition==tempEndPosition) continue;
         for (int i = tempStartPosition; i < tempEndPosition; i++) {
             map.evict_and_decrement_counter(&data[i].vehicle); //ht_update_counter(hTable, data[i].vehicle, -1, mapSize);
         }
@@ -336,7 +373,6 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
         openingWindows++;
         openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;
 
-        currentWindow++;
     }
 
 
@@ -729,8 +765,11 @@ JNIEXPORT jlong JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_changeTime
     //printf("%d, %d, %ld \n", start, end, timestamp);
     //fflush(stdout);
     for (int i = start; i < end; i++) {
-        if (temp%changeOffset==0)
+        if (temp%changeOffset==0) {
             timestamp++;
+            //printf("timestamp %ld \n", timestamp);
+            //fflush(stdout);
+         }
         inputBuffer[i].timestamp = timestamp;
         temp++;
     }

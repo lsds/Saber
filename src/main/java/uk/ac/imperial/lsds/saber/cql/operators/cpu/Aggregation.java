@@ -1080,7 +1080,8 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
 		/* Release hash maps */
 		windowHashTable.release();
 
-        /*System.out.println("first timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferStartPointer()));
+        /*int[] pos = new int[]{5, 0, 15, 12, 2 ,9, 6, 3, 11, 10, 13, 14, 1, 7, 4, 8};
+        System.out.println("first timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferStartPointer()));
         System.out.println("last timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferEndPointer() - inputTupleSize));
         System.out.println("streamStartPointer: " + batch.getStreamStartPointer());
         System.out.println("opening windows "+ openingWindows.numberOfWindows());
@@ -1089,11 +1090,11 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
                 System.out.println("occupancy, timestamp, key, value");
                 int base = i * SystemConf.HASH_TABLE_SIZE;
                 for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
-                    int offset = j * 32;
+                    int offset = pos[j] * 32;
                     System.out.println(openingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
                             openingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", "  +
                             openingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
-                            openingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20));
+                            (int) openingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20));
                 }
             }
             System.out.println("-------------");
@@ -1105,11 +1106,11 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
                 System.out.println("occupancy, timestamp, key, value");
                 int base = i * SystemConf.HASH_TABLE_SIZE;
                 for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
-                    int offset = j * 32;
+                    int offset = pos[j] * 32;
                     System.out.println(closingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
                             closingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", "  +
                             closingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
-                            closingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20));
+                            (int) closingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20));
                 }
             }
             System.out.println("-------------");
@@ -1121,11 +1122,11 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
                 System.out.println("occupancy, timestamp, key, value");
                 int base = i * SystemConf.HASH_TABLE_SIZE;
                 for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
-                    int offset = j * 32;
+                    int offset = pos[j] * 32;
                     System.out.println(pendingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
                             pendingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", " +
                             pendingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
-                            pendingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20));
+                            (int) pendingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20));
                 }
             }
             System.out.println("-------------");
@@ -1136,15 +1137,24 @@ public class Aggregation implements IOperatorCode, IAggregateOperator {
                 System.out.println("timestamp, key, value");
 				int base = i * SystemConf.HASH_TABLE_SIZE/32 * 16;
                 for (int j = 0; j < SystemConf.HASH_TABLE_SIZE/32; j++) {
-                    int offset = j * 16;
+                    int offset = pos[j] * 16;
                     System.out.println(completeWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
                             completeWindows.getBuffer().getByteBuffer().getInt(base + offset + 8) + ", " +
-                            completeWindows.getBuffer().getByteBuffer().getFloat(base + offset + 12));
+                            (int) completeWindows.getBuffer().getByteBuffer().getFloat(base + offset + 12));
                 }
             }
             System.out.println("-------------");
         }
-        System.out.println("--------xxxxx---------");*/
+        System.out.println("--------xxxxx---------");
+
+		System.out.println("first timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferStartPointer()));
+		System.out.println("last timestamp: " + inputBuffer.getByteBuffer().getLong(batch.getBufferEndPointer() - inputTupleSize));
+		System.out.println("streamStartPointer: " + batch.getStreamStartPointer());
+		System.out.println("opening windows "+ openingWindows.numberOfWindows());
+		System.out.println("closing windows "+ closingWindows.numberOfWindows());
+		System.out.println("pending windows "+ pendingWindows.numberOfWindows());
+		System.out.println("complete windows "+ completeWindows.numberOfWindows());
+		System.out.println("--------");*/
 
 		/* At the end of processing, set window batch accordingly */
 		batch.setClosingWindows  ( closingWindows);
