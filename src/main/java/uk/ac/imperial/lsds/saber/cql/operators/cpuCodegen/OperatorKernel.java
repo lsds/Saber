@@ -52,6 +52,7 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
     private boolean groupBy = false;
 
     private boolean processIncremental;
+    private boolean processInvertible;
 
     ITupleSchema outputSchema;
 
@@ -150,23 +151,29 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
 
         this.outputSchema = ExpressionsUtil.getTupleSchemaFromExpressions(outputAttributes);
 
-        boolean containsIncrementalAggregationType = true;
+        boolean containsInvertibleAggregationType = true;
         for (int i = 0; i < aggregationGroupByTypes.length; ++i) {
             if (
                     aggregationGroupByTypes[i] != AggregationType.CNT &&
                             aggregationGroupByTypes[i] != AggregationType.SUM &&
                             aggregationGroupByTypes[i] != AggregationType.AVG) {
 
-                containsIncrementalAggregationType = false;
+                containsInvertibleAggregationType = false;
                 break;
             }
         }
 
-        if (containsIncrementalAggregationType) {
-            System.out.println("[DBG] operator contains incremental aggregation type");
-            processIncremental = (windowDefinition.getSlide() < windowDefinition.getSize() / 2);
+        if (containsInvertibleAggregationType) {
+            System.out.println("[DBG] operator contains invertible aggregation types");
+            processInvertible = true;
         } else {
-            processIncremental = false;
+            System.out.println("[DBG] operator contains non-invertible aggregation types");
+            processInvertible = false;
+        }
+
+        processIncremental = (windowDefinition.getSlide() < windowDefinition.getSize() / 2);
+        if (processIncremental) {
+            System.out.println("[DBG] operator is computed incrementally");
         }
 
         valueLength = 4 * aggregationGroupByTypes.length;
@@ -282,8 +289,8 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
                     System.out.println(openingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
                             openingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", "  +
                             openingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
-                            //openingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20) + ", "  +
-                            openingWindows.getBuffer().getByteBuffer().getInt(base + offset + 24));
+                            openingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20)); // + ", "  +
+                            //openingWindows.getBuffer().getByteBuffer().getInt(base + offset + 24));
                 }
             }
             System.out.println("-------------");
@@ -299,8 +306,8 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
                     System.out.println(closingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
                             closingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", "  +
                             closingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
-                            //closingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20) + ", "  +
-                            closingWindows.getBuffer().getByteBuffer().getInt(base + offset + 24));
+                            closingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20)); // + ", "  +
+                            //closingWindows.getBuffer().getByteBuffer().getInt(base + offset + 24));
                 }
             }
             System.out.println("-------------");
@@ -316,8 +323,8 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
                     System.out.println(pendingWindows.getBuffer().getByteBuffer().getLong(base + offset) + ", "  +
                             pendingWindows.getBuffer().getByteBuffer().getLong(base + offset + 8) + ", " +
                             pendingWindows.getBuffer().getByteBuffer().getInt(base + offset + 16) + ", "  +
-                            //pendingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20) + ", "  +
-                            pendingWindows.getBuffer().getByteBuffer().getInt(base + offset + 24));
+                            pendingWindows.getBuffer().getByteBuffer().getFloat(base + offset + 20)); // + ", "  +
+                            //pendingWindows.getBuffer().getByteBuffer().getInt(base + offset + 24));
                 }
             }
             System.out.println("-------------");
@@ -374,13 +381,20 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
 
         String headers_and_structs = CpuKernelGenerator.getHeader(inputSchema, null, outputSchema);
         String windowDef = CpuKernelGenerator.getWindowDefinition(windowDefinition);
-        String hashtable = CpuKernelGenerator.getHashTableDefinition(SystemConf.SABER_HOME + "/clib/cpu_templates/hashtable_tmpl",
-                aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes, keyLength, valueLength);
 
-        String templateTypes = CpuKernelGenerator.getTemplateTypes (aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes);
-        String signature = CpuKernelGenerator.getSignature (templateTypes);
-        String initializeAggregationVariables = CpuKernelGenerator.getVariables (aggregationTypes, aggregationAttributes,
-                aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes, templateTypes);
+
+        String setValues = "";
+        if (!processInvertible)
+            setValues = "map.setValues();";
+        String hashtable = CpuKernelGenerator.getHashTableDefinition(aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes, keyLength, valueLength);
+
+        String templateTypes = CpuKernelGenerator.getTemplateTypes (aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes, false);
+        String templateTypesForHashTable = CpuKernelGenerator.getTemplateTypes (aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes, true);
+
+        String signature = CpuKernelGenerator.getSignature ("ht_node"+templateTypes);
+
+        //aggregationTypes
+        String initializeAggregationVariables = CpuKernelGenerator.getGroupByVariables (groupByAttributes, templateTypes, templateTypesForHashTable);
 
         String sw_p1 = CpuKernelGenerator.sw_p1;
         String computationBlockForInsert_t3 = CpuKernelGenerator.getComputationBlockForInsert (windowDefinition, aggregationTypes,
@@ -388,17 +402,16 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
                 expressions, predicate, inputSchema, 3);
         String sw_p2 = CpuKernelGenerator.sw_p2;
         //String computationBlockForInsert = CpuKernelGenerator.getComputationBlock ();
-        String sw_p3 = CpuKernelGenerator.sw_p3;
+        String sw_p3 = CpuKernelGenerator.get_sw_p3(setValues);
         //String computationBlockForInsert = CpuKernelGenerator.getComputationBlock ();
         String sw_p4 = CpuKernelGenerator.sw_p4;
         String computationBlockForEvict_t4 = CpuKernelGenerator.getComputationBlockForEvict (windowDefinition, aggregationTypes,
                 aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,
                 expressions, predicate, inputSchema, 4);
-        String sw_p5 = CpuKernelGenerator.sw_p5;
+        String sw_p5 = CpuKernelGenerator.get_sw_p5(setValues);
 
         // todo: this is where having or self join should happen
-        String writeCompleteWindows_t3 = CpuKernelGenerator.getWriteCompleteWindowsBlock (aggregationGroupByTypes, aggregationGroupByAttributes,
-                groupByAttributes, outputSchema, 3);
+        String writeCompleteWindows_t3 = CpuKernelGenerator.getWriteCompleteWindowsBlock (aggregationGroupByTypes, groupByAttributes, 3);
 
         String sw_p6 = CpuKernelGenerator.sw_p6;
         String computationBlockForInsert_t2 = CpuKernelGenerator.getComputationBlockForInsert (windowDefinition, aggregationTypes,
@@ -407,10 +420,9 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
         String sw_p7 = CpuKernelGenerator.sw_p7;
         // String computationBlockForEvict_t4
 
-        String sw_p8 = CpuKernelGenerator.sw_p8;
+        String sw_p8 = CpuKernelGenerator.get_sw_p8(setValues);
         // todo: this is where having or self join should happen
-        String writeCompleteWindows_t6 = CpuKernelGenerator.getWriteCompleteWindowsBlock (aggregationGroupByTypes, aggregationGroupByAttributes,
-                groupByAttributes, outputSchema, 6);
+        String writeCompleteWindows_t6 = CpuKernelGenerator.getWriteCompleteWindowsBlock (aggregationGroupByTypes, groupByAttributes, 6);
         String sw_p9 = CpuKernelGenerator.sw_p9;
         String computationBlockForInsert_t5 = CpuKernelGenerator.getComputationBlockForInsert (windowDefinition, aggregationTypes,
                 aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,
@@ -419,28 +431,27 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
         String computationBlockForInsert_t4 = CpuKernelGenerator.getComputationBlockForInsert (windowDefinition, aggregationTypes,
                 aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,
                 expressions, predicate, inputSchema, 4);
-        String sw_p11 = CpuKernelGenerator.sw_p11;
+        String sw_p11 = CpuKernelGenerator.get_sw_p11(setValues);
         String computationBlockForEvict_t3 = CpuKernelGenerator.getComputationBlockForEvict (windowDefinition, aggregationTypes,
                 aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,
                 expressions, predicate, inputSchema, 3);
-        String sw_p12 = CpuKernelGenerator.sw_p12;
+        String sw_p12 = CpuKernelGenerator.get_sw_p12(setValues);
 
         // merge code
-        String mergeFunction_p1 = CpuKernelGenerator.getMergeFunction_p1 (templateTypes);
-        String writeCompleteWindowsForMerge_b1_t4_not_found = CpuKernelGenerator.getWriteCompleteWindowsBlockForMerge (aggregationGroupByTypes, aggregationGroupByAttributes,
-                groupByAttributes, outputSchema, 1,4, false);
+        String mergeFunction_p1 = CpuKernelGenerator.getMergeFunction_p1 (templateTypes, templateTypesForHashTable);
+        String writeCompleteWindowsForMerge_b1_t4_not_found = CpuKernelGenerator.getWriteCompleteWindowsBlockForMerge (aggregationGroupByTypes, groupByAttributes,
+                1,4, false);
         String mergeFunction_p2 = CpuKernelGenerator.mergeFunction_p2;
-        String writeCompleteWindowsForMerge_b1_t4_found = CpuKernelGenerator.getWriteCompleteWindowsBlockForMerge (aggregationGroupByTypes, aggregationGroupByAttributes,
-                groupByAttributes, outputSchema, 1,4, true);
+        String writeCompleteWindowsForMerge_b1_t4_found = CpuKernelGenerator.getWriteCompleteWindowsBlockForMerge (aggregationGroupByTypes, groupByAttributes,
+                1,4, true);
         String mergeFunction_p3 = CpuKernelGenerator.mergeFunction_p3;
-        String mergeOpeningWindowsBlock_b1_t4 = CpuKernelGenerator.getMergeOpeningWindowsBlock (windowDefinition, aggregationTypes,
-                aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes,4);
+        String mergeOpeningWindowsBlock_b1_t4 = CpuKernelGenerator.getMergeOpeningWindowsBlock (aggregationTypes,
+                aggregationAttributes, aggregationGroupByTypes, aggregationGroupByAttributes, 4);
         String mergeFunction_p4 = CpuKernelGenerator.mergeFunction_p4;
         String writeCompleteWindowsForMerge_b2_t3 = CpuKernelGenerator.getWriteCompleteWindowsBlockForMerge (aggregationGroupByTypes, aggregationGroupByAttributes,
-                groupByAttributes, outputSchema, 2,3, false);
+                2,3, false);
         String mergeFunction_p5 = CpuKernelGenerator.mergeFunction_p5;
-        String mergeOpeningWindowsBlock_b2_t3 = CpuKernelGenerator.getWriteOpeningWindowsBlockForMerge (aggregationGroupByTypes, aggregationGroupByAttributes,
-                groupByAttributes, outputSchema, 1,3);
+        String mergeOpeningWindowsBlock_b2_t3 = CpuKernelGenerator.getWriteOpeningWindowsBlockForMerge (aggregationGroupByTypes, aggregationGroupByAttributes,3);
         String mergeFunction_p6 = CpuKernelGenerator.getMergeFunction_p6 (templateTypes);
 
         // helper function for merging
@@ -455,9 +466,11 @@ public class OperatorKernel implements IOperatorCode, IAggregateOperator {
                 computationBlockForInsert_t2 + sw_p7 + computationBlockForEvict_t4 + sw_p8 + writeCompleteWindows_t6 + sw_p9 +
                 computationBlockForInsert_t5 +sw_p10 + computationBlockForInsert_t4 + sw_p11 + computationBlockForEvict_t3 + sw_p12 +
 
-                mergeFunction_p1 + writeCompleteWindowsForMerge_b1_t4_not_found + mergeFunction_p2 + writeCompleteWindowsForMerge_b1_t4_found + mergeFunction_p3 + mergeOpeningWindowsBlock_b1_t4 +
-                mergeFunction_p4 + writeCompleteWindowsForMerge_b2_t3 + mergeFunction_p5 + mergeOpeningWindowsBlock_b2_t3 + mergeFunction_p6 +
-                mergeHelperFunction + changeTimestampsFunction;
+                mergeFunction_p1 + writeCompleteWindowsForMerge_b1_t4_not_found + mergeFunction_p2 + writeCompleteWindowsForMerge_b1_t4_found +
+                mergeFunction_p3 + mergeOpeningWindowsBlock_b1_t4 + mergeFunction_p4 + writeCompleteWindowsForMerge_b2_t3 + mergeFunction_p5 +
+                mergeOpeningWindowsBlock_b2_t3 + mergeFunction_p6 + mergeHelperFunction +
+
+                changeTimestampsFunction;
 
         //System.out.println(source);
 

@@ -12,6 +12,9 @@ import uk.ac.imperial.lsds.saber.cql.expressions.longs.LongExpression;
 import uk.ac.imperial.lsds.saber.cql.operators.AggregationType;
 import uk.ac.imperial.lsds.saber.cql.operators.gpu.code.generators.KernelGenerator;
 
+import static uk.ac.imperial.lsds.saber.cql.operators.AggregationType.MAX;
+import static uk.ac.imperial.lsds.saber.cql.operators.AggregationType.MIN;
+
 public class AggregationCpuKernelGenerator {
 
 	public static String getIntermediateTupleDefinition (Expression [] groupByAttributes,
@@ -266,7 +269,7 @@ public class AggregationCpuKernelGenerator {
 		return b.toString();
 	}
 
-	public static String getTemplateDefinition (Expression[] groupByAttributes, int numberOfValues) {
+	public static String getTemplateDefinition (AggregationType[] aggregationTypes, Expression[] groupByAttributes, int numberOfValues, boolean isHashTableDefinition) {
         StringBuilder b = new StringBuilder ();
 
         if (groupByAttributes.length > 1 || numberOfValues > 1)
@@ -290,48 +293,37 @@ public class AggregationCpuKernelGenerator {
         for (int i = 0; i < numberOfValues; ++i) {
             b.append(" float");
         }
+
+        if (isHashTableDefinition) {
+            for (int i = 0; i < aggregationTypes.length; i++) {
+                if (aggregationTypes[i] == MIN) {
+                    b.append(", MIN");
+                    break;
+                }
+                if (aggregationTypes[i] == MAX) {
+                    b.append(", MAX");
+                    break;
+                }
+            }
+        }
+
         b.append(">");
         return b.toString();
     }
 
-    public static String getAggregationVariables (AggregationType[] aggregationTypes, FloatColumnReference[] aggregationAttributes, AggregationType[] aggregationGroupByTypes,
-                                                 FloatColumnReference[] aggregationGroupByAttributes, Expression[] groupByAttributes, String templateTypes) {
+    public static String getAggregationVariables (Expression[] groupByAttributes, String templateTypes, String templateTypesForHashTable) {
         StringBuilder b = new StringBuilder ();
         // initialise hashtable
         if (groupByAttributes!=null) {
-            b.append("\thashtable" +templateTypes+ "map; \n");
+            b.append("\thashtable" +templateTypesForHashTable+ "map; \n");
             b.append("\tht_node" +templateTypes+ " *hTable = map.getTable(); \n");
             b.append("\tconst int ht_node_size = sizeof(ht_node"+templateTypes+"); \n");
         }
 
-        // initialise variables
-        if (aggregationTypes!=null && aggregationTypes.length > 0) {
-            for (int i = 0; i < aggregationTypes.length; ++i) {
-                switch (aggregationTypes[i]) {
-                    case SUM:
-                        b.append(String.format("\tfloat globalVar_%d = ;\n", (i+1), 0.0f));
-                        break;
-                    case AVG:
-                        b.append(String.format("\tfloat globalVar_%d = ;\n", (i+1), 0.0f));
-                    case CNT:
-                        b.append(String.format("\tfloat globalVar_%d = ;\n", (i), 0.0f));
-                        break;
-                    case MIN:
-                        b.append(String.format("\tfloat globalVar_%d = FLT_MAX;\n", (i+1)));
-                        break;
-                    case MAX:
-                        b.append(String.format("\tfloat globalVar_%d = FLT_MIN;\n", (i+1)));
-                        break;
-                    default:
-                        throw new IllegalArgumentException("error: invalid aggregation type");
-                }
-            }
-        }
         return b.toString();
     }
 
-    public static String getWriteCompleteWindowsBlock (AggregationType[] aggregationGroupByTypes, FloatColumnReference[] aggregationGroupByAttributes,
-                                                      Expression[] groupByAttributes, ITupleSchema outputSchema, int numberOfTabs) {
+    public static String getWriteCompleteWindowsBlock (AggregationType[] aggregationGroupByTypes, Expression[] groupByAttributes, int numberOfTabs) {
         StringBuilder b = new StringBuilder ();
 
         if (groupByAttributes==null) {
@@ -356,11 +348,11 @@ public class AggregationCpuKernelGenerator {
                         b.append(tabs+"completeWindowsResults[completeWindowsPointer]._"+(i+2)+" = hTable[i].counter; \n");
                         break;
                     case MIN:
-                        throw new UnsupportedOperationException("error: min is not supported yet...");
-                        //break;
+                        b.append(tabs+"completeWindowsResults[completeWindowsPointer]._"+(i+2)+" = hTable[i].value; \n");
+                        break;
                     case MAX:
-                        throw new UnsupportedOperationException("error: max is not supported yet...");
-                        //break;
+                        b.append(tabs+"completeWindowsResults[completeWindowsPointer]._"+(i+2)+" = hTable[i].value; \n");
+                        break;
                     default:
                         throw new IllegalArgumentException("error: invalid aggregation type");
                 }
@@ -370,8 +362,8 @@ public class AggregationCpuKernelGenerator {
         return b.toString();
 	}
 
-    public static String getWriteCompleteWindowsBlockForMerge(AggregationType[] aggregationGroupByTypes, FloatColumnReference[] aggregationGroupByAttributes,
-                                                              Expression[] groupByAttributes, ITupleSchema outputSchema, int bufferId, int numberOfTabs, boolean isFound) {
+    public static String getWriteCompleteWindowsBlockForMerge(AggregationType[] aggregationGroupByTypes, Expression[] groupByAttributes, int bufferId,
+                                                              int numberOfTabs, boolean isFound) {
         StringBuilder b = new StringBuilder ();
 
         if (groupByAttributes==null) {
@@ -410,11 +402,17 @@ public class AggregationCpuKernelGenerator {
                                 b.append(tabs+"completeWindowsResults[resultIndex]._"+(i+2)+" = buffer1[idx].counter + buffer2[posInB2].counter; \n");
                             break;
                         case MIN:
-                            throw new UnsupportedOperationException("error: min is not supported yet...");
-                            //break;
+                            if (!isFound)
+                                b.append(tabs+"completeWindowsResults[resultIndex]._"+(i+2)+" = buffer1[idx].value; \n");
+                            else
+                                b.append(tabs+"completeWindowsResults[resultIndex]._"+(i+2)+" = (buffer1[idx].value < buffer2[posInB2].value) ? buffer1[idx].value : buffer2[posInB2].value; \n");
+                            break;
                         case MAX:
-                            throw new UnsupportedOperationException("error: max is not supported yet...");
-                            //break;
+                            if (!isFound)
+                                b.append(tabs+"completeWindowsResults[resultIndex]._"+(i+2)+" = buffer1[idx].value; \n");
+                            else
+                                b.append(tabs+"completeWindowsResults[resultIndex]._"+(i+2)+" = (buffer1[idx].value > buffer2[posInB2].value) ? buffer1[idx].value : buffer2[posInB2].value; \n");
+                            break;
                         default:
                             throw new IllegalArgumentException("error: invalid aggregation type");
                     }
@@ -439,11 +437,11 @@ public class AggregationCpuKernelGenerator {
                             b.append(tabs + "completeWindowsResults[resultIndex]._" + (i + 2) + " = buffer2[idx].counter; \n");
                             break;
                         case MIN:
-                            throw new UnsupportedOperationException("error: min is not supported yet...");
-                            //break;
+                            b.append(tabs + "completeWindowsResults[resultIndex]._" + (i + 2) + " = buffer2[idx].value; \n");
+                            break;
                         case MAX:
-                            throw new UnsupportedOperationException("error: max is not supported yet...");
-                            //break;
+                            b.append(tabs + "completeWindowsResults[resultIndex]._" + (i + 2) + " = buffer2[idx].value; \n");
+                            break;
                         default:
                             throw new IllegalArgumentException("error: invalid aggregation type");
                     }
@@ -456,8 +454,7 @@ public class AggregationCpuKernelGenerator {
         return b.toString();
     }
 
-    public static String getWriteOpeningWindowsBlockForMerge(AggregationType[] aggregationGroupByTypes, FloatColumnReference[] aggregationGroupByAttributes,
-                                                             Expression[] groupByAttributes, ITupleSchema outputSchema, int bufferId, int numberOfTabs) {
+    public static String getWriteOpeningWindowsBlockForMerge(AggregationType[] aggregationGroupByTypes, Expression[] groupByAttributes, int numberOfTabs) {
         StringBuilder b = new StringBuilder ();
 
         if (groupByAttributes==null) {
@@ -486,11 +483,11 @@ public class AggregationCpuKernelGenerator {
                         b.append(tabs + "openingWindowsResults[posInRes + resultIndex].counter = buffer2[idx].counter; \n");
                         break;
                     case MIN:
-                        throw new UnsupportedOperationException("error: min is not supported yet...");
-                        //break;
+                        b.append(tabs + "openingWindowsResults[posInRes + resultIndex].value = buffer2[idx].value; \n");
+                        break;
                     case MAX:
-                        throw new UnsupportedOperationException("error: max is not supported yet...");
-                        //break;
+                        b.append(tabs + "openingWindowsResults[posInRes + resultIndex].value = buffer2[idx].value; \n");
+                        break;
                     default:
                         throw new IllegalArgumentException("error: invalid aggregation type");
                 }
@@ -514,17 +511,17 @@ public class AggregationCpuKernelGenerator {
                 switch (aggregationGroupByTypes[i]) {
                     case SUM:
                     case AVG:
-                        b.append(String.format(tabs+"map.insert_and_modify(&data[currPos]._%d, data[currPos]._%d, data[currPos].timestamp);\n", ((ColumnReference)groupByAttributes[i]).getColumn(), aggregationGroupByAttributes[i]));
+                        b.append(String.format(tabs+"map.insert_and_modify(&data[currPos]._%d, data[currPos]._%d, data[currPos].timestamp);\n", ((ColumnReference)groupByAttributes[i]).getColumn(), aggregationGroupByAttributes[i].getColumn()));
                         break;
                     case CNT:
                         b.append(String.format(tabs+"map.insert_and_increment_counter(&data[currPos]._%d, data[currPos].timestamp);\n", ((ColumnReference)groupByAttributes[i]).getColumn()));
                         break;
                     case MIN:
-                        throw new UnsupportedOperationException("error: not supported yet...");
-                        //break;
+                        b.append(String.format(tabs+"map.insert(&data[currPos]._%d, data[currPos]._%d, data[currPos].timestamp);\n", ((ColumnReference)groupByAttributes[i]).getColumn(), aggregationGroupByAttributes[i].getColumn()));
+                        break;
                     case MAX:
-                        throw new UnsupportedOperationException("error: not supported yet...");
-                        //break;
+                        b.append(String.format(tabs+"map.insert(&data[currPos]._%d, data[currPos]._%d, data[currPos].timestamp);\n", ((ColumnReference)groupByAttributes[i]).getColumn(), aggregationGroupByAttributes[i].getColumn()));
+                        break;
                     default:
                         throw new IllegalArgumentException("error: invalid aggregation type");
                 }
@@ -546,17 +543,17 @@ public class AggregationCpuKernelGenerator {
                 switch (aggregationGroupByTypes[i]) {
                     case SUM:
                     case AVG:
-                        b.append(String.format(tabs+"map.insert_and_modify(&data[i]._%d, -data[i]._%d, data[i].timestamp);\n", ((ColumnReference)groupByAttributes[i]).getColumn(), aggregationGroupByAttributes[i]));
+                        b.append(String.format(tabs+"map.insert_and_modify(&data[i]._%d, -data[i]._%d, data[i].timestamp);\n", ((ColumnReference)groupByAttributes[i]).getColumn(), aggregationGroupByAttributes[i].getColumn()));
                         break;
                     case CNT:
                         b.append(String.format(tabs+"map.evict_and_decrement_counter(&data[i]._%d);\n", ((ColumnReference)groupByAttributes[i]).getColumn()));
                         break;
                     case MIN:
-                        throw new UnsupportedOperationException("error: not supported yet...");
-                        //break;
+                        b.append(String.format(tabs+"map.evict(&data[i]._%d);\n", ((ColumnReference)groupByAttributes[i]).getColumn()));
+                        break;
                     case MAX:
-                        throw new UnsupportedOperationException("error: not supported yet...");
-                        //break;
+                        b.append(String.format(tabs+"map.evict(&data[i]._%d);\n", ((ColumnReference)groupByAttributes[i]).getColumn()));
+                        break;
                     default:
                         throw new IllegalArgumentException("error: invalid aggregation type");
                 }
@@ -565,7 +562,7 @@ public class AggregationCpuKernelGenerator {
         return b.toString();
     }
 
-	public static String getMergeFunctor(AggregationType[] aggregationGroupByTypes, FloatColumnReference[] aggregationGroupByAttributes, Expression[] groupByAttributes, int numberOfTabs) {
+	public static String getMergeFunctor(AggregationType[] aggregationGroupByTypes, int numberOfTabs) {
 		StringBuilder b = new StringBuilder ();
 
 		String tabs = "";
@@ -584,11 +581,11 @@ public class AggregationCpuKernelGenerator {
                         b.append(tabs+"openingWindowsResults[idx].counter += buffer2[posInB2].counter;\n");
 						break;
 					case MIN:
-						throw new UnsupportedOperationException("error: not supported yet...");
-						//break;
+                        b.append(tabs+"openingWindowsResults[idx].value = (openingWindowsResults[idx].value < buffer2[posInB2].value) ? openingWindowsResults[idx].value : buffer2[posInB2].value;\n");
+                        break;
 					case MAX:
-						throw new UnsupportedOperationException("error: not supported yet...");
-						//break;
+                        b.append(tabs+"openingWindowsResults[idx].value = (openingWindowsResults[idx].value > buffer2[posInB2].value) ? openingWindowsResults[idx].value : buffer2[posInB2].value;\n");
+						break;
 					default:
 						throw new IllegalArgumentException("error: invalid aggregation type");
 				}

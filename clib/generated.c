@@ -258,19 +258,19 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedDi
         pendingWindowsPointers[pendingWindows] = pendingWindowsPointer; // - 1;
     }
 
-    if (completeWindows == 0  && streamStartPointer == 0) { // We only have one opening window, so we write it and return...
+    if (completeWindows == 0 && ((streamStartPointer == 0) || (currentSlide > 1 && data[startPositions[0]].timestamp%windowSlide==0))) { // We only have one opening window, so we write it and return...
         // write results
         std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node<int, int>));
         openingWindowsPointer += mapSize;
         openingWindows++;
         openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;
         // We only have one opening window if we start from a valid point in time (the last check in the next if statement)
-    } else if (completeWindows == 0  && currentSlide > 1 && data[startPositions[0]].timestamp%windowSlide==0) {
+    //} else if (completeWindows == 0  && currentSlide > 1 && data[startPositions[0]].timestamp%windowSlide==0) {
         // write results
-        std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node<int, int>));
-        openingWindowsPointer += mapSize;
-        openingWindows++;
-        openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;
+        //std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, mapSize * sizeof(ht_node<int, int>));
+        //openingWindowsPointer += mapSize;
+        //openingWindows++;
+        //openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;
         // todo: fix this!!
         //currentWindow++; // in order to skip the check later
         //} else if (completeWindows == 0 && closingWindows > 0) { // We have only opening and closing windows which are already written

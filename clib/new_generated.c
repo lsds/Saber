@@ -34,25 +34,201 @@ typedef struct {
 
 #include <cstdlib> 
 #include <cstring> 
-#define MAP_SIZE         4096
+#define MAP_SIZE         1024
 #define KEY_SIZE         4
 #define VALUE_SIZE       4
+#define BUCKET_SIZE       1024
+enum AggregationType {MIN, MAX};
+
+
+template <class Value, AggregationType type>
+class TwoStacks {
+public:
+    Value currValue;
+private:
+    int size;
+    Value *queue;
+    int queueFront;
+    int queueRear;
+    int backStackSize;
+    int backStackPointer;
+    Value backStackValue;
+    int frontStackSize;
+    int frontStackPointer;
+    Value *frontStackValues;
+public:
+    TwoStacks () : TwoStacks(BUCKET_SIZE) {}
+    TwoStacks (int size) {
+        // rounding up to next power of 2
+        size = round(size);
+        this->size = size;
+        this->queue = (Value *)  malloc( sizeof(Value) * size );
+        this->queueFront = -1;
+        this->queueRear = -1;
+        this->backStackSize = 0;
+        this->backStackPointer = -1;
+        this->backStackValue = (type == MIN) ? (Value) FLT_MAX : (Value) FLT_MIN;
+        this->frontStackSize = 0;
+        this->frontStackPointer = -1;
+        this->frontStackValues = (Value *)  malloc( sizeof(Value) * size );
+    }
+
+    void insert (Value inputValue) {
+        Value tempValue =(this->backStackSize==0) ? ((type == MIN) ? (Value) FLT_MAX : (Value) FLT_MIN) :
+                this->backStackValue;
+        if (type == MIN) {
+            this->backStackValue = (tempValue < inputValue) ? this->backStackValue : inputValue;
+        } else {
+            this->backStackValue = (tempValue > inputValue) ? this->backStackValue : inputValue;
+        }
+        this->backStackSize++;
+        this->backStackPointer++;
+        if (this->backStackPointer == this->size)
+            this->backStackPointer = 0;
+        enqueue(inputValue);
+    }
+
+    void evict () {
+        if (this->frontStackSize == 0) // swap if the front stack is empty and we can't evict
+            swap ();
+        this->frontStackSize--;
+        this->frontStackPointer++;
+        if (this->frontStackPointer == this->size)
+            this->frontStackPointer = 0;
+        dequeue();
+    }
+
+    Value query () {
+        Value tempValue1, tempValue2;
+        switch(type) {
+            case MIN:
+                tempValue1 = (this->frontStackSize == 0) ? (Value) FLT_MAX : this->frontStackValues[this->frontStackSize-1];
+                tempValue2 = (this->backStackSize == 0) ? (Value) FLT_MAX : this->backStackValue;
+                this->currValue = (tempValue1 < tempValue2) ? tempValue1 : tempValue2;
+                break;
+            case MAX:
+                tempValue1 = (this->frontStackSize == 0) ? (Value) FLT_MIN : this->frontStackValues[this->frontStackSize-1];
+                tempValue2 = (this->backStackSize == 0) ? (Value) FLT_MIN : this->backStackValue;
+                this->currValue = (tempValue1 > tempValue2) ? tempValue1 : tempValue2;
+        }
+        return this->currValue;;
+    }
+
+    Value getCurrentValue () {
+        return this->currValue;
+    }
+
+    /*void printQueue () {
+        printf("[ ");
+        if (this->queueFront < this->queueRear) {
+            for (int i = this->queueFront; i < this->queueRear; i++) {
+                printf("%ld, ", this->queue[i]);
+            }
+        } else {
+            for (int i = this->queueFront; i < this->size; i++) {
+                printf("%ld, ", this->queue[i]);
+            }
+            for (int i = 0; i < this->queueRear; i++) {
+                printf("%ld, ", this->queue[i]);
+            }
+        }
+        printf("] \n");
+    }*/
+
+    void deleteTwoStacks () {
+        free(this->queue);
+        free(this->frontStackValues);
+    }
+
+private:
+    inline int round (int value) {
+        if (!(value && (!(value&(value-1))))) {
+            value--;
+            value |= value >> 1;
+            value |= value >> 2;
+            value |= value >> 4;
+            value |= value >> 8;
+            value |= value >> 16;
+            value++;
+        }
+        return value;
+    }
+
+    inline void enqueue (Value inputValue) {
+        if ((this->queueFront == 0 && this->queueRear == this->size-1)){ //|| (tRear == tFront-1)) {
+            printf("Queue is Full \n");
+            throw;
+        } else {
+            if (this->queueFront == -1) { /* Insert First Element */
+                this->queueFront = 0;
+            }
+            this->queueRear++;
+            if (this->queueRear == this->size)
+                this->queueRear = 0;
+            queue[this->queueRear] = inputValue;
+        }
+    }
+
+    inline void dequeue () {
+        if (this->queueFront == -1) {
+            printf("Queue is Empty \n");
+        }
+        if (this->queueFront == this->queueRear) {
+            this->queueFront = -1;
+            this->queueRear = -1;
+        }
+        else {
+            this->queueFront = (this->queueFront + 1);
+            if (this->queueFront == this->size)
+                this->queueFront = 0;
+        }
+    }
+
+    inline void swap () {
+        Value tempValue = (type == MIN) ? (Value) FLT_MAX : (Value) FLT_MIN;
+        int outputIndex;
+        int inputIndex = this->backStackPointer;
+        int limit = this->backStackSize;
+        Value *arr = this->queue;
+        Value *outputStackArr = this->frontStackValues;
+        for (outputIndex=0 ; outputIndex<limit; outputIndex++) {
+            if (type == MIN) {
+                tempValue = (tempValue < arr[inputIndex]) ? tempValue : arr[inputIndex];
+            } else {
+                tempValue = (tempValue > arr[inputIndex]) ? tempValue : arr[inputIndex];
+            }
+            outputStackArr[outputIndex] = tempValue;
+            inputIndex--;
+        }
+        this->backStackSize = 0;
+        this->backStackPointer = -1;
+        this->frontStackSize = limit;
+        this->frontStackPointer = this->queueRear - this->frontStackSize + 1;
+        //if (this->frontStackPointer < 0)
+        //    this->frontStackPointer = (this->queueRear + this->frontStackSize) & (this->size -1);
+    }
+};
+
+
+
 template <class Key, class Value>
 struct ht_node {
     char status;
     long timestamp;
     Key key;
     Value value;
+    Value sum;
     int counter;
     //char padding[3];
 };
 
 
-template <class Key, class Value>
+template <class Key, class Value, AggregationType type>
 class hashtable {
 private:
     int size;
     struct ht_node<Key, Value> *table;
+    TwoStacks<Value, type> *twoStacksArray;
 
 private:
 
@@ -107,9 +283,13 @@ public:
         size = round(size);
         this->size = size;
         this->table = (ht_node<Key, Value> *)  malloc( sizeof(ht_node<Key, Value>) * size );
+
+        this->twoStacksArray = (TwoStacks<Value, type> *)  malloc( sizeof(TwoStacks<Value, type>) * BUCKET_SIZE * size );
         //printf("%d \n", sizeof(ht_node<Key, Value>));
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++) {
             memset(&this->table[i], 0, sizeof(ht_node<Key, Value>));
+            this->twoStacksArray[i] = TwoStacks<Value, type>();
+        }
     }
 
     hashtable (ht_node<Key, Value> * table) : hashtable(table, MAP_SIZE) {}
@@ -124,61 +304,34 @@ public:
     ht_node<Key, Value> * getTable () { return this->table; }
 
     void insert (const Key * key, const Value value, const long timestamp) {
-        int hashIndex = hash(key);
-        //find next free space -> use two for loops
-        int numOfTrials = 0;
-        while (this->table[hashIndex].status
-               && isEqual(&this->table[hashIndex].key, key) && numOfTrials < this->size) {
-            hashIndex++;
-            hashIndex %= this->size;
-            numOfTrials++;
-        }
-
-        if (numOfTrials >= this->size) {
-            printf ("error: the hashtable is full \n");
-            exit(1);
-        }
-
-        this->table[hashIndex].status = 1;
-        this->table[hashIndex].timestamp = timestamp;
-        memcpy(&this->table[hashIndex].key, key, KEY_SIZE); //strcpy(table[hashIndex].key, key);
-        this->table[hashIndex].value = value;
-        this->table[hashIndex].counter = 1;
-    }
-
-    Value insert_and_modify (const Key * key, const Value value, const long timestamp) {
         int ind = hash(key), i = ind;
         char tempStatus;
         for (; i < this->size; i++) {
             tempStatus = this->table[i].status;
             if (tempStatus && isEqual(&this->table[i].key, key)) { //update
-                this->table[i].value += value;
-                this->table[i].counter++;
-                return this->table[i].value;
+                this->twoStacksArray[i].insert(value);
+                return;
             }
             if (!tempStatus) { // first insert
                 this->table[i].status = 1;
                 this->table[i].timestamp = timestamp;
                 memcpy(&this->table[i].key, key, KEY_SIZE); //strcpy(table[hashIndex].key, key);
-                this->table[i].value = value;
-                this->table[i].counter = 1;
-                return value;
+                this->twoStacksArray[i].insert(value);
+                return;
             }
         }
         for (i = 0; i < ind; i++) {
             tempStatus = this->table[i].status;
             if (tempStatus && isEqual(&this->table[i].key, key)) {
-                this->table[i].value += value;
-                this->table[i].counter++;
-                return this->table[i].value;
+                this->twoStacksArray[i].insert(value);
+                return;
             }
             if (!tempStatus) {
                 this->table[i].status = 1;
                 this->table[i].timestamp = timestamp;
                 memcpy(&this->table[i].key, key, KEY_SIZE); //strcpy(table[hashIndex].key, key);
-                this->table[i].value= value;
-                this->table[i].counter++;
-                return value;
+                this->twoStacksArray[i].insert(value);
+                return;
             }
         }
 
@@ -186,36 +339,131 @@ public:
         exit(1);
     }
 
-    int insert_and_increment_counter (const Key * key, const long timestamp) {
+    void evict (const Key * key) {
+        int ind = hash(key), i = ind;
+        char tempStatus;
+        for (; i < this->size; i++) {
+            tempStatus = this->table[i].status;
+            if (tempStatus && isEqual(&this->table[i].key, key)) { //update
+                this->twoStacksArray[i].evict();
+                return;
+            }
+        }
+        for (i = 0; i < ind; i++) {
+            tempStatus = this->table[i].status;
+            if (tempStatus && isEqual(&this->table[i].key, key)) {
+                this->twoStacksArray[i].evict();
+                return;
+            }
+        }
+
+        printf ("error: entry not found \n");
+        exit(1);
+    }
+
+    int insert_and_modify (const Key * key, const Value value, const long timestamp) {
+        int ind = hash(key), i = ind;
+        char tempStatus;
+        for (; i < this->size; i++) {
+            tempStatus = this->table[i].status;
+            if (tempStatus && isEqual(&this->table[i].key, key)) { //update
+                this->table[i].sum += value;
+                this->table[i].counter++;
+                this->twoStacksArray[i].insert(value);
+                return 0;
+            }
+            if (!tempStatus) { // first insert
+                this->table[i].status = 1;
+                this->table[i].timestamp = timestamp;
+                memcpy(&this->table[i].key, key, KEY_SIZE); //strcpy(table[hashIndex].key, key);
+                this->table[i].sum = value;
+                this->table[i].counter = 1;
+                this->twoStacksArray[i].insert(value);
+                return 0;
+            }
+        }
+        for (i = 0; i < ind; i++) {
+            tempStatus = this->table[i].status;
+            if (tempStatus && isEqual(&this->table[i].key, key)) {
+                this->table[i].sum += value;
+                this->table[i].counter++;
+                this->twoStacksArray[i].insert(value);
+                return 0;
+            }
+            if (!tempStatus) {
+                this->table[i].status = 1;
+                this->table[i].timestamp = timestamp;
+                memcpy(&this->table[i].key, key, KEY_SIZE); //strcpy(table[hashIndex].key, key);
+                this->table[i].sum = value;
+                this->table[i].counter++;
+                this->twoStacksArray[i].insert(value);
+                return 0;
+            }
+        }
+
+        printf ("error: the hashtable is full \n");
+        exit(1);
+    }
+
+    int evict_and_modify (const Key * key, const Value value, const long timestamp) {
+        int ind = hash(key), i = ind;
+        char tempStatus;
+        for (; i < this->size; i++) {
+            tempStatus = this->table[i].status;
+            if (tempStatus && isEqual(&this->table[i].key, key)) { //update
+                this->table[i].sum -= value;
+                this->table[i].counter--;
+                this->twoStacksArray[i].evict();
+                return 0;
+            }
+        }
+        for (i = 0; i < ind; i++) {
+            tempStatus = this->table[i].status;
+            if (tempStatus && isEqual(&this->table[i].key, key)) {
+                this->table[i].sum -= value;
+                this->table[i].counter--;
+                this->twoStacksArray[i].evict();
+                return 0;
+            }
+        }
+
+        printf ("error: entry not found \n");
+        exit(1);
+    }
+
+    int insert_and_increment_counter (const Key * key, const Value value, const long timestamp) {
         int ind = hash(key), i = ind;
         char tempStatus;
         for (; i < this->size; i++) {
             tempStatus = this->table[i].status;
             if (tempStatus && isEqual(&this->table[i].key, key)) { //update
                 this->table[i].counter++;
-                return this->table[i].counter;
+                this->twoStacksArray[i].insert(value);
+                return 0;
             }
             if (!tempStatus) { // first insert
                 this->table[i].status = 1;
                 this->table[i].timestamp = timestamp;
                 memcpy(&this->table[i].key, key, KEY_SIZE); //strcpy(table[hashIndex].key, key);
-
                 this->table[i].counter = 1;
-                return 1;
+                this->twoStacksArray[i].insert(value);
+                return 0;
             }
         }
         for (i = 0; i < ind; i++) {
             tempStatus = this->table[i].status;
             if (tempStatus && isEqual(&this->table[i].key, key)) {
                 this->table[i].counter++;
-                return this->table[i].counter;
+                this->twoStacksArray[i].insert(value);
+                return 0;
             }
             if (!tempStatus) {
                 this->table[i].status = 1;
                 this->table[i].timestamp = timestamp;
                 memcpy(&this->table[i].key, key, KEY_SIZE); //strcpy(table[hashIndex].key, key);
                 this->table[i].counter++;
-                return 1;
+                this->twoStacksArray[i].insert(value);
+                return 0;
             }
         }
 
@@ -230,36 +478,64 @@ public:
             tempStatus = this->table[i].status;
             if (tempStatus && isEqual(&this->table[i].key, key)) { //update
                 this->table[i].counter--;
-                return this->table[i].counter;
-            }
-            if (!tempStatus) {
+                this->twoStacksArray[i].evict();
                 return 0;
             }
         }
         for (i = 0; i < ind; i++) {
             tempStatus = this->table[i].status;
             if (tempStatus && isEqual(&this->table[i].key, key)) {
-                this->table[i].counter++;
-                return this->table[i].counter;
-            }
-            if (!tempStatus) {
+                this->table[i].counter--;
+                this->twoStacksArray[i].evict();
                 return 0;
             }
         }
-        return 0;
+
+        printf ("error: entry not found \n");
+        exit(1);
+    }
+
+    void setValues () {
+        int size = this->size;
+        ht_node<Key, Value> *table = this->table;
+        TwoStacks<Value, type> *twoStacks = this->twoStacksArray;
+        for (int i = 0; i < size; i++) {
+            if (table[i].status) {
+                table[i].value = twoStacks[i].query();
+            }
+        }
     }
 
     bool get_value (const Key * key, Value &result) {
         int ind = hash(this->size, key), i = ind;
         for (; i < this->size; i++) {
             if ((this->table[i].status) && isEqual(&this->table[i].key, key)) {
+                this->table[i].value = this->twoStacksArray[i].query();
                 result = this->table[i].value;
                 return true;
             }
         }
         for (i = 0; i < ind; i++) {
             if ((this->table[i].status) && isEqual(&this->table[i].key, key)) {
+                this->table[i].value = this->twoStacksArray[i].query();
                 result = this->table[i].value;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool get_sum (const Key * key, Value &result) {
+        int ind = hash(this->size, key), i = ind;
+        for (; i < this->size; i++) {
+            if ((this->table[i].status) && isEqual(&this->table[i].key, key)) {
+                result = this->table[i].sum;
+                return true;
+            }
+        }
+        for (i = 0; i < ind; i++) {
+            if ((this->table[i].status) && isEqual(&this->table[i].key, key)) {
+                result = this->table[i].sum;
                 return true;
             }
         }
@@ -311,7 +587,7 @@ public:
 
     bool get_index (ht_node<Key,Value> * table, const Key * key, int &index) {
         int ind = hash(key), i = ind;
-        for (; i < size; i++) {
+        for (; i < this->size; i++) {
             if ((table[i].status) && isEqual(&table[i].key, key)) {
                 index = i;
                 return true;
@@ -335,8 +611,19 @@ public:
         return false;
     }
 
+    void printHashtable () {
+        printf("---HashTalbe----\n");
+        for (int i = 0; i < this->size; i++) {
+            if (this->table[i].status) {
+                printf("%d, %f \n", i, this->table[i].value);
+            }
+        }
+    }
+
     void deleteHashtable () {
         free(this->table);
+        for (int i = 0; i < this->size; i++)
+            this->twoStacksArray[i].deleteTwoStacks();
     }
 
     /*~hashtable () {
@@ -432,7 +719,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOpera
     int firstPane = data[bufferStartPointer].timestamp / PANE_SIZE;
     bool startingFromPane = (bufferStartPointer==0) ? true : (data[bufferStartPointer].timestamp % firstPane == 0);
 
-	hashtable<int, float>map; 
+	hashtable<int, float, MIN>map; 
 	ht_node<int, float> *hTable = map.getTable(); 
 	const int ht_node_size = sizeof(ht_node<int, float>); 
 
@@ -454,7 +741,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOpera
                 completeWindows++;
                 break;
             }
-			map.insert_and_increment_counter(&data[currPos]._1, data[currPos].timestamp);
+			map.insert(&data[currPos]._1, data[currPos]._2, data[currPos].timestamp);
             currPos++;
         }
 
@@ -463,7 +750,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOpera
         tempPane = (bufferStartPointer != 0) ? data[bufferStartPointer - 1].timestamp / PANE_SIZE :
                    data[BUFFER_SIZE / sizeof(input_tuple_t) - 1].timestamp / PANE_SIZE;
         while (currPos < bufferEndPointer) {
-			map.insert_and_increment_counter(&data[currPos]._1, data[currPos].timestamp);
+			map.insert(&data[currPos]._1, data[currPos]._2, data[currPos].timestamp);
             activePane = data[currPos].timestamp / PANE_SIZE;
             if (activePane - tempPane >= PANES_PER_SLIDE) { // there may be still opening windows
                 tempPane = activePane;
@@ -496,7 +783,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOpera
             if (activePane - tempPane >= PANES_PER_SLIDE &&
                 activePane >= PANES_PER_WINDOW) {//activePane - tempPane < PANES_PER_WINDOW) { // closing window
                 tempPane = activePane;
-
+                map.setValues();
                 // write result to the closing windows
                 std::memcpy(closingWindowsResults + closingWindowsPointer, hTable, MAP_SIZE * ht_node_size);
                 closingWindowsPointer += MAP_SIZE;
@@ -504,7 +791,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOpera
                 closingWindowsPointers[closingWindows] = closingWindowsPointer; //- 1;
                 //printf("activePane %d \n", activePane);
             }
-			map.insert_and_increment_counter(&data[currPos]._1, data[currPos].timestamp);
+			map.insert(&data[currPos]._1, data[currPos]._2, data[currPos].timestamp);
             if (activePane - tempOpenPane >= PANES_PER_SLIDE) { // new slide and possible opening windows
                 tempOpenPane = activePane;
                 // count here and not with the closing windows the starting points of slides!!
@@ -521,11 +808,11 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOpera
         // remove the extra values so that we have the first complete window
         if (completeWindows > 0 && !startingFromPane) {
             for (int i = bufferStartPointer; i < startPositions[1]; i++ ) {
-				map.evict_and_decrement_counter(&data[i]._1);
+				map.evict(&data[i]._1);
             }
         }
     }
-
+    map.setValues();
     int tempStartPosition;
     int tempEndPosition;
     // Check if we have one pending window
@@ -537,44 +824,37 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOpera
         pendingWindowsPointers[pendingWindows] = pendingWindowsPointer; // - 1;
     }
 
-    if (completeWindows == 0  && streamStartPointer == 0) { // We only have one opening window, so we write it and return...
+    if (completeWindows == 0 && ((streamStartPointer == 0) || (currentSlide > 1 && data[startPositions[0]].timestamp%WINDOW_SLIDE==0))) { // We only have one opening window, so we write it and return...
         // write results
         std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, MAP_SIZE * ht_node_size);
         openingWindowsPointer += MAP_SIZE;
         openingWindows++;
         openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;
-        // We only have one opening window if we start from a valid point in time (the last check in the next if statement)
-    } else if (completeWindows == 0  && currentSlide > 1 && data[startPositions[0]].timestamp%WINDOW_SLIDE==0) {
-        // write results
-        std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, MAP_SIZE * ht_node_size);
-        openingWindowsPointer += MAP_SIZE;
-        openingWindows++;
-        openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;
-        //currentWindow++; // in order to skip the check later
     } else if (completeWindows > 0) { // we have at least one complete window...
 
         // write results and pack them for the first complete window in the batch
         for (int i = 0; i < MAP_SIZE; i++) {
 			completeWindowsResults[completeWindowsPointer].timestamp = hTable[i].timestamp; 
 			completeWindowsResults[completeWindowsPointer]._1 = hTable[i].key; 
-			completeWindowsResults[completeWindowsPointer]._2 = hTable[i].counter; 
+			completeWindowsResults[completeWindowsPointer]._2 = hTable[i].value; 
 			completeWindowsPointer += hTable[i].status; 
 
         }
         // write in the correct slot, as the value has already been incremented!
         completeWindowsPointers[completeWindows] = completeWindowsPointer; // - 1;
-		map.insert_and_increment_counter(&data[currPos]._1, data[currPos].timestamp);
+		map.insert(&data[currPos]._1, data[currPos]._2, data[currPos].timestamp);
         currPos++;
 
         // compute the rest windows
         currPos = endPositions[0];
         tempPane = data[currPos].timestamp/PANE_SIZE; //currStartPos = data[currPos].timestamp; //startPositions[currentWindow];
-        int removalIndex = (startingFromPane) ? currentWindow : currentWindow + 1;        while (currPos < bufferEndPointer) {
+        int removalIndex = (startingFromPane) ? currentWindow : currentWindow + 1; 
+        while (currPos < bufferEndPointer) {
             // remove previous slide
             tempStartPosition = startPositions[removalIndex - 1];
             tempEndPosition = startPositions[removalIndex];
             for (int i = tempStartPosition; i < tempEndPosition; i++) {
-				map.evict_and_decrement_counter(&data[i]._1);
+				map.evict(&data[i]._1);
             }
             // add elements from the next slide
             currPos = endPositions[currentWindow - 1] + 1; // take the next position, as we have already computed this value
@@ -589,26 +869,28 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOpera
                     endPositions[currentWindow] = currPos;
                     currentWindow++;
                     // write and pack the complete window result
+                    map.setValues();
                     for (int i = 0; i < MAP_SIZE; i++) {
 						completeWindowsResults[completeWindowsPointer].timestamp = hTable[i].timestamp; 
 						completeWindowsResults[completeWindowsPointer]._1 = hTable[i].key; 
-						completeWindowsResults[completeWindowsPointer]._2 = hTable[i].counter; 
+						completeWindowsResults[completeWindowsPointer]._2 = hTable[i].value; 
 						completeWindowsPointer += hTable[i].status; 
 
                     }
                     completeWindows++;
                     completeWindowsPointers[completeWindows] = completeWindowsPointer; // - 1;
                     // increment before exiting for a complete window
-					map.insert_and_increment_counter(&data[currPos]._1, data[currPos].timestamp);
+					map.insert(&data[currPos]._1, data[currPos]._2, data[currPos].timestamp);
                     currPos++;
                     break;
                 }
-				map.insert_and_increment_counter(&data[currPos]._1, data[currPos].timestamp);
+				map.insert(&data[currPos]._1, data[currPos]._2, data[currPos].timestamp);
                 currPos++;
                 if (currPos >= bufferEndPointer) { // we have reached the first open window after all the complete ones
                     // write the first open window if we have already computed the result, otherwise remove the respective tuples
                     if ((data[bufferEndPointer-1].timestamp/PANE_SIZE) -
                                 (data[tempEndPosition].timestamp/PANE_SIZE) < PANES_PER_WINDOW) {
+                        map.setValues();
                         std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, MAP_SIZE * ht_node_size);
                         openingWindowsPointer += MAP_SIZE;
                         openingWindows++;
@@ -631,10 +913,12 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOpera
         tempStartPosition = startPositions[currentWindow];
         tempEndPosition = startPositions[currentWindow + 1];
         currentWindow++;
-        if (tempStartPosition == tempEndPosition) continue;        for (int i = tempStartPosition; i < tempEndPosition; i++) {
-			map.evict_and_decrement_counter(&data[i]._1);
+        if (tempStartPosition == tempEndPosition) continue; 
+        for (int i = tempStartPosition; i < tempEndPosition; i++) {
+			map.evict(&data[i]._1);
         }
         // write result to the opening windows
+        map.setValues();
         std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, MAP_SIZE * ht_node_size);
         openingWindowsPointer += MAP_SIZE;
         openingWindows++;
@@ -752,8 +1036,8 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAg
     // Input Buffers
     ht_node<int, float> *buffer1= (ht_node<int, float> *) env->GetDirectBufferAddress(buff1);
     ht_node<int, float> *buffer2= (ht_node<int, float> *) env->GetDirectBufferAddress(buff2);
-    hashtable<int, float> map1 (buffer1, MAP_SIZE);
-    hashtable<int, float> map2 (buffer2, MAP_SIZE);
+    hashtable<int, float, MIN> map1 (buffer1, MAP_SIZE);
+    hashtable<int, float, MIN> map2 (buffer2, MAP_SIZE);
     //int len = env->GetDirectBufferCapacity(buffer);
     //const int inputSize = len/32; // 32 is the size of the tuple here
 
@@ -800,7 +1084,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAg
 				/* Put key */
 				completeWindowsResults[resultIndex]._1 = buffer1[idx].key; 
 				/* Put value(s) */
-				completeWindowsResults[resultIndex]._2 = buffer1[idx].counter; 
+				completeWindowsResults[resultIndex]._2 = buffer1[idx].value; 
 				resultIndex ++; 
 
                 // Do I need padding here ???
@@ -826,7 +1110,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAg
 				/* Put key */
 				completeWindowsResults[resultIndex]._1 = buffer1[idx].key; 
 				/* Put value(s) */
-				completeWindowsResults[resultIndex]._2 = buffer1[idx].counter + buffer2[posInB2].counter; 
+				completeWindowsResults[resultIndex]._2 = (buffer1[idx].value < buffer2[posInB2].value) ? buffer1[idx].value : buffer2[posInB2].value; 
 				resultIndex ++; 
 
                 // Do I need padding here ???
@@ -846,7 +1130,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAg
                 //openingWindowsResults[idx].timestamp = buffer1[idx].timestamp;
                 /* Put key and TODO: value(s) */
                 //openingWindowsResults[idx].key = buffer1[idx].key;
-				openingWindowsResults[idx].counter += buffer2[posInB2].counter;
+				openingWindowsResults[idx].value = (openingWindowsResults[idx].value < buffer2[posInB2].value) ? openingWindowsResults[idx].value : buffer2[posInB2].value;
                 /* Put count */
             }
             // Unmark occupancy in second buffer
@@ -872,7 +1156,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAg
 			/* Put key */
 			completeWindowsResults[resultIndex]._1 = buffer2[idx].key; 
 			/* Put value(s) */
-			completeWindowsResults[resultIndex]._2 = buffer2[idx].counter; 
+			completeWindowsResults[resultIndex]._2 = buffer2[idx].value; 
 			resultIndex ++; 
 
             // Do I need padding here ???
@@ -893,7 +1177,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAg
 			openingWindowsResults[posInRes + resultIndex].timestamp = buffer2[idx].timestamp; 
 			/* Put key and TODO: value(s) */ 
 			openingWindowsResults[posInRes + resultIndex].key = buffer2[idx].key; 
-			openingWindowsResults[posInRes + resultIndex].counter = buffer2[idx].counter; 
+			openingWindowsResults[posInRes + resultIndex].value = buffer2[idx].value; 
 
         }
     }

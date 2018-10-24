@@ -386,7 +386,7 @@ public class PartialResultSlot {
                 for (int j = startPos; j < endPos; j+=16) {
                     System.out.println(completeWindows.getBuffer().getByteBuffer().getLong(j) + ", "  +
                             completeWindows.getBuffer().getByteBuffer().getInt(j + 8) + ", " +
-                            (int) completeWindows.getBuffer().getByteBuffer().getFloat(j + 12));
+                            completeWindows.getBuffer().getByteBuffer().getFloat(j + 12));
                 }
                 System.out.println("--------xxxxx---------");*/
 

@@ -28,7 +28,9 @@ public class SystemConf {
 	public static int HASH_TABLE_SIZE = 1048576;
 
 	public static int C_HASH_TABLE_SIZE = 1024;
-	
+
+	public static int C_HASH_TABLE_BUCKET_SIZE = 1024;
+
 	public static long THROUGHPUT_MONITOR_INTERVAL = 1000L;
 	
 	public static long PERFORMANCE_MONITOR_INTERVAL = 1000L;

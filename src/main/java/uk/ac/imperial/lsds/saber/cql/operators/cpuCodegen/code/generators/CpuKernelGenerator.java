@@ -181,26 +181,17 @@ public class CpuKernelGenerator {
         return b.toString();
 	}
 
-	public static String getHashTableDefinition (String filename, AggregationType [] aggregationTypes, FloatColumnReference [] aggregationAttributes,
+	public static String getHashTableDefinition (AggregationType [] aggregationTypes, FloatColumnReference [] aggregationAttributes,
                                                   Expression [] groupByAttributes, int keyLength, int valueLength) {
 
 		StringBuilder b = new StringBuilder();
 
+		String filename = null;
 		if (groupByAttributes==null) {
 			b.append("//a hashtable isn't required in this case \n");
             return b.toString();
 		}
 		else {
-
-            for (int i = 0; i < aggregationTypes.length; ++i) {
-                if (
-                        aggregationTypes[i] != AggregationType.CNT &&
-                                aggregationTypes[i] != AggregationType.SUM &&
-                                aggregationTypes[i] != AggregationType.AVG) {
-
-                    System.err.println("Min/Max is not supported yet \n");
-                }
-            }
 
             b.append("#include <cstdlib> \n");
             b.append("#include <cstring> \n");
@@ -208,6 +199,18 @@ public class CpuKernelGenerator {
             b.append(String.format("#define MAP_SIZE         %d\n", SystemConf.C_HASH_TABLE_SIZE));
             b.append(String.format("#define KEY_SIZE         %d\n", keyLength));
             b.append(String.format("#define VALUE_SIZE       %d\n", valueLength));
+
+            for (int i = 0; i < aggregationTypes.length; ++i) {
+                if (aggregationTypes[i] != AggregationType.CNT &&
+                        aggregationTypes[i] != AggregationType.SUM &&
+                        aggregationTypes[i] != AggregationType.AVG) {
+                    filename = SystemConf.SABER_HOME + "/clib/cpu_templates/non_inv_hashtable_tmpl";
+                    b.append(String.format("#define BUCKET_SIZE       %d\n", SystemConf.C_HASH_TABLE_BUCKET_SIZE));
+                } else {
+                    filename = SystemConf.SABER_HOME + "/clib/cpu_templates/hashtable_tmpl";
+                }
+            }
+
 
             b.append(load(filename)).append("\n");
             b.append("\n");
@@ -251,19 +254,19 @@ public class CpuKernelGenerator {
         return AggregationCpuKernelGenerator.getEvictFunctor (aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes, numberOfTabs);
     }
 
-    public static String getAggregationMergeOperator(AggregationType[] aggregationGroupByTypes, FloatColumnReference[] aggregationGroupByAttributes,
-                                                     Expression[] groupByAttributes, int numberOfTabs) {
-        return AggregationCpuKernelGenerator.getMergeFunctor (aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes, numberOfTabs);
+    public static String getAggregationMergeOperator(AggregationType[] aggregationGroupByTypes, int numberOfTabs) {
+        return AggregationCpuKernelGenerator.getMergeFunctor (aggregationGroupByTypes, numberOfTabs);
     }
 
-    public static String getTemplateTypes(AggregationType[] aggregationTypes, FloatColumnReference[] aggregationAttributes, Expression[] groupByAttributes) {
+    public static String getTemplateTypes(AggregationType[] aggregationTypes, FloatColumnReference[] aggregationAttributes, Expression[] groupByAttributes,
+                                          boolean isHashTableDefinition) {
         StringBuilder b = new StringBuilder ();
-        String s = AggregationCpuKernelGenerator.getTemplateDefinition (groupByAttributes, aggregationAttributes.length);
+        String s = AggregationCpuKernelGenerator.getTemplateDefinition (aggregationTypes, groupByAttributes, aggregationAttributes.length, isHashTableDefinition);
         b.append(s);
         return b.toString();
     }
 
-    public static String getSignature(String templateTypes) {
+    public static String getSignature(String node) {
         StringBuilder b = new StringBuilder ();
         String s =
                 "JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOperatorComputation\n" +
@@ -281,9 +284,9 @@ public class CpuKernelGenerator {
                 "    input_tuple_t *data= (input_tuple_t *) env->GetDirectBufferAddress(buffer);\n" +
                 "\n" +
                 "    // Output Buffers\n" +
-                "    ht_node"+templateTypes+" *openingWindowsResults = (ht_node"+templateTypes+" *) env->GetDirectBufferAddress(openingWindowsBuffer); // the results here are in the\n" +
-                "    ht_node"+templateTypes+" *closingWindowsResults = (ht_node"+templateTypes+" *) env->GetDirectBufferAddress(closingWindowsBuffer); // form of the hashtable\n" +
-                "    ht_node"+templateTypes+" *pendingWindowsResults = (ht_node"+templateTypes+" *) env->GetDirectBufferAddress(pendingWindowsBuffer);\n" +
+                "    "+node+" *openingWindowsResults = ("+node+" *) env->GetDirectBufferAddress(openingWindowsBuffer); // the results here are in the\n" +
+                "    "+node+" *closingWindowsResults = ("+node+" *) env->GetDirectBufferAddress(closingWindowsBuffer); // form of the hashtable\n" +
+                "    "+node+" *pendingWindowsResults = ("+node+" *) env->GetDirectBufferAddress(pendingWindowsBuffer);\n" +
                 "    output_tuple_t *completeWindowsResults = (output_tuple_t *) env->GetDirectBufferAddress(completeWindowsBuffer); // the results here are packed\n" +
                 "    int * arrayHelper = (int *) env->GetDirectBufferAddress(arrayHelperBuffer);\n" +
                 "    int *openingWindowsPointers = (int *) env->GetDirectBufferAddress(openingWindowsStartPointers);\n" +
@@ -359,22 +362,25 @@ public class CpuKernelGenerator {
         return b.toString();
     }
 
-    public static String getVariables(AggregationType[] aggregationTypes, FloatColumnReference[] aggregationAttributes, AggregationType[] aggregationGroupByTypes,
-                                      FloatColumnReference[] aggregationGroupByAttributes, Expression[] groupByAttributes, String templateTypes) {
+    public static String getGroupByVariables(Expression[] groupByAttributes, String templateTypes, String templateTypesForHashTable) {
         StringBuilder b = new StringBuilder ();
-        String s = AggregationCpuKernelGenerator.getAggregationVariables (aggregationTypes, aggregationAttributes, aggregationGroupByTypes,
-                aggregationGroupByAttributes, groupByAttributes, templateTypes);
+        String s = AggregationCpuKernelGenerator.getAggregationVariables (groupByAttributes, templateTypes, templateTypesForHashTable);
         b.append(s).append("\n");
         return b.toString();
     }
 
-    public static String getWriteCompleteWindowsBlock (AggregationType[] aggregationGroupByTypes, FloatColumnReference[] aggregationGroupByAttributes,
-                                                      Expression[] groupByAttributes, ITupleSchema outputSchema, int numberOfTabs) {
+    public static String getReductionVariables(AggregationType[] aggregationTypes) {
+        StringBuilder b = new StringBuilder ();
+        String s = ReductionCpuKernelGenerator.getAggregationVariables (aggregationTypes);
+        b.append(s).append("\n");
+        return b.toString();
+    }
+
+    public static String getWriteCompleteWindowsBlock (AggregationType[] aggregationGroupByTypes, Expression[] groupByAttributes, int numberOfTabs) {
         StringBuilder b = new StringBuilder ();
 
         // having clause
-        String s = AggregationCpuKernelGenerator.getWriteCompleteWindowsBlock (aggregationGroupByTypes, aggregationGroupByAttributes,
-                groupByAttributes, outputSchema, numberOfTabs);
+        String s = AggregationCpuKernelGenerator.getWriteCompleteWindowsBlock (aggregationGroupByTypes, groupByAttributes, numberOfTabs);
 
         b.append(s).append("\n");
         return b.toString();
@@ -440,21 +446,20 @@ public class CpuKernelGenerator {
         return b.toString();
     }
 
-    public static String getWriteCompleteWindowsBlockForMerge(AggregationType[] aggregationGroupByTypes, FloatColumnReference[] aggregationGroupByAttributes,
-                                                              Expression[] groupByAttributes, ITupleSchema outputSchema, int bufferId, int numberOfTabs, boolean isFound) {
+    public static String getWriteCompleteWindowsBlockForMerge(AggregationType[] aggregationGroupByTypes,
+                                                              Expression[] groupByAttributes, int bufferId, int numberOfTabs, boolean isFound) {
         StringBuilder b = new StringBuilder ();
 
         // having clause
-        String s = AggregationCpuKernelGenerator.getWriteCompleteWindowsBlockForMerge(aggregationGroupByTypes, aggregationGroupByAttributes,
-                groupByAttributes, outputSchema, bufferId, numberOfTabs, isFound);
+        String s = AggregationCpuKernelGenerator.getWriteCompleteWindowsBlockForMerge(aggregationGroupByTypes, groupByAttributes, bufferId, numberOfTabs, isFound);
 
         b.append(s).append("\n");
         return b.toString();
     }
 
-    public static String getMergeOpeningWindowsBlock(WindowDefinition windowDefinition, AggregationType[] aggregationTypes, FloatColumnReference[] aggregationAttributes,
+    public static String getMergeOpeningWindowsBlock(AggregationType[] aggregationTypes, FloatColumnReference[] aggregationAttributes,
                                                      AggregationType[] aggregationGroupByTypes, FloatColumnReference[] aggregationGroupByAttributes,
-                                                     Expression[] groupByAttributes, int numberOfTabs) {
+                                                     int numberOfTabs) {
         StringBuilder b = new StringBuilder ();
 
 
@@ -464,19 +469,16 @@ public class CpuKernelGenerator {
 
         // group by aggregate
         if (aggregationGroupByAttributes!=null && aggregationGroupByAttributes.length > 0)
-            b.append(getAggregationMergeOperator(aggregationGroupByTypes, aggregationGroupByAttributes, groupByAttributes, numberOfTabs));
-
+            b.append(getAggregationMergeOperator(aggregationGroupByTypes, numberOfTabs));
 
         return b.toString();
     }
 
-    public static String getWriteOpeningWindowsBlockForMerge(AggregationType[] aggregationGroupByTypes, FloatColumnReference[] aggregationGroupByAttributes,
-                                                             Expression[] groupByAttributes, ITupleSchema outputSchema, int bufferId, int numberOfTabs) {
+    public static String getWriteOpeningWindowsBlockForMerge(AggregationType[] aggregationGroupByTypes, Expression[] groupByAttributes, int numberOfTabs) {
         StringBuilder b = new StringBuilder ();
 
         // having clause
-        String s = AggregationCpuKernelGenerator.getWriteOpeningWindowsBlockForMerge(aggregationGroupByTypes, aggregationGroupByAttributes,
-                groupByAttributes, outputSchema, bufferId, numberOfTabs);
+        String s = AggregationCpuKernelGenerator.getWriteOpeningWindowsBlockForMerge(aggregationGroupByTypes, groupByAttributes, numberOfTabs);
 
         b.append(s).append("\n");
         return b.toString();
@@ -510,7 +512,8 @@ public class CpuKernelGenerator {
             "        tempPane = (bufferStartPointer != 0) ? data[bufferStartPointer - 1].timestamp / PANE_SIZE :\n" +
             "                   data[BUFFER_SIZE / sizeof(input_tuple_t) - 1].timestamp / PANE_SIZE;\n" +
             "        while (currPos < bufferEndPointer) {\n";
-    public static String sw_p3 =
+    public static String get_sw_p3 (String setupValues) {
+        return
             "            activePane = data[currPos].timestamp / PANE_SIZE;\n" +
             "            if (activePane - tempPane >= PANES_PER_SLIDE) { // there may be still opening windows\n" +
             "                tempPane = activePane;\n" +
@@ -543,14 +546,15 @@ public class CpuKernelGenerator {
             "            if (activePane - tempPane >= PANES_PER_SLIDE &&\n" +
             "                activePane >= PANES_PER_WINDOW) {//activePane - tempPane < PANES_PER_WINDOW) { // closing window\n" +
             "                tempPane = activePane;\n" +
-            "\n" +
+            "                "+setupValues+"\n" +
             "                // write result to the closing windows\n" +
             "                std::memcpy(closingWindowsResults + closingWindowsPointer, hTable, MAP_SIZE * ht_node_size);\n" +
             "                closingWindowsPointer += MAP_SIZE;\n" +
             "                closingWindows++;\n" +
             "                closingWindowsPointers[closingWindows] = closingWindowsPointer; //- 1;\n" +
             "                //printf(\"activePane %d \\n\", activePane);\n" +
-            "            }\n" ;
+            "            }\n";
+    }
     public static String sw_p4 =
             "            if (activePane - tempOpenPane >= PANES_PER_SLIDE) { // new slide and possible opening windows\n" +
             "                tempOpenPane = activePane;\n" +
@@ -568,11 +572,12 @@ public class CpuKernelGenerator {
             "        // remove the extra values so that we have the first complete window\n" +
             "        if (completeWindows > 0 && !startingFromPane) {\n" +
             "            for (int i = bufferStartPointer; i < startPositions[1]; i++ ) {\n" ;
-    public static String sw_p5 =
+    public static String get_sw_p5 (String setValues){
+        return
             "            }\n" +
             "        }\n" +
             "    }\n" +
-            "\n" +
+            "    "+setValues+"\n" +
             "    int tempStartPosition;\n" +
             "    int tempEndPosition;\n" +
             "    // Check if we have one pending window\n" +
@@ -584,24 +589,17 @@ public class CpuKernelGenerator {
             "        pendingWindowsPointers[pendingWindows] = pendingWindowsPointer; // - 1;\n" +
             "    }\n" +
             "\n" +
-            "    if (completeWindows == 0  && streamStartPointer == 0) { // We only have one opening window, so we write it and return...\n" +
+            "    if (completeWindows == 0 && ((streamStartPointer == 0) || (currentSlide > 1 && data[startPositions[0]].timestamp%WINDOW_SLIDE==0))) { // We only have one opening window, so we write it and return...\n" +
             "        // write results\n" +
             "        std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, MAP_SIZE * ht_node_size);\n" +
             "        openingWindowsPointer += MAP_SIZE;\n" +
             "        openingWindows++;\n" +
             "        openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;\n" +
-            "        // We only have one opening window if we start from a valid point in time (the last check in the next if statement)\n" +
-            "    } else if (completeWindows == 0  && currentSlide > 1 && data[startPositions[0]].timestamp%WINDOW_SLIDE==0) {\n" +
-            "        // write results\n" +
-            "        std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, MAP_SIZE * ht_node_size);\n" +
-            "        openingWindowsPointer += MAP_SIZE;\n" +
-            "        openingWindows++;\n" +
-            "        openingWindowsPointers[openingWindows] = openingWindowsPointer; // - 1;\n" +
-            "        //currentWindow++; // in order to skip the check later\n" +
             "    } else if (completeWindows > 0) { // we have at least one complete window...\n" +
             "\n" +
             "        // write results and pack them for the first complete window in the batch\n" +
             "        for (int i = 0; i < MAP_SIZE; i++) {\n";
+    }
     public static String sw_p6 =
             "        }\n" +
             "        // write in the correct slot, as the value has already been incremented!\n" +
@@ -612,13 +610,14 @@ public class CpuKernelGenerator {
             "        // compute the rest windows\n" +
             "        currPos = endPositions[0];\n" +
             "        tempPane = data[currPos].timestamp/PANE_SIZE; //currStartPos = data[currPos].timestamp; //startPositions[currentWindow];\n" +
-            "        int removalIndex = (startingFromPane) ? currentWindow : currentWindow + 1;" +
+            "        int removalIndex = (startingFromPane) ? currentWindow : currentWindow + 1; \n" +
             "        while (currPos < bufferEndPointer) {\n" +
             "            // remove previous slide\n" +
             "            tempStartPosition = startPositions[removalIndex - 1];\n" +
             "            tempEndPosition = startPositions[removalIndex];\n" +
             "            for (int i = tempStartPosition; i < tempEndPosition; i++) {\n";
-    public static String sw_p8 =
+    public static String get_sw_p8(String setValues) {
+        return
             "            }\n" +
             "            // add elements from the next slide\n" +
             "            currPos = endPositions[currentWindow - 1] + 1; // take the next position, as we have already computed this value\n" +
@@ -633,7 +632,9 @@ public class CpuKernelGenerator {
             "                    endPositions[currentWindow] = currPos;\n" +
             "                    currentWindow++;\n" +
             "                    // write and pack the complete window result\n" +
+            "                    "+setValues+"\n" +
             "                    for (int i = 0; i < MAP_SIZE; i++) {\n";
+    }
     public static String sw_p9 =
             "                    }\n" +
             "                    completeWindows++;\n" +
@@ -643,12 +644,14 @@ public class CpuKernelGenerator {
             "                    currPos++;\n" +
             "                    break;\n" +
             "                }\n";
-    public static String sw_p11 =
+    public static String get_sw_p11(String setValues) {
+        return
             "                currPos++;\n" +
             "                if (currPos >= bufferEndPointer) { // we have reached the first open window after all the complete ones\n" +
             "                    // write the first open window if we have already computed the result, otherwise remove the respective tuples\n" +
             "                    if ((data[bufferEndPointer-1].timestamp/PANE_SIZE) -\n" +
             "                                (data[tempEndPosition].timestamp/PANE_SIZE) < PANES_PER_WINDOW) {\n" +
+            "                        "+setValues+"\n"+
             "                        std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, MAP_SIZE * ht_node_size);\n" +
             "                        openingWindowsPointer += MAP_SIZE;\n" +
             "                        openingWindows++;\n" +
@@ -671,11 +674,14 @@ public class CpuKernelGenerator {
             "        tempStartPosition = startPositions[currentWindow];\n" +
             "        tempEndPosition = startPositions[currentWindow + 1];\n" +
             "        currentWindow++;\n" +
-            "        if (tempStartPosition == tempEndPosition) continue;" +
+            "        if (tempStartPosition == tempEndPosition) continue; \n" +
             "        for (int i = tempStartPosition; i < tempEndPosition; i++) {\n";
-    public static String sw_p12 =
+    }
+    public static String get_sw_p12 (String setValues) {
+        return
             "        }\n" +
             "        // write result to the opening windows\n" +
+            "        "+setValues+"\n"+
             "        std::memcpy(openingWindowsResults + openingWindowsPointer, hTable, MAP_SIZE * ht_node_size);\n" +
             "        openingWindowsPointer += MAP_SIZE;\n" +
             "        openingWindows++;\n" +
@@ -780,8 +786,9 @@ public class CpuKernelGenerator {
             "    return 0;\n" +
             "}\n" +
             "\n";
+    }
 
-    public static String getMergeFunction_p1(String templateTypes) {
+    public static String getMergeFunction_p1(String templateTypes, String templateTypesForHashTable) {
         return
             "JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_optimisedAggregateHashTables\n" +
             "  (JNIEnv * env, jobject obj,\n" +
@@ -797,8 +804,8 @@ public class CpuKernelGenerator {
             "    // Input Buffers\n" +
             "    ht_node"+templateTypes+" *buffer1= (ht_node"+templateTypes+" *) env->GetDirectBufferAddress(buff1);\n" +
             "    ht_node"+templateTypes+" *buffer2= (ht_node"+templateTypes+" *) env->GetDirectBufferAddress(buff2);\n" +
-            "    hashtable"+templateTypes+" map1 (buffer1, MAP_SIZE);\n" +
-            "    hashtable"+templateTypes+" map2 (buffer2, MAP_SIZE);\n" +
+            "    hashtable"+templateTypesForHashTable+" map1 (buffer1, MAP_SIZE);\n" +
+            "    hashtable"+templateTypesForHashTable+" map2 (buffer2, MAP_SIZE);\n" +
             "    //int len = env->GetDirectBufferCapacity(buffer);\n" +
             "    //const int inputSize = len/32; // 32 is the size of the tuple here\n" +
             "\n" +

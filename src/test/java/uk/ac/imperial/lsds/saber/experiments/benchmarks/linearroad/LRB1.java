@@ -65,10 +65,10 @@ public class LRB1 extends LRB {
 
 		// Code for computing the Distinct function over the window
 		AggregationType [] aggregationTypes = new AggregationType [1];
-		aggregationTypes[0] = AggregationType.fromString("cnt");
+		aggregationTypes[0] = AggregationType.fromString("min");//"cnt");
 
 		FloatColumnReference [] aggregationAttributes = new FloatColumnReference [1];
-		aggregationAttributes[0] = new FloatColumnReference(1);
+		aggregationAttributes[0] = new FloatColumnReference(2);//1);
 
 		Expression [] groupByAttributes = new Expression [] {
 				new IntColumnReference(1)
