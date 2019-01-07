@@ -73,12 +73,12 @@ public class RESTfulHandler extends AbstractHandler {
 					response.getWriter().println (
 						callback + 
 						"(" + 
-						mapper.writeValueAsString (q.getAnswer (baseRequest.getParameters())) + 
+						mapper.writeValueAsString (q.getAnswer (baseRequest.getParameterMap())) + 
 						")"
 					);
 				else
 					response.getWriter().println (
-						mapper.writeValueAsString (q.getAnswer (baseRequest.getParameters()))
+						mapper.writeValueAsString (q.getAnswer (baseRequest.getParameterMap()))
 					);
 				
 			} else if (s[1].equals("throughput")) {
@@ -93,12 +93,12 @@ public class RESTfulHandler extends AbstractHandler {
 					response.getWriter().println (
 						callback + 
 						"(" + 
-						mapper.writeValueAsString (t[idx].getAnswer (baseRequest.getParameters())) + 
+						mapper.writeValueAsString (t[idx].getAnswer (baseRequest.getParameterMap())) + 
 						")"
 					);
 				else
 					response.getWriter().println (
-						mapper.writeValueAsString (t[idx].getAnswer (baseRequest.getParameters()))
+						mapper.writeValueAsString (t[idx].getAnswer (baseRequest.getParameterMap()))
 					);
 			} else {
 				throw new IllegalStateException (String.format("error: invalid target (%s)", target));

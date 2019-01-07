@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.util.MultiMap;
-
 import uk.ac.imperial.lsds.saber.ITupleSchema;
 import uk.ac.imperial.lsds.saber.Query;
 import uk.ac.imperial.lsds.saber.QueryApplication;
@@ -75,7 +73,7 @@ public class QueryApplicationHandler implements IHandler {
 		}
 	}
 	
-	public Object getAnswer (MultiMap<String> requestParameters) {
+	public Object getAnswer (Map<String, String[]> map) {
 		return info;
 	}
 }

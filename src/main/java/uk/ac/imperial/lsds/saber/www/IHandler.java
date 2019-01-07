@@ -1,8 +1,8 @@
 package uk.ac.imperial.lsds.saber.www;
 
-import org.eclipse.jetty.util.MultiMap;
+import java.util.Map;
 
 public interface IHandler {
 	
-	public Object getAnswer (MultiMap<String> params);
+	public Object getAnswer (Map<String, String[]> map);
 }

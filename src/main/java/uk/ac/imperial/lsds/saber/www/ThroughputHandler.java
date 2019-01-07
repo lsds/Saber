@@ -1,6 +1,6 @@
 package uk.ac.imperial.lsds.saber.www;
 
-import org.eclipse.jetty.util.MultiMap;
+import java.util.Map;
 
 public class ThroughputHandler implements IHandler {
 	
@@ -14,13 +14,14 @@ public class ThroughputHandler implements IHandler {
 		queue.add (timestamp, cpuValue, gpuValue);
 	}
 	
-	public Object getAnswer (MultiMap<String> params) {
+	@Override
+	public Object getAnswer(Map<String, String[]> map) {
 		
-		String mode = params.get("mode").get(0);
+		String mode = map.get("mode")[0];
 		
-		long start = params.containsKey("start") ? Long.valueOf(params.getValue("start", 0)) : -1L;
-		long  stop = params.containsKey( "stop") ? Long.valueOf(params.getValue( "stop", 0)) : -1L; 
-		long  step = params.containsKey( "step") ? Long.valueOf(params.getValue( "step", 0)) : -1L;
+		long start = map.containsKey("start") ? Long.valueOf(map.get("start")[0]) : -1L;
+		long  stop = map.containsKey( "stop") ? Long.valueOf(map.get( "stop")[0]) : -1L; 
+		long  step = map.containsKey( "step") ? Long.valueOf(map.get( "step")[0]) : -1L;
 		
 		// System.out.println(String.format("[DBG] Throughput request: mode %s start %d stop %d step %d",
 		//		mode, start, stop, step));
