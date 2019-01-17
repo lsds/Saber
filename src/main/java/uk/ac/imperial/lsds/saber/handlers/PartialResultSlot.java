@@ -329,13 +329,6 @@ public class PartialResultSlot {
 
         b2 = p.closingWindows.getBuffer();
 
-
-        int intermediateTupleSize = TheCPU.getInstance().getIntermediateTupleSize();
-        int mapSize = SystemConf.C_HASH_TABLE_SIZE; // todo: This is defined manually now...
-        int tupleSize = TheCPU.getInstance().getIntermediateTupleSize();
-        int resultTupleSize = 16;
-        int newPosition;
-        //System.out.println("----starting to merge opening and closing------");
         for (wid = 0; wid < p.closingWindows.numberOfWindows(); ++wid) {
 
             start1 =   openingWindows.getStartPointer(wid);
@@ -352,14 +345,12 @@ public class PartialResultSlot {
             }*/
 
             if (end1 < 0) { // why??
-                end1 = (SystemConf.JNI) ? start1 + mapSize : start1 + SystemConf.HASH_TABLE_SIZE;
+                end1 = start1 + SystemConf.HASH_TABLE_SIZE;
             }
             if (end2 < 0) { // why??
-                end2 = (SystemConf.JNI) ? start2 + mapSize : start2 + SystemConf.HASH_TABLE_SIZE;
+                end2 = start2 + SystemConf.HASH_TABLE_SIZE;
             }
 
-            //System.out.println("start1: " + start1 + ", end1: " + end1);
-            //System.out.println("start2: " + start2 + ", end2: " + end2);
 
             if (start1 == end1)
                 throw new IllegalStateException ("error: empty opening window partial result");
@@ -368,41 +359,15 @@ public class PartialResultSlot {
                 throw new IllegalStateException ("error: empty closing window partial result");
             }
 
-            if (SystemConf.JNI) {
-                // todo: What timestamp do I want to save in the aggregated value???
-                //newPosition = completeWindows.getBuffer().position();
-                newPosition = TheCPU.getInstance().optimisedAggregateHashTables(b1.getByteBuffer(), start1, end1,
-                        b2.getByteBuffer(), start2, end2,
-                        operator.getKeyLength(), operator.getValueLength(), intermediateTupleSize, mapSize,
-                        operator.numberOfValues(), /*ByteBuffer aggregationTypes,*/
-                        operator.getOutputSchema().getPadLength(), true,
-                        null, completeWindows.getBuffer().getByteBuffer(),
-                        completeWindows.getBuffer().position());
 
+            int multiplier = 1;//32;//TODO: set this not manually
 
-                /*System.out.println("print complete window: "+ wid);
-                int startPos = completeWindows.getBuffer().position();
-                int endPos = newPosition;
-                for (int j = startPos; j < endPos; j+=16) {
-                    System.out.println(completeWindows.getBuffer().getByteBuffer().getLong(j) + ", "  +
-                            completeWindows.getBuffer().getByteBuffer().getInt(j + 8) + ", " +
-                            completeWindows.getBuffer().getByteBuffer().getFloat(j + 12));
-                }
-                System.out.println("--------xxxxx---------");*/
+            aggregateHashTables (b1, start1*multiplier, end1*multiplier, b2, start2*multiplier, end2*multiplier, operator, true);
+            /* At this point, w3 contains a packed, complete window result.
+             * Append it directly to this node's complete windows. */
+            if (w3 != null)
+                completeWindows.append(w3.getByteBuffer());
 
-                /* At this point, w3 contains a packed, complete window result.
-                 * Append it directly to this node's complete windows. */
-                if (newPosition != completeWindows.getBuffer().position()) //w3 != null)
-                    completeWindows.append(w3.getByteBuffer(), newPosition, resultTupleSize);
-            } else {
-                int multiplier = 1;//32;//TODO: set this not manually
-
-                //aggregateHashTables (b1, start1*multiplier, end1*multiplier, b2, start2*multiplier, end2*multiplier, operator, true);
-                /* At this point, w3 contains a packed, complete window result.
-                 * Append it directly to this node's complete windows. */
-                if (w3 != null)
-                    completeWindows.append(w3.getByteBuffer());
-            }
         }
 
         p.closingWindows.nullify();
@@ -426,7 +391,7 @@ public class PartialResultSlot {
             b2 = p.pendingWindows.getBuffer();
 
             start2 = 0;
-            end2 = b2.position()/tupleSize; //todo: fix this!
+            end2 = b2.position();
 
             int nextOpenWindow = wid;
             int count = 0;
@@ -442,7 +407,7 @@ public class PartialResultSlot {
                 }*/
 
                 if (end1 < 0) { // why??
-                    end1 = (SystemConf.JNI) ? start1 + mapSize : start1 + SystemConf.HASH_TABLE_SIZE;
+                    end1 = start1 + SystemConf.HASH_TABLE_SIZE;
                 }
 
                 //System.out.println("aaa start1: " + start1 + ", end1: " + end1);
@@ -451,29 +416,13 @@ public class PartialResultSlot {
                 if (start1 == end1)
                     throw new IllegalStateException ("error: empty opening window partial result");
 
-                if (SystemConf.JNI) {
-                    // The buffer b1 is the same as the part of the opening windows where we rewrite the results!
-                    //newPosition = 0;
-                    newPosition = TheCPU.getInstance().optimisedAggregateHashTables(b1.getByteBuffer(), start1, end1,
-                            b2.getByteBuffer(), start2, end2,
-                            operator.getKeyLength(), operator.getValueLength(), intermediateTupleSize, mapSize,
-                            operator.numberOfValues(), /*ByteBuffer aggregationTypes,*/
-                            operator.getOutputSchema().getPadLength(), false,
-                            openingWindows.getBuffer().getByteBuffer(), null,
-                            start1);//openingWindows.getBuffer().position());
+                int multiplier = 1;//32;//TODO: set this not manually
+                aggregateHashTables (b1, start1*multiplier, end1*multiplier, b2, start2*multiplier, end2*multiplier, operator, false);
 
-                    openingWindows.getBuffer().position(newPosition);
-                } else {
-                    //if (end1==1024 || end2==1024)
-                    //    System.out.println("aaa");
-                    //end2 = b2.position();
+                /* At this point, w3 contains a hash table. Replace current window's hash table */
+                openingWindows.getBuffer().position(start1);
+                openingWindows.getBuffer().put(w3.getByteBuffer(), 0, w3.capacity());
 
-                    int multiplier = 1;//32;//TODO: set this not manually
-                    //aggregateHashTables (b1, start1*multiplier, end1*multiplier, b2, start2*multiplier, end2*multiplier, operator, false);
-                    /* At this point, w3 contains a hash table. Replace current window's hash table */
-                    //openingWindows.getBuffer().position(start1);
-                    //openingWindows.getBuffer().put(w3.array(), 0, w3.capacity());
-                }
                 ++nextOpenWindow;
                 ++count;
             }
@@ -515,7 +464,7 @@ public class PartialResultSlot {
 
 
             // todo: check this!
-            p.openingWindows.prepend(openingWindows, wid, count, tupleSize*mapSize/*windowSize*/, tupleSize);
+            p.openingWindows.prepend(openingWindows, wid, count, windowSize, 128);
 
             /*tempPos = p.openingWindows.getBuffer().getByteBuffer().position();
             p.openingWindows.getBuffer().getByteBuffer().position(0);

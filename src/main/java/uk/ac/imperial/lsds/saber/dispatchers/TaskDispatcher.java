@@ -144,7 +144,7 @@ public class TaskDispatcher implements ITaskDispatcher {
 	public boolean tryDispatch (ByteBuffer inputBuffer, int length) {
 		int idx;
 
-		if ((idx = buffer.put(inputBuffer.array(), length)) < 0) {
+		if ((idx = ((CircularQueryBuffer) buffer).put(length)) < 0) { //(idx = buffer.put(inputBuffer.array(), length)) < 0) {
 			return false;
 		}
 		assemble (idx, length);

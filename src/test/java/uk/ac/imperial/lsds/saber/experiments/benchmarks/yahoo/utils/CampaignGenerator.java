@@ -151,7 +151,7 @@ public class CampaignGenerator {
 			value2++;
 		}
 		
-		this.relationBuffer = new RelationalTableQueryBuffer(0, SystemConf.RELATIONAL_TABLE_BUFFER_SIZE, false);
+		this.relationBuffer = new RelationalTableQueryBuffer(0, SystemConf.RELATIONAL_TABLE_BUFFER_SIZE, true);
 		
 		this.relationBuffer.put(data, data.length);		
 	}
@@ -189,7 +189,7 @@ public class CampaignGenerator {
 			}
 		}
 		
-		this.relationBuffer = new RelationalTableQueryBuffer(0, SystemConf.RELATIONAL_TABLE_BUFFER_SIZE, false);
+		this.relationBuffer = new RelationalTableQueryBuffer(0, SystemConf.RELATIONAL_TABLE_BUFFER_SIZE, true);
 		
 		this.relationBuffer.put(data, data.length);		
 	}
@@ -212,7 +212,7 @@ public class CampaignGenerator {
 			campaigns.position(campaigns.position() + 16);			
 		}
 		
-		this.relationBuffer = new RelationalTableQueryBuffer(0, SystemConf.RELATIONAL_TABLE_BUFFER_SIZE, false);
+		this.relationBuffer = new RelationalTableQueryBuffer(0, SystemConf.RELATIONAL_TABLE_BUFFER_SIZE, true);
 		
 		this.relationBuffer.put(data, data.length);	
 	}
@@ -220,7 +220,11 @@ public class CampaignGenerator {
 	public void createHashMap(IQueryBuffer relationBuffer, int offset) {
 		
 		this.hashMap = new HashMap();		
-		byte[] buffer = relationBuffer.getByteBuffer().array();		
+		//byte[] buffer = relationBuffer.getByteBuffer().array();
+		byte [] buffer = new byte[relationBuffer.getByteBuffer().position()];
+		for (int  i = 0; i < relationBuffer.getByteBuffer().position(); i++)
+		    buffer[i] = relationBuffer.getByteBuffer().get(i);
+
 		int tupleSize = campaignsSchema.getTupleSize();
 		
 		byte[] b = isV2? new byte[8] : new byte[16];

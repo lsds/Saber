@@ -265,10 +265,21 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 		
 		/* Check bounds and normalise indices of this byte array */
 		
-		if (isDirect || dst.isDirect())
-			throw new UnsupportedOperationException("error: cannot append bytes from/to a direct buffer");
-		
-		dst.put(this.buffer.array(), offset, length);
+		if (isDirect || dst.isDirect()) {
+			//throw new UnsupportedOperationException("error: cannot append bytes from/to a direct buffer");
+
+			long addr1 = ((DirectBuffer) this.buffer).address();
+			long addr2 = ((DirectBuffer) dst.getByteBuffer()).address();
+			int _position = dst.position();
+			//for (int i = offset;  i < (offset+length); i+=4)
+			//    unsafe.putInt(addr2 + _position, unsafe.getInt(addr1 + i));
+			unsafe.copyMemory(addr1 + offset, addr2 + _position, length);
+			int position = _position + length;
+			position -= (offset == 0) ? 1 : 0; // check this
+			buffer.position(position);
+		} else {
+            dst.put(this.buffer.array(), offset, length);
+        }
 	}
 	
 	public void appendBytesTo (int start, int end, byte [] dst) {

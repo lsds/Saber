@@ -1,17 +1,32 @@
 package uk.ac.imperial.lsds.saber.buffers;
 
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 import uk.ac.imperial.lsds.saber.SystemConf;
 
 public class RelationalTableQueryBuffer implements IQueryBuffer {
-	
+
+    public static Unsafe getTheUnsafe() {
+        try {
+            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+            theUnsafe.setAccessible(true);
+            return (Unsafe) theUnsafe.get(null);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private Unsafe unsafe = getTheUnsafe();
+
 	private static final int _default_capacity = SystemConf.RELATIONAL_TABLE_BUFFER_SIZE;
 	
 	private int id;
 	
-	private boolean isDirect = false;
+	private boolean isDirect = true;
 	
 	private byte [] data = null;
 	
@@ -207,9 +222,14 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 			return normalise (end.get());
 		}
 		
-		if (isDirect)
-			throw new UnsupportedOperationException("error: cannot put array to a direct buffer");
-	
+		if (isDirect) {
+            //throw new UnsupportedOperationException("error: cannot put array to a direct buffer");
+            this.buffer.put(values);
+            //for (int i = 0; i < length; i++)
+
+
+            return length;
+        }
 		if (values == null || length <= 0)
 			throw new NullPointerException ("error: cannot put null to a relational table buffer");
 
@@ -304,13 +324,23 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 	}
 
 	public void appendBytesTo (int offset, int length, IQueryBuffer dst) {
-		
-		if (isDirect || dst.isDirect())
-			throw new UnsupportedOperationException("error: cannot append bytes from/to a direct buffer");
-		
+
 		int start = normalise(offset);
-		
-		dst.put(data, start, length);
+
+		if (isDirect || dst.isDirect()) {
+            //throw new UnsupportedOperationException("error: cannot append bytes from/to a direct buffer");
+            long addr1 = ((DirectBuffer) this.buffer).address();
+            long addr2 = ((DirectBuffer) dst.getByteBuffer()).address();
+            int _position = dst.position();
+            //for (int i = offset;  i < (offset+length); i+=4)
+            //    unsafe.putInt(addr2 + _position, unsafe.getInt(addr1 + i));
+            unsafe.copyMemory(addr1 + start, addr2 + _position, length);
+            int position = _position + length;
+            position -= (start == 0) ? 1 : 0; // check this
+            buffer.position(position);
+        } else {
+            dst.put(data, start, length);
+        }
 	}
 	
 	public void appendBytesTo (int start, int end, byte [] dst) {

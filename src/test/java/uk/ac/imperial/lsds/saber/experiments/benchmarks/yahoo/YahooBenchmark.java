@@ -37,7 +37,6 @@ public class YahooBenchmark extends InputStream {
 	private long[][] ads;
 	private int adsPerCampaign;
 	private boolean isV2 = false;
-
 	
 	public YahooBenchmark (QueryConf queryConf, boolean isExecuted) {
 		this(queryConf, isExecuted, null, false);
@@ -109,33 +108,28 @@ public class YahooBenchmark extends InputStream {
 		this.ads = campaignGen.getAds();
 		HashMap hashMap = campaignGen.getHashMap();
 
+		Expression [] expressions2 = new Expression [3];
+		expressions2[0] = new LongColumnReference(0); 	   // event_time
 
-		// AGGREGATE (count("*") as count, max(event_time) as 'lastUpdate) 
-		// GROUP BY Campaign_ID with 10 seconds tumbling window
+		if (isV2) {
+			expressions2[1] = new LongColumnReference (1);
+			expressions2[2] = new LongColumnReference (2);
+		}
+		else {
+			expressions2[1] = new LongLongColumnReference(1);  // ad_id
+			expressions2[2] = new LongLongColumnReference(3);  // campaign_id
+		}
+
+
 		WindowDefinition windowDefinition = new WindowDefinition (WindowType.RANGE_BASED, windowSize, windowSize);
-		AggregationType [] aggregationTypes = new AggregationType [2];
 
-		System.out.println("[DBG] aggregation type is COUNT(*)" );
-		aggregationTypes[0] = AggregationType.CNT;
-		System.out.println("[DBG] aggregation type is MAX(0)" );
-		aggregationTypes[1] = AggregationType.MAX;
-		
-		FloatColumnReference[] aggregationAttributes = new FloatColumnReference [2];
-		aggregationAttributes[0] = new FloatColumnReference(1);
-		aggregationAttributes[1] = new FloatColumnReference(0);
-		
-		Expression [] groupByAttributes = null;
-		if (isV2)
-			groupByAttributes = new Expression [] {new LongColumnReference(3)};
-		else
-			groupByAttributes = new Expression [] {new LongLongColumnReference(3)};
 
-		
 		// Create and initialize the operator for computing the Benchmark's data.
 		IOperatorCode cpuCode = new YahooBenchmarkOp (
 				inputSchema, 
 				selectPredicate, 
-				expressions, 
+				expressions,
+				expressions2,
 				joinPredicate, 
 				relationSchema,
 				relationBuffer,
@@ -156,33 +150,12 @@ public class YahooBenchmark extends InputStream {
 		
 		Set<Query> queries = new HashSet<Query>();
 		queries.add(query1);
-		
-		
-		// Create the aggregate operator
+
 		ITupleSchema joinSchema = ((YahooBenchmarkOp) cpuCode).getOutputSchema();
-		cpuCode = new Aggregation (windowDefinition, aggregationTypes, aggregationAttributes, groupByAttributes);
-
-		IPredicate selectPredicate2 = new IntComparisonPredicate
-				(IntComparisonPredicate.NONEQUAL_OP, new IntColumnReference(1), new IntConstant(0));
-		operator = new QueryOperator (cpuCode, gpuCode);
-		operators = new HashSet<QueryOperator>();
-		operators.add(operator);
-		Query query2 = new Query (1, operators, joinSchema, windowDefinition, null, null, queryConf, timestampReference);
-		
-
-		// Connect the two queries
-		queries.add(query2);
-		query1.connectTo(query2);
 
 		if (isExecuted) {
 			application = new QueryApplication(queries);
 			application.setup();
-		
-			/* The path is query -> dispatcher -> handler -> aggregator */
-			if (SystemConf.CPU)
-				query2.setAggregateOperator((IAggregateOperator) cpuCode);
-			else
-				query2.setAggregateOperator((IAggregateOperator) gpuCode);
 		}
 
 		return;

@@ -12,15 +12,16 @@ public class YahooBenchmarkApp {
 
 		YahooBenchmarkQuery benchmarkQuery = null;
 		int numberOfThreads = 1;
-		int batchSize = 4 * 1048576;
+		int batchSize = 2 * 1048576;
 		String executionMode = "cpu";
-		int circularBufferSize = 128 * 1 * 1048576/2;
-		int unboundedBufferSize = 4 * 1048576;
+		int circularBufferSize = 16 * 1048576;
+		int unboundedBufferSize = 2 * 1048576;
 		int hashTableSize = 2*64*128;
 		int partialWindows = 2;
-		int slots = 1 * 128 * 1024*2;
-		
-		boolean isV2 = false; // change the tuple size to half if set true
+		int slots = 64 * 1024;
+
+		// change the tuple size to half if set true
+		//boolean isV2 = false;
 
 		/* Parse command line arguments */
 		if (args.length!=0)  
@@ -46,19 +47,17 @@ public class YahooBenchmarkApp {
 
 
 		/* Initialize the Operators of the Benchmark */
-		benchmarkQuery = new YahooBenchmark (queryConf, true, null, isV2);
+		benchmarkQuery = new YahooBenchmark (queryConf, true);
 		
 		/* Generate input stream */
-		int numberOfGeneratorThreads = 2;
+		int numberOfGeneratorThreads = 1;
 		int adsPerCampaign = ((YahooBenchmark) benchmarkQuery).getAdsPerCampaign();
 		long[][] ads = ((YahooBenchmark) benchmarkQuery).getAds();
-
-		
 		int bufferSize = 4 * 131072;
-		int coreToBind = 3; //numberOfThreads + 1;
+		int coreToBind = SystemConf.THREADS + 2;
 		
 		
-		Generator generator = new Generator (bufferSize, numberOfGeneratorThreads, adsPerCampaign, ads, coreToBind, isV2);
+		Generator generator = new Generator (bufferSize, numberOfGeneratorThreads, adsPerCampaign, ads, coreToBind, false);
 		long timeLimit = System.currentTimeMillis() + 10 * 10000;
 
 		while (true) {

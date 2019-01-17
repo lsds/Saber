@@ -1,13 +1,14 @@
 package uk.ac.imperial.lsds.saber;
 
 import java.util.Map;
+import java.util.Properties;
 
 public class SystemConf {
 
     public static boolean WWW = false;
 
-	public static String SABER_HOME = "/home/grt17/Caber/Saber";
-	
+	public static String SABER_HOME = "/home/george/Desktop/Saber";
+
 	static {
 		
 		Map<String, String> env = System.getenv();

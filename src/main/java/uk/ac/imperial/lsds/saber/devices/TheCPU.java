@@ -7,10 +7,8 @@ import java.nio.ByteBuffer;
 public class TheCPU {
 
 	// set this to use the correct library
-	private static final String cpuLibrary = /*SystemConf.SABER_HOME*/
-			"/home/grt17/Caber/Saber" + "/clib/libCPU.so";
-    private static final String cpuGenLibrary = /*SystemConf.SABER_HOME*/
-            "/home/grt17/Caber/Saber" + "/clib/libCPUGen.so";
+	private static final String cpuLibrary = SystemConf.SABER_HOME + "/clib/libCPU.so";
+    private static final String cpuGenLibrary = SystemConf.SABER_HOME + "/clib/libCPUGen.so";
 	
 	/*static {
 		try {

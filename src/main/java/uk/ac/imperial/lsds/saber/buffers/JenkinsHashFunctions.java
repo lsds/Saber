@@ -1,5 +1,7 @@
 package uk.ac.imperial.lsds.saber.buffers;
 
+import java.nio.ByteBuffer;
+
 public class JenkinsHashFunctions {
 	
 	private static final int rotate (int val, int bits) {
@@ -78,6 +80,75 @@ public class JenkinsHashFunctions {
 			c ^= b; c -= rotate(b,24);
 		}
 		
+		return c;
+	}
+
+	public static int hash (ByteBuffer buffer, int offset, int length, int initValue) {
+
+		int a, b, c;
+
+		a = b = c = (0xdeadbeef + (length << 2) + initValue);
+
+		/* Handle most of the key */
+
+		int index = offset;
+
+		while (length > 12) {
+
+			a += buffer.get(index + 0);
+			a += buffer.get(index + 1) <<  8;
+			a += buffer.get(index + 2) << 16;
+			a += buffer.get(index + 3) << 24;
+			b += buffer.get(index + 4);
+			b += buffer.get(index + 5) <<  8;
+			b += buffer.get(index + 6) << 16;
+			b += buffer.get(index + 7) << 24;
+			c += buffer.get(index + 8);
+			c += buffer.get(index + 9) <<  8;
+			c += buffer.get(index + 10) << 16;
+			c += buffer.get(index + 11) << 24;
+
+			{
+				/* mix(a, b, c); */
+				a -= c; a ^= rotate(c,  4); c += b;
+				b -= a; b ^= rotate(a,  6); a += c;
+				c -= b; c ^= rotate(b,  8); b += a;
+				a -= c; a ^= rotate(c, 16); c += b;
+				b -= a; b ^= rotate(a, 19); a += c;
+				c -= b; c ^= rotate(b,  4); b += a;
+			}
+
+			index  += 12;
+			length -= 12;
+		}
+
+		switch (length) {
+			case 12: c += buffer.get(index + 11) <<  24;
+			case 11: c += buffer.get(index + 10) <<  16;
+			case 10: c += buffer.get(index + 9) <<   8;
+			case  9: c += buffer.get(index + 8);
+			case  8: b += buffer.get(index + 7) <<  24;
+			case  7: b += buffer.get(index + 6) <<  16;
+			case  6: b += buffer.get(index + 5) <<   8;
+			case  5: b += buffer.get(index + 4);
+			case  4: a += buffer.get(index + 3) <<  24;
+			case  3: a += buffer.get(index + 2) <<  16;
+			case  2: a += buffer.get(index + 1) <<   8;
+			case  1: a += buffer.get(index + 0); break;
+			case  0: return c;
+		}
+
+		{
+			/* final(a, b, c); */
+			c ^= b; c -= rotate(b,14);
+			a ^= c; a -= rotate(c,11);
+			b ^= a; b -= rotate(a,25);
+			c ^= b; c -= rotate(b,16);
+			a ^= c; a -= rotate(c, 4);
+			b ^= a; b -= rotate(a,14);
+			c ^= b; c -= rotate(b,24);
+		}
+
 		return c;
 	}
 }
