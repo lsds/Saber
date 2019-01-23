@@ -16,7 +16,7 @@ $ cd Saber
 
 $ echo "export SABER_HOME=$(pwd)" >> $HOME/.profile
 
-$ echo "export PATH=\$SABER_HOME/clib:\$PATH" >> $HOME/.profile
+$ echo "export PATH=\\$SABER_HOME/clib:\\$PATH" >> $HOME/.profile
 
 $ source /home/$USER/.profile
 
@@ -24,7 +24,7 @@ Make sure your JAVA_HOME is set. E.g.:
 
 $ echo "export JAVA_HOME=/usr/lib/jvm/oracle-java10-jdk-amd64" >> $HOME/.bashrc
 
-$ echo "export PATH=\$JAVA_HOME/bin:\$PATH" >> $HOME/.bashrc
+$ echo "export PATH=\\$JAVA_HOME/bin:\\$PATH" >> $HOME/.bashrc
 
 $ ./build.sh
 
