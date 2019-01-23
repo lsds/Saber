@@ -245,7 +245,7 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
         //    unsafe.putInt(addr2 + _position, unsafe.getInt(addr1 + i));
         unsafe.copyMemory(addr1 + offset, addr2 + _position, length);
         int position = _position + length;
-        position -= (offset == 0) ? 1 : 0;
+        //position -= (offset == 0) ? 1 : 0;
         buffer.position(position);
 		return 0;
 	}
@@ -275,8 +275,8 @@ public class UnboundedQueryBuffer implements IQueryBuffer {
 			//    unsafe.putInt(addr2 + _position, unsafe.getInt(addr1 + i));
 			unsafe.copyMemory(addr1 + offset, addr2 + _position, length);
 			int position = _position + length;
-			position -= (offset == 0) ? 1 : 0; // check this
-			buffer.position(position);
+			//position -= (offset == 0) ? 1 : 0; // check this
+			dst.position(position);
 		} else {
             dst.put(this.buffer.array(), offset, length);
         }

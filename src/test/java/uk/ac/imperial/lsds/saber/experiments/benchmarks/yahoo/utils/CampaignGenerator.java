@@ -1,6 +1,7 @@
 package uk.ac.imperial.lsds.saber.experiments.benchmarks.yahoo.utils;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -115,8 +116,9 @@ public class CampaignGenerator {
 		/* set the size of the relational table*/
 		SystemConf.RELATIONAL_TABLE_BUFFER_SIZE = campaignsTupleSize * 100 * adsPerCampaign;
 		
-		byte [] data = new byte [campaignsTupleSize * 100 * adsPerCampaign];		
+		byte [] data = new byte [campaignsTupleSize * 100 * adsPerCampaign];
 		ByteBuffer b1 = ByteBuffer.wrap(data);
+		b1.order(ByteOrder.LITTLE_ENDIAN);
 		
 		/* Fill the buffer */
 		int i;
@@ -166,7 +168,8 @@ public class CampaignGenerator {
 		
 		byte [] data = new byte [campaignsTupleSize * 100 * adsPerCampaign];		
 		ByteBuffer b1 = ByteBuffer.wrap(data);
-		
+        b1.order(ByteOrder.LITTLE_ENDIAN);
+
 		/* Fill the buffer */
 		int i;
 		int value = 0;

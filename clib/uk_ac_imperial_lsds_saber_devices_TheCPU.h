@@ -87,6 +87,14 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_singleOpera
 JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_getIntermediateTupleSize
   (JNIEnv *, jobject);
 
+/*
+ * Class:     uk_ac_imperial_lsds_saber_devices_TheCPU
+ * Method:    operatorTester
+ * Signature: (Ljava/nio/ByteBuffer;IILjava/nio/ByteBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_operatorTester
+  (JNIEnv *, jobject, jobject, jint, jint, jobject, jint);
+
 #ifdef __cplusplus
 }
 #endif

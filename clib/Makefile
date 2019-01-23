@@ -2,7 +2,7 @@
 # Customised for platypus1 running Linux on Thu Jan 19 07:53:49 GMT 2017
 #
 OS = Linux
-JAVA_HOME = /usr/lib/jvm/java-8-oracle
+#JAVA_HOME = /usr/lib/jvm/java-8-oracle
 CUDA_HOME = /usr/local/cuda
 
 CLASS_PATH = ../target/classes

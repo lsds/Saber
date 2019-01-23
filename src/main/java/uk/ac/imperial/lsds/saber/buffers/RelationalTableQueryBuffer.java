@@ -2,6 +2,7 @@ package uk.ac.imperial.lsds.saber.buffers;
 
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
 
 import sun.misc.Unsafe;
@@ -93,6 +94,7 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
 		} else {
 			
 			buffer = ByteBuffer.allocateDirect(this.size);
+			buffer.order(ByteOrder.LITTLE_ENDIAN);
 		}		
 	}	
 	
@@ -336,8 +338,8 @@ public class RelationalTableQueryBuffer implements IQueryBuffer {
             //    unsafe.putInt(addr2 + _position, unsafe.getInt(addr1 + i));
             unsafe.copyMemory(addr1 + start, addr2 + _position, length);
             int position = _position + length;
-            position -= (start == 0) ? 1 : 0; // check this
-            buffer.position(position);
+            //position -= (start == 0) ? 1 : 0; // check this
+            dst.position(position);
         } else {
             dst.put(data, start, length);
         }

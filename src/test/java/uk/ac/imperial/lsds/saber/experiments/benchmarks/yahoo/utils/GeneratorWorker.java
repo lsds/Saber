@@ -95,12 +95,13 @@ public class GeneratorWorker implements Runnable {
 			int value = 0;
 			
 			bufferHelper.clear();
+			bufferHelper.order(ByteOrder.LITTLE_ENDIAN);
 			bufferHelper.putLong(user_id.getMostSignificantBits());                            // user_id
 			bufferHelper.putLong(user_id.getLeastSignificantBits());
 			bufferHelper.putLong(page_id.getMostSignificantBits());                            // page_id
 			bufferHelper.putLong(page_id.getLeastSignificantBits());
-			
-			buffer.position(startPos);
+
+            buffer.position(startPos);
 			while (buffer.position()  < endPos) {
 	
 			    buffer.putLong (timestamp);		    
@@ -109,7 +110,7 @@ public class GeneratorWorker implements Runnable {
 				buffer.putLong(this.ads[(value % 100000) % (100 * this.adsPerCampaign)][1]);			
 				buffer.putInt((value % 100000) % 5);                                         // ad_type: (0, 1, 2, 3, 4) => 
 				                                                                             // ("banner", "modal", "sponsored-search", "mail", "mobile")
-				buffer.putInt((value % 100000) % 2);                                         // event_type: (0, 1, 2) =>
+				buffer.putInt((value % 100000) % 4);                                         // event_type: (0, 1, 2) =>
 																							 // ("view", "click", "purchase")
 				
 				buffer.putInt(1);                                                            // ip_address
@@ -133,8 +134,10 @@ public class GeneratorWorker implements Runnable {
 
 	private void generateV2(GeneratedBuffer generatedBuffer, int startPos, int endPos, long timestamp) {	
 		ByteBuffer buffer = generatedBuffer.getBuffer().duplicate();
-		/* Fill the buffer */	
-		
+		/* Fill the buffer */
+		buffer.order(ByteOrder.LITTLE_ENDIAN);
+
+
 		if (isFirstTime!=0 ) {
 			long user_id = 0L; 
 			long page_id = 0L;

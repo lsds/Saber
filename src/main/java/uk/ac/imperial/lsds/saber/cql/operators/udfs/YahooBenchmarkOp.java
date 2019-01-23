@@ -77,6 +77,8 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 	private int keyLength, valueLength;
 	
 	private boolean isV2 = true;
+
+	private Random randGen;
 	
 	/* Thread local variables */
 	private ThreadLocal<float   []> tl_values;
@@ -139,6 +141,8 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 			groupBy = false;
 		
 		timestampReference = new LongColumnReference(0);
+
+		this.randGen = new Random();
 	}
 	
 	@Override
@@ -180,21 +184,28 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 
 	@Override
 	public void processData(WindowBatch batch, IWindowAPI api) {
-		
-		boolean useCalc = false; // enable this boolean to merge select and project operators
-		if (useCalc && selectPredicate != null && expressions != null)
-			calc (batch, api);
-		else {
-			/* Select */
-			if (selectPredicate != null)
-				select (batch, api);
-		
-		
-			/* Project */
-			if (expressions != null)
-				project (batch, api);
-		
-		}
+
+	    // variables testing for correctness
+        int inputPointer, randPos;
+        long tempLongVar;
+
+        inputPointer = (batch.getBufferEndPointer()- batch.getBufferStartPointer());
+        /* Select */
+        if (selectPredicate != null)
+            select (batch, api);
+
+        assert (batch.getBuffer().limit() == inputPointer/4) || (batch.getBuffer().limit() == (inputPointer/4 - 1)) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
+
+        inputPointer = (batch.getBufferEndPointer()- batch.getBufferStartPointer() + 1)/batch.getSchema().getTupleSize();
+        randPos = this.randGen.nextInt(inputPointer);
+        tempLongVar = batch.getBuffer().getByteBuffer().getLong(randPos*batch.getSchema().getTupleSize());
+        /* Project */
+        if (expressions != null)
+            project (batch, api);
+
+        assert (batch.getBuffer().limit() == (inputPointer*projectedSchema.getTupleSize())) : "Broken project: wrong number of columns copied";
+        assert (tempLongVar == batch.getBuffer().getByteBuffer().getLong(randPos*projectedSchema.getTupleSize())) : "Broken project: wrong tuple passed";
+
 		/* Hash Join */
 		if (joinPredicate != null)
 			hashJoin (batch, api);
@@ -205,7 +216,7 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 
 	}
 	
-	private void calc(WindowBatch batch, IWindowAPI api) {
+	public void calc(WindowBatch batch, IWindowAPI api) {
 		IQueryBuffer inputBuffer = batch.getBuffer();
 		IQueryBuffer outputBuffer = UnboundedQueryBufferFactory.newInstance();
 		
@@ -224,7 +235,7 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 				outputBuffer.put(projectedSchema.getPad());
 			}
 		}
-		
+
 		/* Return any (unbounded) buffers to the pool */
 		inputBuffer.release();
 		
@@ -241,7 +252,7 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 		api.outputWindowBatchResult (batch);		
 	}
 
-	private void select(WindowBatch batch, IWindowAPI api) {
+	public void select(WindowBatch batch, IWindowAPI api) {
 		
 		IQueryBuffer inputBuffer = batch.getBuffer();
 		IQueryBuffer outputBuffer = UnboundedQueryBufferFactory.newInstance();
@@ -249,16 +260,22 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 		ITupleSchema schema = batch.getSchema();
 		int tupleSize = schema.getTupleSize();
 
-
+		int selectivity = 0;
 		for (int pointer = batch.getBufferStartPointer(); pointer < batch.getBufferEndPointer(); pointer += tupleSize) {
 			
 			if (selectPredicate.satisfied (inputBuffer, schema, pointer)) {
 				// Write tuple to result buffer
 				inputBuffer.appendBytesTo(pointer, tupleSize, outputBuffer);
+				selectivity++;
 			}
 		}
 
-		inputBuffer.release();
+        // assume selectivity is 25% in our case
+        assert (4*selectivity == ((batch.getBufferEndPointer()-batch.getBufferStartPointer())/tupleSize)) : "Broken Selection: Selectivity is 25%!";
+		// check that the pointer of the outputBuffer has moved accordingly
+        assert (outputBuffer.position() == selectivity*tupleSize) || (outputBuffer.position() == (selectivity*tupleSize - 1)) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
+
+        inputBuffer.release();
 		
 		/* Reset position for output buffer */
 		outputBuffer.close();
@@ -271,7 +288,7 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 		api.outputWindowBatchResult (batch);
 	}
 
-	private void project (WindowBatch batch, IWindowAPI api) {
+	public void project (WindowBatch batch, IWindowAPI api) {
 		
 		IQueryBuffer inputBuffer = batch.getBuffer();
 		IQueryBuffer outputBuffer = UnboundedQueryBufferFactory.newInstance();
@@ -286,8 +303,13 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 				expressions[i].appendByteResult(inputBuffer, schema, pointer, outputBuffer);
 			}
 			outputBuffer.put(projectedSchema.getPad());
-		}					
-		
+		}
+
+        assert (outputBuffer.position() == (((batch.getBufferEndPointer()-batch.getBufferStartPointer()+1)/tupleSize)*projectedSchema.getTupleSize())) : "Broken project: wrong number of columns copied";
+        int randPos = this.randGen.nextInt((batch.getBufferEndPointer()-batch.getBufferStartPointer()+1)/tupleSize);
+        assert (inputBuffer.getByteBuffer().getLong(randPos*tupleSize) == outputBuffer.getByteBuffer().getLong(randPos*projectedSchema.getTupleSize())) : "Broken project: wrong tuple passed";
+
+
 		/* Return any (unbounded) buffers to the pool */
 		inputBuffer.release();
 		
@@ -304,7 +326,7 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 		api.outputWindowBatchResult (batch);
 	}
 
-	private void hashJoin (WindowBatch batch, IWindowAPI api) {
+	public void hashJoin (WindowBatch batch, IWindowAPI api) {
 		
 		IQueryBuffer inputBuffer = batch.getBuffer();
 		//byte[] bInputBuffer = inputBuffer.getByteBuffer().array();
@@ -345,11 +367,16 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
                 for (int i = 0; i < key.length; i++) {
                     key[i] = inputBuffer.getByteBuffer().get(pointer + offset1 + j + i);
                 }
-
-                value = hashMap.get(key);
+                // hashMap is a helper data structure that stores the key (ad_id) of the HashJoin operation from the static table
+                // and has their actual positions in the off-heap buffer (relationBuffer) as a value
+                value = hashMap.get(key); // here we retrieve the wanted position
 				if (value != -1) {
-					// Write tuple to result buffer 
+					// Write tuple to result buffer
+
+                    // the first half is the tuple from the input stream
 					inputBuffer.appendBytesTo(pointer, pointerOffset1, outputBuffer);
+                    // now we copy the second half from the relationalBuffer,
+                    // instead of the hashMap which just contains the mapping and not the actual tuples!
 					relationBuffer.appendBytesTo(value, pointerOffset2, outputBuffer);
 					
 					/* Write dummy content, if needed */
@@ -363,12 +390,12 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 		
 		if (debug) 
 			System.out.println("[DBG] output buffer position is " + outputBuffer.position());
-		
+
 		if (monitorSelectivity) {
 			double selectivity = 0D;
 			if (invoked > 0)
 				selectivity = ((double) matched / (double) invoked) * 100D;
-			System.out.println(String.format("[DBG] task %6d %2d out of %2d tuples selected (%4.1f)", 
+			System.out.println(String.format("[DBG] task %6d %2d out of %2d tuples selected (%4.1f)",
 					batch.getTaskId(), matched, invoked, selectivity));
 		}
 		

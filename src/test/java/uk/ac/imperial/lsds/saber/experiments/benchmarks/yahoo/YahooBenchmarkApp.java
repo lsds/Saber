@@ -58,7 +58,7 @@ public class YahooBenchmarkApp {
 		
 		
 		Generator generator = new Generator (bufferSize, numberOfGeneratorThreads, adsPerCampaign, ads, coreToBind, false);
-		long timeLimit = System.currentTimeMillis() + 10*10000;
+		long timeLimit = System.currentTimeMillis() + 50*1000;
 
 		//GeneratedBuffer b = generator.getNext();
 

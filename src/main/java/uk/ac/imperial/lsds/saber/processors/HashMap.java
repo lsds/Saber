@@ -1,6 +1,7 @@
 package uk.ac.imperial.lsds.saber.processors;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import uk.ac.imperial.lsds.saber.buffers.JenkinsHashFunctions;
@@ -11,16 +12,18 @@ public class HashMap {
 	private int _SIZE = 1024;
 				
 	private class ThreadMapNode {
-		
-		public byte [] tupleKey;
+
+		//public byte [] tupleKey;
+		public ByteBuffer tupleKey;
 		public int value;
 		
 		public ThreadMapNode next;
 		
 		public ThreadMapNode (byte [] tupleKey, int value, ThreadMapNode next) {
-			
-			this.tupleKey = tupleKey;
-			this.value = value;
+
+			this.tupleKey = ByteBuffer.wrap(tupleKey);
+            this.tupleKey.order(ByteOrder.LITTLE_ENDIAN);
+            this.value = value;
 			this.next = next;
 		}
 	}
@@ -83,14 +86,15 @@ public class HashMap {
 		if (q == null)
 			return -1;
 		
-		if (Arrays.equals(q.tupleKey, tupleKey))
+		if (Arrays.equals(q.tupleKey.array(), tupleKey))
 			return q.value;
 		
-		while (!Arrays.equals(q.tupleKey, tupleKey) && q.next != null) {
+		while (!Arrays.equals(q.tupleKey.array(), tupleKey) && q.next != null) {
 			q = q.next;
 			if (q.tupleKey.equals(tupleKey))
 				return q.value;
 		}
 		return -1;
 	}
+
 }
