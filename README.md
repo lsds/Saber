@@ -8,14 +8,6 @@ Saber has been implemented in Java and C. The Java code is compiled and packaged
 
 The CPU and GPU query operators have been implemented in Java and OpenCL, respectively. The GPU OpenCL operators are compiled _just-in-time_, when an operator is instantiated by a Saber application.
 
-#### Oracle Java 8 Installation
-
-$ sudo add-apt-repository ppa:webupd8team/java
-
-$ sudo apt-get update
-
-$ sudo apt-get install oracle-java8-installer
-
 #### Quick Start
 
 $ git clone -b Performance_Engineering_339 https://github.com/lsds/Saber.git
@@ -30,7 +22,9 @@ $ source /home/$USER/.profile
 
 Make sure your JAVA_HOME is set. E.g.:
 
-$ export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+$ echo "export JAVA_HOME=/usr/lib/jvm/oracle-java10-jdk-amd64" >> $HOME/.bashrc
+
+$ echo "export PATH=\$JAVA_HOME/bin:\$PATH" >> $HOME/.bashrc
 
 $ ./build.sh
 
