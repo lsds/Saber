@@ -13,8 +13,6 @@ $ echo "export PATH=$SABER_HOME/clib:$PATH >> .profile
 
 $ source .profile
 
-export SABER_HOME=\`pwd\`
-
 Make sure your JAVA_HOME is set. E.g.:
 
 $ export JAVA_HOME=/usr/lib/jvm/java-8-oracle
