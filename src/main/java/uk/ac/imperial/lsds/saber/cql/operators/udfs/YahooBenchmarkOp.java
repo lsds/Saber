@@ -27,6 +27,7 @@ import uk.ac.imperial.lsds.saber.cql.operators.AggregationType;
 import uk.ac.imperial.lsds.saber.cql.operators.IAggregateOperator;
 import uk.ac.imperial.lsds.saber.cql.operators.IOperatorCode;
 import uk.ac.imperial.lsds.saber.cql.predicates.IPredicate;
+import uk.ac.imperial.lsds.saber.devices.TheCPU;
 import uk.ac.imperial.lsds.saber.processors.HashMap;
 import uk.ac.imperial.lsds.saber.processors.ThreadMap;
 import uk.ac.imperial.lsds.saber.tasks.IWindowAPI;
@@ -199,8 +200,8 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 			hashJoin (batch, api);
 
         /* Project to drop unwanted columns */
-        if (expressions2 != null)
-            project2 (batch, api);
+        //if (expressions2 != null)
+        //    project2 (batch, api);
 
 	}
 	
@@ -220,7 +221,8 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 					
 					expressions[i].appendByteResult(inputBuffer, schema, pointer, outputBuffer);
 				}
-				outputBuffer.put(projectedSchema.getPad());			}
+				outputBuffer.put(projectedSchema.getPad());
+			}
 		}
 		
 		/* Return any (unbounded) buffers to the pool */
@@ -246,16 +248,16 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 		
 		ITupleSchema schema = batch.getSchema();
 		int tupleSize = schema.getTupleSize();
-		
+
+
 		for (int pointer = batch.getBufferStartPointer(); pointer < batch.getBufferEndPointer(); pointer += tupleSize) {
 			
 			if (selectPredicate.satisfied (inputBuffer, schema, pointer)) {
-				
-				/* Write tuple to result buffer */
+				// Write tuple to result buffer
 				inputBuffer.appendBytesTo(pointer, tupleSize, outputBuffer);
 			}
 		}
-		
+
 		inputBuffer.release();
 		
 		/* Reset position for output buffer */

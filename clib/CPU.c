@@ -113,6 +113,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_getCpuId
 JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_init_1clock
     (JNIEnv * env, jobject obj, jobject buffer) {
 
+    (void) obj;
     char *result = (char *) env->GetDirectBufferAddress(buffer);
 
     uint64_t clock_mhz; // clock frequency in MHz (number of instructions per microseconds)

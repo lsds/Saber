@@ -121,7 +121,25 @@ public class YahooBenchmark extends InputStream {
 		}
 
 
-		WindowDefinition windowDefinition = new WindowDefinition (WindowType.RANGE_BASED, windowSize, windowSize);
+		// AGGREGATE (count("*") as count, max(event_time) as 'lastUpdate)
+		// GROUP BY Campaign_ID with 10 seconds tumbling window
+		WindowDefinition windowDefinition = new WindowDefinition (WindowType.ROW_BASED, windowSize, windowSize);
+		AggregationType [] aggregationTypes = new AggregationType [2];
+
+		System.out.println("[DBG] aggregation type is COUNT(*)" );
+		aggregationTypes[0] = AggregationType.CNT;
+		System.out.println("[DBG] aggregation type is MAX(0)" );
+		aggregationTypes[1] = AggregationType.MAX;
+
+		FloatColumnReference[] aggregationAttributes = new FloatColumnReference [2];
+		aggregationAttributes[0] = new FloatColumnReference(1);
+		aggregationAttributes[1] = new FloatColumnReference(0);
+
+		Expression [] groupByAttributes = null;
+		if (isV2)
+			groupByAttributes = new Expression [] {new LongColumnReference(3)};
+		else
+			groupByAttributes = new Expression [] {new LongLongColumnReference(3)};
 
 
 		// Create and initialize the operator for computing the Benchmark's data.
@@ -151,11 +169,31 @@ public class YahooBenchmark extends InputStream {
 		Set<Query> queries = new HashSet<Query>();
 		queries.add(query1);
 
+		// Create the aggregate operator
 		ITupleSchema joinSchema = ((YahooBenchmarkOp) cpuCode).getOutputSchema();
+		cpuCode = new Aggregation (windowDefinition, aggregationTypes, aggregationAttributes, groupByAttributes);
+
+		IPredicate selectPredicate2 = new IntComparisonPredicate
+				(IntComparisonPredicate.NONEQUAL_OP, new IntColumnReference(1), new IntConstant(0));
+		operator = new QueryOperator (cpuCode, gpuCode);
+		operators = new HashSet<QueryOperator>();
+		operators.add(operator);
+		Query query2 = new Query (1, operators, joinSchema, windowDefinition, null, null, queryConf, timestampReference);
+
+
+		// Connect the two queries
+		queries.add(query2);
+		query1.connectTo(query2);
 
 		if (isExecuted) {
 			application = new QueryApplication(queries);
 			application.setup();
+
+			/* The path is query -> dispatcher -> handler -> aggregator */
+			if (SystemConf.CPU)
+				query2.setAggregateOperator((IAggregateOperator) cpuCode);
+			else
+				query2.setAggregateOperator((IAggregateOperator) gpuCode);
 		}
 
 		return;

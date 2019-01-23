@@ -1,6 +1,7 @@
 package uk.ac.imperial.lsds.saber.experiments.benchmarks.yahoo.utils;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.UUID;
 
 import uk.ac.imperial.lsds.saber.devices.TheCPU;
@@ -85,9 +86,10 @@ public class GeneratorWorker implements Runnable {
 		
 		
 		ByteBuffer buffer = generatedBuffer.getBuffer().duplicate();
-		/* Fill the buffer */	
-		
-		if (isFirstTime!=0 ) {
+		/* Fill the buffer */
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        if (isFirstTime!=0 ) {
 			UUID user_id = UUID.randomUUID(); 
 			UUID page_id = UUID.randomUUID();
 			int value = 0;
@@ -107,7 +109,7 @@ public class GeneratorWorker implements Runnable {
 				buffer.putLong(this.ads[(value % 100000) % (100 * this.adsPerCampaign)][1]);			
 				buffer.putInt((value % 100000) % 5);                                         // ad_type: (0, 1, 2, 3, 4) => 
 				                                                                             // ("banner", "modal", "sponsored-search", "mail", "mobile")
-				buffer.putInt((value % 100000) % 3);                                         // event_type: (0, 1, 2) => 
+				buffer.putInt((value % 100000) % 2);                                         // event_type: (0, 1, 2) =>
 																							 // ("view", "click", "purchase")
 				
 				buffer.putInt(1);                                                            // ip_address

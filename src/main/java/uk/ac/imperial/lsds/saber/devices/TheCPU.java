@@ -40,6 +40,7 @@ public class TheCPU {
 	public native int bind (int cpu);
 	public native int unbind ();
 	public native int getCpuId ();
+
 	public native int init_clock (ByteBuffer result);
 	public native int optimisedDistinct (ByteBuffer buffer, int bufferSize, int bufferStartPointer, int bufferEndPointer,
 											ByteBuffer openingWindowsBuffer, ByteBuffer closingWindowsBuffer,

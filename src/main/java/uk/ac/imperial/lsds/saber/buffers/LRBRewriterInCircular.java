@@ -63,12 +63,15 @@ public class LRBRewriterInCircular implements Runnable {
 			//System.out.println("id " + id + ", startPos " + startPos + ", endPos " + endPos + ", timestamp " + timestamp + ", timeBase " + timeBase);
 
 			if (step > (size - startPos)) {
-				System.err.println("error: corner case");
+				//System.err.println("error: corner case");
 				int right = size - startPos;
 				int left  = step - (size - startPos);
 
-				System.arraycopy(this.circularBuffer.inputBuffer, startIndex, buffer.array(), startPos, right);
-				System.arraycopy(this.circularBuffer.inputBuffer, size - startPos, buffer.array(), 0, left);
+				//System.arraycopy(this.circularBuffer.inputBuffer, startIndex, buffer.array(), startPos, right);
+				//System.arraycopy(this.circularBuffer.inputBuffer, size - startPos, buffer.array(), 0, left);
+				TheCPU.getInstance().changeTimestamps(buffer, startPos, right, this.circularBuffer.bufferSize, timestamp);
+				TheCPU.getInstance().changeTimestamps(buffer, 0, left, this.circularBuffer.bufferSize, timestamp);
+
 				//writeToBuffer(this.circularBuffer.getByteBuffer(), right, size, timestamp);
 				//writeToBuffer(this.circularBuffer.getByteBuffer(), startPos, endPos, timestamp);
 

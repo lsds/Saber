@@ -17,7 +17,7 @@ public class YahooBenchmarkApp {
 		int circularBufferSize = 16 * 1048576;
 		int unboundedBufferSize = 2 * 1048576;
 		int hashTableSize = 2*64*128;
-		int partialWindows = 2;
+		int partialWindows = 1024;
 		int slots = 64 * 1024;
 
 		// change the tuple size to half if set true
@@ -58,7 +58,9 @@ public class YahooBenchmarkApp {
 		
 		
 		Generator generator = new Generator (bufferSize, numberOfGeneratorThreads, adsPerCampaign, ads, coreToBind, false);
-		long timeLimit = System.currentTimeMillis() + 10 * 10000;
+		long timeLimit = System.currentTimeMillis() + 10*10000;
+
+		//GeneratedBuffer b = generator.getNext();
 
 		while (true) {
 			

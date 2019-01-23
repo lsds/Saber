@@ -133,6 +133,7 @@ public class CircularQueryBuffer implements IQueryBuffer {
             }
             isBufferFilledLatch = new Latch(numberOfThreads);
             latch = new CountDownLatch(numberOfThreads);
+
 		}
 
 		buffer.order( ByteOrder.LITTLE_ENDIAN);
