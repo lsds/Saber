@@ -9,7 +9,7 @@ $ cd Saber
 
 $ echo "export SABER_HOME=$(pwd)" >> /home/$USER/.profile
 
-$ echo "export PATH=\$SABER_HOME/clib:\$PATH >> /home/$USER/.profile
+$ echo "export PATH=\$SABER_HOME/clib:\$PATH" >> /home/$USER/.profile
 
 $ source /home/$USER/.profile
 
