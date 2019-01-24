@@ -185,7 +185,7 @@ public class PerformanceMonitor implements Runnable {
 					thoughputAvgPerRecord = (thoughputAvg * _1MB_)/ 32; // tuple size to get the records per second
 					thoughputAvgAsString = numberFormat.format((double) thoughputAvg);
 					thoughputAvgPerRecordAsString = numberFormat.format((double) thoughputAvgPerRecord);
-					System.out.println("Throughput Average (GB/s): " + thoughputAvgAsString + ", Throughput Average(records/s): " + thoughputAvgPerRecordAsString);
+					System.out.println("Throughput Average (MB/s): " + thoughputAvgAsString + ", Throughput Average(records/s): " + thoughputAvgPerRecordAsString);
 				}
 
 				deltaHelper++;
