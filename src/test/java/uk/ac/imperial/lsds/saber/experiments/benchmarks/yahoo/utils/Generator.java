@@ -23,18 +23,23 @@ public class Generator {
 	private List<List<Integer>> positionsList;
 	
 	private boolean isV2 = false;
+	private boolean runOnce = false;
+
+	private double selectivity;
 	
 	public Generator (int bufferSize, int numberOfThreads, int adsPerCampaign, long[][] ads, int coreToBind) {
-		this(bufferSize, numberOfThreads, adsPerCampaign, ads, coreToBind, false);
+		this(bufferSize, numberOfThreads, adsPerCampaign, ads, coreToBind, false, false, 1.0);
 	}
 	
-	public Generator (int bufferSize, int numberOfThreads, int adsPerCampaign, long[][] ads, int coreToBind, boolean isV2) {
+	public Generator (int bufferSize, int numberOfThreads, int adsPerCampaign, long[][] ads, int coreToBind, boolean isV2, boolean runOnce, double selectivity) {
 		this.bufferSize = bufferSize;
 		this.numberOfThreads = numberOfThreads;
 		this.adsPerCampaign = adsPerCampaign;
 		this.ads = ads;
 		
 		this.isV2 = isV2;
+		this.runOnce = runOnce;
+		this.selectivity = selectivity;
 		
 		buffers = new GeneratedBuffer [2];
 		for (int i = 0; i < buffers.length; i++)
@@ -52,7 +57,7 @@ public class Generator {
 		
 		workers = new GeneratorWorker [numberOfThreads];
 		for (int i = 0; i < workers.length; i++) {
-			workers[i] = new GeneratorWorker (this, positionsList.get(i).get(0), positionsList.get(i).get(1), i + coreToBind, isV2);
+			workers[i] = new GeneratorWorker (this, positionsList.get(i).get(0), positionsList.get(i).get(1), i + coreToBind, isV2, this.runOnce, selectivity);
 			//workers[i].configure();
 			//executor.execute(workers[i]);
 			Thread thread = new Thread(workers[i]);

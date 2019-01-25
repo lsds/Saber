@@ -10,6 +10,7 @@ import java.util.Random;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 import uk.ac.imperial.lsds.saber.ITupleSchema;
+import uk.ac.imperial.lsds.saber.SystemConf;
 import uk.ac.imperial.lsds.saber.WindowBatch;
 import uk.ac.imperial.lsds.saber.WindowDefinition;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
@@ -45,9 +46,11 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 	
 	private WindowDefinition windowDefinition;
 	
-	private IPredicate selectPredicate = null;
-	
-	private Expression [] expressions;
+	private IPredicate selectPredicate;
+
+    private IPredicate selectPredicate2;
+
+    private Expression [] expressions;
 
     private Expression [] expressions2;
 	
@@ -78,6 +81,8 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 	
 	private boolean isV2 = true;
 
+    private int queryNum;
+
 	private Random randGen;
 	
 	/* Thread local variables */
@@ -91,7 +96,8 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 
 	public YahooBenchmarkOp (
 			ITupleSchema inputSchema,
-			IPredicate selectPredicate, 
+			IPredicate selectPredicate,
+			IPredicate selectPredicate2,
 			Expression [] expressions,
             Expression [] expressions2,
 			IPredicate joinPredicate,
@@ -103,11 +109,12 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 			AggregationType [] aggregationTypes, 
 			FloatColumnReference [] aggregationAttributes, 
 			Expression [] groupByAttributes,
-			boolean isV2
+			boolean isV2, int queryNum
 			) {
 		
 		this.windowDefinition = windowDefinition;
 		this.selectPredicate = selectPredicate;
+		this.selectPredicate2 = selectPredicate2;
 		this.expressions = expressions;
 		this.expressions2 = expressions2;
 		
@@ -143,6 +150,7 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 		timestampReference = new LongColumnReference(0);
 
 		this.randGen = new Random();
+		this.queryNum = queryNum;
 	}
 	
 	@Override
@@ -184,8 +192,17 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 
 	@Override
 	public void processData(WindowBatch batch, IWindowAPI api) {
+	    switch (this.queryNum) {
+            case 0 :
+            case 1 : query0_1(batch, api); break;
+            case 2 : query2(batch, api); break;
+            case 3 : query3(batch, api); break;
+            default: System.out.println("Wrong query number!"); System.exit(1);
+        }
+	}
 
-	    // variables testing for correctness
+	public void query0_1 (WindowBatch batch, IWindowAPI api) {
+        // variables testing for correctness
         int inputPointer, randPos;
         long tempLongVar;
 
@@ -194,7 +211,7 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
         if (selectPredicate != null)
             select (batch, api);
 
-        assert (batch.getBuffer().limit() == inputPointer/4) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
+        assert (batch.getBuffer().limit() == inputPointer*SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
 
         inputPointer = (batch.getBufferEndPointer()- batch.getBufferStartPointer() + 1)/batch.getSchema().getTupleSize();
         randPos = this.randGen.nextInt(inputPointer);
@@ -208,53 +225,63 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 
         inputPointer = (batch.getBufferEndPointer()- batch.getBufferStartPointer());
         /* Hash Join */
-		if (joinPredicate != null)
-			hashJoin (batch, api);
+        if (joinPredicate != null)
+            hashJoin (batch, api);
 
-        assert (batch.getBuffer().limit() == inputPointer*16) : "Broken HashJoin: The pointer of the outputBuffer hasn't moved properly!";
+        assert (batch.getBuffer().limit() == inputPointer*4/SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken HashJoin: The pointer of the outputBuffer hasn't moved properly!";
 
+        /* Select */
+        if (selectPredicate2 != null)
+            select2 (batch, api);
+        assert (batch.getBuffer().limit()%batch.getSchema().getTupleSize()==0) : "Broken second Selection: The pointer of the outputBuffer hasn't moved properly!";
+    }
 
-        /* Project to drop unwanted columns */
-        //if (expressions2 != null)
-        //    project2 (batch, api);
+    public void query2 (WindowBatch batch, IWindowAPI api) {
+        // variables testing for correctness
+        int inputPointer, randPos;
+        long tempLongVar;
 
-	}
-	
-	public void calc(WindowBatch batch, IWindowAPI api) {
-		IQueryBuffer inputBuffer = batch.getBuffer();
-		IQueryBuffer outputBuffer = UnboundedQueryBufferFactory.newInstance();
-		
-		ITupleSchema schema = batch.getSchema();
-		int tupleSize = schema.getTupleSize();
-		
-		for (int pointer = batch.getBufferStartPointer(); pointer < batch.getBufferEndPointer(); pointer += tupleSize) {
-			
-			if (selectPredicate.satisfied (inputBuffer, schema, pointer)) {
-				
-				/* Write tuple to result buffer */
-				for (int i = 0; i < expressions.length; ++i) {
-					
-					expressions[i].appendByteResult(inputBuffer, schema, pointer, outputBuffer);
-				}
-				outputBuffer.put(projectedSchema.getPad());
-			}
-		}
+        inputPointer = (batch.getBufferEndPointer()- batch.getBufferStartPointer());
+        /* Select */
+        if (selectPredicate != null)
+            select (batch, api);
 
-		/* Return any (unbounded) buffers to the pool */
-		inputBuffer.release();
-		
-		/* Reset position for output buffer */
-		outputBuffer.close();
-		
-		/* Reuse window batch by setting the new buffer and the new schema for the data in this buffer */
-		batch.setBuffer(outputBuffer);
-		batch.setSchema(projectedSchema);
+        assert (batch.getBuffer().limit() == inputPointer*SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
 
-		/* Important to set start and end buffer pointers */
-		batch.setBufferPointers(0, outputBuffer.limit());
-		
-		api.outputWindowBatchResult (batch);		
-	}
+        inputPointer = (batch.getBufferEndPointer()- batch.getBufferStartPointer() + 1)/batch.getSchema().getTupleSize();
+        randPos = this.randGen.nextInt(inputPointer);
+        tempLongVar = batch.getBuffer().getByteBuffer().getLong(randPos*batch.getSchema().getTupleSize());
+        /* Project */
+        if (expressions != null)
+            project (batch, api);
+
+        assert (batch.getBuffer().limit() == (inputPointer*projectedSchema.getTupleSize())) : "Broken project: wrong number of columns copied";
+        assert (tempLongVar == batch.getBuffer().getByteBuffer().getLong(randPos*projectedSchema.getTupleSize())) : "Broken project: wrong tuple passed";
+
+        inputPointer = (batch.getBufferEndPointer()- batch.getBufferStartPointer());
+        /* Hash Join */
+        if (joinPredicate != null)
+            hashJoin (batch, api);
+
+        assert (batch.getBuffer().limit() == inputPointer*4/SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken HashJoin: The pointer of the outputBuffer hasn't moved properly!";
+    }
+
+    public void query3 (WindowBatch batch, IWindowAPI api) {
+        // variables testing for correctness
+        int inputPointer;
+
+        inputPointer = (batch.getBufferEndPointer()- batch.getBufferStartPointer());
+        /* Select */
+        if (selectPredicate != null)
+            select (batch, api);
+
+        assert (batch.getBuffer().limit() == inputPointer*SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
+
+        /* Select */
+        if (selectPredicate2 != null)
+            select2 (batch, api);
+        assert (batch.getBuffer().limit()%batch.getSchema().getTupleSize()==0) : "Broken second Selection: The pointer of the outputBuffer hasn't moved properly!";
+    }
 
 	public void select(WindowBatch batch, IWindowAPI api) {
 		
@@ -275,7 +302,7 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
 		}
 
         // assume selectivity is 25% in our case
-        assert (4*selectivity == ((batch.getBufferEndPointer()-batch.getBufferStartPointer())/tupleSize)) : "Broken Selection: Selectivity is 25%!";
+        assert (selectivity/SystemConf.FIRST_FILTER_SELECTIVITY == ((batch.getBufferEndPointer()-batch.getBufferStartPointer())/tupleSize)) : "Broken Selection: Selectivity is 25%!";
 		// check that the pointer of the outputBuffer has moved accordingly
         assert (outputBuffer.position() == selectivity*tupleSize) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
 
@@ -441,6 +468,10 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
             outputBuffer.put(projectedSchema2.getPad());
         }
 
+        assert (outputBuffer.position() == (((batch.getBufferEndPointer()-batch.getBufferStartPointer()+1)/tupleSize)*projectedSchema2.getTupleSize())) : "Broken project: wrong number of columns copied";
+        int randPos = this.randGen.nextInt((batch.getBufferEndPointer()-batch.getBufferStartPointer()+1)/tupleSize);
+        assert (inputBuffer.getByteBuffer().getLong(randPos*tupleSize) == outputBuffer.getByteBuffer().getLong(randPos*projectedSchema2.getTupleSize())) : "Broken project: wrong tuple passed";
+
         /* Return any (unbounded) buffers to the pool */
         inputBuffer.release();
 
@@ -450,6 +481,77 @@ public class YahooBenchmarkOp implements IOperatorCode, IAggregateOperator {
         /* Reuse window batch by setting the new buffer and the new schema for the data in this buffer */
         batch.setBuffer(outputBuffer);
         batch.setSchema(projectedSchema2);
+
+        /* Important to set start and end buffer pointers */
+        batch.setBufferPointers(0, outputBuffer.limit());
+
+        api.outputWindowBatchResult (batch);
+    }
+
+    public void select2(WindowBatch batch, IWindowAPI api) {
+
+        IQueryBuffer inputBuffer = batch.getBuffer();
+        IQueryBuffer outputBuffer = UnboundedQueryBufferFactory.newInstance();
+
+        ITupleSchema schema = batch.getSchema();
+        int tupleSize = schema.getTupleSize();
+
+        int selectivity = 0;
+        for (int pointer = batch.getBufferStartPointer(); pointer < batch.getBufferEndPointer(); pointer += tupleSize) {
+
+            if (selectPredicate2.satisfied (inputBuffer, schema, pointer)) {
+                // Write tuple to result buffer
+                inputBuffer.appendBytesTo(pointer, tupleSize, outputBuffer);
+                selectivity++;
+            }
+        }
+
+        // assume selectivity is 25% in our case
+        // check that the pointer of the outputBuffer has moved accordingly
+        assert (outputBuffer.position() == selectivity*tupleSize) : "Broken Second Selection: The pointer of the outputBuffer hasn't moved properly!";
+
+        inputBuffer.release();
+
+        /* Reset position for output buffer */
+        outputBuffer.close();
+
+        batch.setBuffer(outputBuffer);
+
+        /* Important to set start and end buffer pointers */
+        batch.setBufferPointers(0, outputBuffer.limit());
+
+        api.outputWindowBatchResult (batch);
+    }
+
+    public void calc(WindowBatch batch, IWindowAPI api) {
+        IQueryBuffer inputBuffer = batch.getBuffer();
+        IQueryBuffer outputBuffer = UnboundedQueryBufferFactory.newInstance();
+
+        ITupleSchema schema = batch.getSchema();
+        int tupleSize = schema.getTupleSize();
+
+        for (int pointer = batch.getBufferStartPointer(); pointer < batch.getBufferEndPointer(); pointer += tupleSize) {
+
+            if (selectPredicate.satisfied (inputBuffer, schema, pointer)) {
+
+                /* Write tuple to result buffer */
+                for (int i = 0; i < expressions.length; ++i) {
+
+                    expressions[i].appendByteResult(inputBuffer, schema, pointer, outputBuffer);
+                }
+                outputBuffer.put(projectedSchema.getPad());
+            }
+        }
+
+        /* Return any (unbounded) buffers to the pool */
+        inputBuffer.release();
+
+        /* Reset position for output buffer */
+        outputBuffer.close();
+
+        /* Reuse window batch by setting the new buffer and the new schema for the data in this buffer */
+        batch.setBuffer(outputBuffer);
+        batch.setSchema(projectedSchema);
 
         /* Important to set start and end buffer pointers */
         batch.setBufferPointers(0, outputBuffer.limit());

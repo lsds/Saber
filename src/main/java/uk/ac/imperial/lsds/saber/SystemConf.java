@@ -21,8 +21,10 @@ public class SystemConf {
 	public enum SchedulingPolicy { HLS, FIFO, STATIC };
 	
 	public static SchedulingPolicy SCHEDULING_POLICY = SchedulingPolicy.FIFO;
-	
+
 	public static int SWITCH_THRESHOLD = 10;
+
+	public static double FIRST_FILTER_SELECTIVITY = 1.0;
 
 	public static int PARTIAL_WINDOWS = 0;
 	

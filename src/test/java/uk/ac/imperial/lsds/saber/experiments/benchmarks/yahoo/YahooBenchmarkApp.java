@@ -9,7 +9,15 @@ public class YahooBenchmarkApp {
 	public static final String usage = "usage: YahooBenchmarkApp with in-memory generation";
 	
 	public static void main (String [] args) throws InterruptedException {
+        // Queries
+	    // q0: select(25% selectivity)->project->staticHashJoin->select
+        // q1: select(50% selectivity)->project->staticHashJoin->select
+        // q2: select(25% selectivity)->project->staticHashJoin->aggregate
+        // q3: select(50% selectivity)->select
+	    int queryNum = 3;
+	    boolean isShortRun = true; // define if the application runs for either 4 or 40 seconds
 
+		// Do not change anything bellow this line!!!
 		YahooBenchmarkQuery benchmarkQuery = null;
 		int numberOfThreads = 1;
 		int batchSize = 2 * 1048576;
@@ -24,8 +32,17 @@ public class YahooBenchmarkApp {
 		//boolean isV2 = false;
 
 		/* Parse command line arguments */
-		if (args.length!=0)  
-			numberOfThreads = Integer.parseInt(args[0]);
+		if (args.length!=0)
+            queryNum = Integer.parseInt(args[0]);
+
+		if (queryNum > 3) {
+		    System.out.println("This application supports only four queries. Enter a number between 0-3 to choose one of the following:");
+            System.out.println("0: select(25% selectivity)->project->staticHashJoin->select");
+            System.out.println("1: select(50% selectivity)->project->staticHashJoin->select");
+            System.out.println("2: select(25% selectivity)->project->staticHashJoin->aggregate");
+            System.out.println("3: select(50% selectivity)-> select(25% selectivity)");
+		    System.exit(1);
+		}
 		
 		// Set SABER's configuration				
 		QueryConf queryConf = new QueryConf (batchSize);		
@@ -44,23 +61,24 @@ public class YahooBenchmarkApp {
 		SystemConf.HYBRID = SystemConf.CPU && SystemConf.GPU;
 		SystemConf.THREADS = numberOfThreads;
 		SystemConf.LATENCY_ON = false;
+        SystemConf.FIRST_FILTER_SELECTIVITY = (queryNum == 1 || queryNum == 3) ? 0.50 : 0.25;
 
 
 		/* Initialize the Operators of the Benchmark */
-		benchmarkQuery = new YahooBenchmark (queryConf, true);
+		benchmarkQuery = new YahooBenchmark (queryConf, true, queryNum);
 		
 		/* Generate input stream */
 		int numberOfGeneratorThreads = 1;
 		int adsPerCampaign = ((YahooBenchmark) benchmarkQuery).getAdsPerCampaign();
 		long[][] ads = ((YahooBenchmark) benchmarkQuery).getAds();
-		int bufferSize = 4 * 131072;
+		int bufferSize = 8 * 131072;
 		int coreToBind = SystemConf.THREADS + 2;
 		
-		
-		Generator generator = new Generator (bufferSize, numberOfGeneratorThreads, adsPerCampaign, ads, coreToBind, false);
-		long timeLimit = System.currentTimeMillis() + 50*1000;
-
-		//GeneratedBuffer b = generator.getNext();
+		boolean runOnce = true;
+		Generator generator = new Generator (bufferSize, numberOfGeneratorThreads, adsPerCampaign, ads, coreToBind, false, runOnce, SystemConf.FIRST_FILTER_SELECTIVITY);
+        GeneratedBuffer b = generator.getNext();
+        long offset = (isShortRun) ? 4*1000 : 40*1000;
+		long timeLimit = System.currentTimeMillis() + offset;
 
 		while (true) {
 			
@@ -69,9 +87,9 @@ public class YahooBenchmarkApp {
 				System.exit(0);
 			}						
 
-			GeneratedBuffer b = generator.getNext();
+			//GeneratedBuffer b = generator.getNext();
 			benchmarkQuery.getApplication().processData (b.getBuffer().array());
-			b.unlock();
+			//b.unlock();
 		}
 	}
 }

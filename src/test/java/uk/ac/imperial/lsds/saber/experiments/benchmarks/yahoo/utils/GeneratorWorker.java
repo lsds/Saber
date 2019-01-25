@@ -21,11 +21,13 @@ public class GeneratorWorker implements Runnable {
 	private final int id;
 	
 	private boolean isV2 = false;
+	private boolean runOnce =  false;
+	private double selectivity;
 	
 	public GeneratorWorker (Generator generator, int startPos, int endPos, int id) {
-		this(generator, startPos, endPos, id, false);
+		this(generator, startPos, endPos, id, false, false, 0.25);
 	}
-	public GeneratorWorker (Generator generator, int startPos, int endPos, int id, boolean isV2) {
+	public GeneratorWorker (Generator generator, int startPos, int endPos, int id, boolean isV2, boolean runOnce, double selectivity) {
 		this.generator = generator;
 		this.adsPerCampaign = generator.getAdsPerCampaign();
 		this.ads = generator.getAds();
@@ -34,7 +36,8 @@ public class GeneratorWorker implements Runnable {
 		this.id = id;
 		
 		this.isV2 = isV2;
-		
+		this.runOnce = runOnce;
+		this.selectivity = selectivity;
 		bufferHelper = ByteBuffer.allocate(32);
 	}
 	
@@ -58,7 +61,7 @@ public class GeneratorWorker implements Runnable {
 		
 		started = true;
 		
-		while (true) {
+		while (started) {
 			
 			while ((curr = generator.next) == prev)
 				;
@@ -78,8 +81,11 @@ public class GeneratorWorker implements Runnable {
 			prev = curr;
 			// System.out.println("done filling buffer " + curr);
 			// break;
+
+            if (this.runOnce)
+			    this.started = false;
 		}
-		// System.out.println("worker exits " );
+        System.out.println(String.format("[DBG] Worker LRBGenerator thread %2d to core %2d exits...", id, id));
 	}
 	
 	private void generate(GeneratedBuffer generatedBuffer, int startPos, int endPos, long timestamp) {
@@ -101,6 +107,8 @@ public class GeneratorWorker implements Runnable {
 			bufferHelper.putLong(page_id.getMostSignificantBits());                            // page_id
 			bufferHelper.putLong(page_id.getLeastSignificantBits());
 
+			int divider = (selectivity == 0.25) ? 4 : 2;
+
             buffer.position(startPos);
 			while (buffer.position()  < endPos) {
 	
@@ -110,7 +118,7 @@ public class GeneratorWorker implements Runnable {
 				buffer.putLong(this.ads[(value % 100000) % (100 * this.adsPerCampaign)][1]);			
 				buffer.putInt((value % 100000) % 5);                                         // ad_type: (0, 1, 2, 3, 4) => 
 				                                                                             // ("banner", "modal", "sponsored-search", "mail", "mobile")
-				buffer.putInt((value % 100000) % 4);                                         // event_type: (0, 1, 2) =>
+				buffer.putInt((value % 100000) % divider);                                   // event_type: (0, 1, 2) =>
 																							 // ("view", "click", "purchase")
 				
 				buffer.putInt(1);                                                            // ip_address
