@@ -8,7 +8,7 @@ import uk.ac.imperial.lsds.saber.QueryConf;
 import uk.ac.imperial.lsds.saber.TupleSchema;
 import uk.ac.imperial.lsds.saber.TupleSchema.PrimitiveType;
 
-public abstract class InputStream implements YahooBenchmarkQuery {
+public abstract class InputStream implements PerformanceEngineeringQuery {
 	
 	ITupleSchema schema = null;
 	QueryApplication application = null;

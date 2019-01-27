@@ -1,233 +1,227 @@
 package uk.ac.imperial.lsds.saber;
 
-import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
 import uk.ac.imperial.lsds.saber.buffers.PartialWindowResultsFactory;
 import uk.ac.imperial.lsds.saber.buffers.UnboundedQueryBufferFactory;
 import uk.ac.imperial.lsds.saber.dispatchers.ITaskDispatcher;
 import uk.ac.imperial.lsds.saber.tasks.TaskFactory;
 
+import java.text.NumberFormat;
+import java.util.*;
+
 public class PerformanceMonitor implements Runnable {
 
-	int counter = 0;
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_RED = "\u001B[31m";
+    static final Comparator<Query> ordering = new Comparator<Query>() {
+        public int compare(Query q, Query p) {
+            return (q.getId() < p.getId()) ? -1 : 1;
+        }
+    };
+    int counter = 0;
+    private long time, _time = 0L;
+    private long dt;
+    private boolean firstLatencyMeasurement = true;
+    private QueryApplication application;
+    private int size;
+    private Measurement[] measurements;
 
-	private long time, _time = 0L;
-	private long dt;
-	private boolean firstLatencyMeasurement = true;
+    public PerformanceMonitor(QueryApplication application) {
 
-	private QueryApplication application;
-	private int size;
+        this.application = application;
 
-	private Measurement [] measurements;
+        size = application.getQueries().size();
+        measurements = new Measurement[size];
+        List<Query> L = new ArrayList<Query>(application.getQueries());
+        Collections.sort(L, ordering);
+        int idx = 0;
+        for (Query query : L) {
+            System.out.println(String.format("[MON] [MultiOperator] S %3d", query.getId()));
+            measurements[idx++] =
+                    new Measurement(
+                            query.getId(),
+                            query.getTaskDispatcher(),
+                            query.getLatencyMonitor()
+                    );
+        }
+    }
 
-	static final Comparator<Query> ordering = new Comparator<Query>() {
-		public int compare(Query q, Query p) {
-			return (q.getId() < p.getId()) ? -1 : 1;
-		}
-	};
+    public void run() {
 
-	public PerformanceMonitor (QueryApplication application) {
+        while (true) {
 
-		this.application = application;
+            try {
+                Thread.sleep(SystemConf.PERFORMANCE_MONITOR_INTERVAL);
+            } catch (Exception e) {
+            }
 
-		size = application.getQueries().size();
-		measurements = new Measurement [size];
-		List<Query> L = new ArrayList<Query>(application.getQueries());
-		Collections.sort(L, ordering);
-		int idx = 0;
-		for (Query query : L) {
-			System.out.println(String.format("[MON] [MultiOperator] S %3d", query.getId()));
-			measurements[idx++] =
-					new Measurement (
-							query.getId(),
-							query.getTaskDispatcher(),
-							query.getLatencyMonitor()
-					);
-		}
-	}
+            time = System.currentTimeMillis();
+            dt = time - _time;
 
-	public void run () {
+            StringBuilder b = new StringBuilder();
+            b.append("[MON]");
 
-		while (true) {
+            for (int i = 0; i < size; i++)
+                b.append(measurements[i].info(dt));
 
-			try {
-				Thread.sleep(SystemConf.PERFORMANCE_MONITOR_INTERVAL);
-			} catch (Exception e)
-			{}
+            b.append(String.format(" q %6d", application.getExecutorQueueSize()));
+            if (SystemConf.SCHEDULING_POLICY == SystemConf.SchedulingPolicy.HLS)
+                b.append(application.getExecutorQueueCounts());
+            /* Append factory sizes */
+            b.append(String.format(" t %6d", TaskFactory.count.get()));
+            b.append(String.format(" w %6d", WindowBatchFactory.count.get()));
+            b.append(String.format(" b %6d", UnboundedQueryBufferFactory.count.get()));
+            b.append(String.format(" p %6d", PartialWindowResultsFactory.count.get()));
 
-			time = System.currentTimeMillis();
-			dt = time - _time;
+            /* Append policy */
+            b.append(" policy " + application.policyToString());
 
-			StringBuilder b = new StringBuilder();
-			b.append("[MON]");
+            /* Update WWW measurements */
+            application.RESTfulUpdate(time);
 
-			for (int i = 0; i < size; i++)
-				b.append(measurements[i].info(dt));
+            System.out.println(b);
 
-			b.append(String.format(" q %6d", application.getExecutorQueueSize()));
-			if (SystemConf.SCHEDULING_POLICY == SystemConf.SchedulingPolicy.HLS)
-				b.append(application.getExecutorQueueCounts());
-			/* Append factory sizes */
-			b.append(String.format(" t %6d",                 TaskFactory.count.get()));
-			b.append(String.format(" w %6d",          WindowBatchFactory.count.get()));
-			b.append(String.format(" b %6d", UnboundedQueryBufferFactory.count.get()));
-			b.append(String.format(" p %6d", PartialWindowResultsFactory.count.get()));
+            _time = time;
 
-			/* Append policy */
-			b.append(" policy " + application.policyToString());
+            if (SystemConf.DURATION > 0) {
 
-			/* Update WWW measurements */
-			application.RESTfulUpdate (time);
+                if (counter++ > SystemConf.DURATION) {
 
-			System.out.println(b);
+                    for (int i = 0; i < size; i++)
+                        measurements[i].stop();
 
-			_time = time;
+                    System.out.println("[MON] Done.");
+                    System.out.flush();
+                    break;
+                }
+            }
+        }
+    }
 
-			if (SystemConf.DURATION > 0) {
+    class Measurement {
 
-				if (counter++ > SystemConf.DURATION) {
+        int id;
 
-					for (int i = 0; i < size; i++)
-						measurements[i].stop();
+        IQueryBuffer firstBuffer, secondBuffer;
 
-					System.out.println("[MON] Done.");
-					System.out.flush();
-					break;
-				}
-			}
-		}
-	}
+        LatencyMonitor monitor;
 
-	class Measurement {
+        ITaskDispatcher dispatcher;
 
-		int id;
+        double Dt;
 
-		IQueryBuffer firstBuffer, secondBuffer;
+        double _1MB_ = 1048576.0;
 
-		LatencyMonitor monitor;
+        long bytesProcessed, _bytesProcessed = 0;
+        long bytesGenerated, _bytesGenerated = 0;
 
-		ITaskDispatcher dispatcher;
+        double MBpsProcessed, MBpsGenerated;
 
-		double Dt;
+        long time, _time = 0;
+        long timestampReference;
+        double latency, latencyMin, latencyMax, latencyAvg, latencySum, latencyDelta, deltaHelper, thoughputAvg, thoughputAvgPerRecord, throughputSum;
+        int latencyCounter, throughputCounter;
 
-		double _1MB_ = 1048576.0;
+        public Measurement(int id, ITaskDispatcher dispatcher, LatencyMonitor monitor) {
+            this.id = id;
 
-		long bytesProcessed, _bytesProcessed = 0;
-		long bytesGenerated, _bytesGenerated = 0;
+            this.dispatcher = dispatcher;
+            this.monitor = monitor;
 
-		double MBpsProcessed, MBpsGenerated;
+            firstBuffer = this.dispatcher.getFirstBuffer();
+            secondBuffer = this.dispatcher.getSecondBuffer();
 
-		long time, _time = 0;
-		long timestampReference;
-		double latency, latencyMin, latencyMax, latencyAvg, latencySum, latencyDelta, deltaHelper, thoughputAvg, thoughputAvgPerRecord, throughputSum;
-		int latencyCounter, throughputCounter;
+            timestampReference = System.nanoTime();
+            latencyMin = Double.MAX_VALUE;
+            latencyMax = Double.MIN_VALUE;
+            latencySum = 0.;
+            latencyCounter = 1;
+            latencyDelta = 0;
+            deltaHelper = 0;
+            throughputCounter = 0;
+            throughputSum = 0;
+        }
 
-		public Measurement (int id, ITaskDispatcher dispatcher, LatencyMonitor monitor) {
-			this.id = id;
+        public void stop() {
+            monitor.stop();
+        }
 
-			this.dispatcher = dispatcher;
-			this.monitor = monitor;
+        @Override
+        public String toString() {
+            return null;
+        }
 
-			firstBuffer  = this.dispatcher.getFirstBuffer();
-			secondBuffer = this.dispatcher.getSecondBuffer();
+        public String info(long delta) {
 
-			timestampReference = System.nanoTime();
-			latencyMin = Double.MAX_VALUE;
-			latencyMax = Double.MIN_VALUE;
-			latencySum = 0.;
-			latencyCounter = 1;
-			latencyDelta = 0;
-			deltaHelper = 0;
-			throughputCounter = 0;
-			throughputSum = 0;
-		}
+            String s = "";
 
-		public void stop () {
-			monitor.stop();
-		}
+            NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
+            String thoughputAvgAsString, thoughputAvgPerRecordAsString;
 
-		@Override
-		public String toString () {
-			return null;
-		}
+            bytesProcessed = firstBuffer.getBytesProcessed();
+            if (secondBuffer != null)
+                bytesProcessed += secondBuffer.getBytesProcessed();
 
-		public String info (long delta) {
+            bytesGenerated = dispatcher.getBytesGenerated();
 
-			String s = "";
+            if (_bytesProcessed > 0) {
 
-			NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
-			String thoughputAvgAsString, thoughputAvgPerRecordAsString;
+                Dt = (delta / 1000.0);
 
-			bytesProcessed = firstBuffer.getBytesProcessed();
-			if (secondBuffer != null)
-				bytesProcessed += secondBuffer.getBytesProcessed();
+                MBpsProcessed = (bytesProcessed - _bytesProcessed) / _1MB_ / Dt;
+                MBpsGenerated = (bytesGenerated - _bytesGenerated) / _1MB_ / Dt;
 
-			bytesGenerated = dispatcher.getBytesGenerated();
+                // TODO: Measure only the sources
+                throughputCounter++;
+                if (this.id == 0) {
+                    throughputSum += MBpsProcessed;
+                    thoughputAvg = (throughputSum / throughputCounter);
+                    thoughputAvgPerRecord = (thoughputAvg * _1MB_) / 32; // tuple size to get the records per second
+                    thoughputAvgAsString = numberFormat.format((double) thoughputAvg);
+                    thoughputAvgPerRecordAsString = numberFormat.format((double) thoughputAvgPerRecord);
+                    System.out.println("Throughput Average (MB/s): " + thoughputAvgAsString + ", Throughput Average(records/s): " + thoughputAvgPerRecordAsString);
+                }
 
-			if (_bytesProcessed > 0) {
+                deltaHelper++;
+                // TODO: Measure only the last operator
+                if (this.id == 1 && MBpsGenerated > 0) {
 
-				Dt = (delta / 1000.0);
+                    time = (System.nanoTime() - timestampReference) / 1000L;
 
-				MBpsProcessed = (bytesProcessed - _bytesProcessed) / _1MB_ / Dt;
-				MBpsGenerated = (bytesGenerated - _bytesGenerated) / _1MB_ / Dt;
+                    if (firstLatencyMeasurement)
+                        firstLatencyMeasurement = false;
+                    else {
+                        latency = (time - _time) / 1000.;
 
-				// TODO: Measure only the sources
-				throughputCounter++;
-				if (this.id == 0) {
-					throughputSum += MBpsProcessed;
-					thoughputAvg = (throughputSum / throughputCounter);
-					thoughputAvgPerRecord = (thoughputAvg * _1MB_)/ 32; // tuple size to get the records per second
-					thoughputAvgAsString = numberFormat.format((double) thoughputAvg);
-					thoughputAvgPerRecordAsString = numberFormat.format((double) thoughputAvgPerRecord);
-					System.out.println("Throughput Average (MB/s): " + thoughputAvgAsString + ", Throughput Average(records/s): " + thoughputAvgPerRecordAsString);
-				}
+                        latencyMin = (latency < latencyMin) ? latency : latencyMin;
+                        latencyMax = (latency > latencyMax) ? latency : latencyMax;
 
-				deltaHelper++;
-				// TODO: Measure only the last operator
-				if (this.id == 1 && MBpsGenerated > 0) {
+                        latencySum += latency;
+                        if (_time > 0) {
+                            latencyCounter++;
+                            latencyAvg = latencySum / latencyCounter;
+                        }
 
-					time = (System.nanoTime() - timestampReference) / 1000L;
+                        latencyDelta = latency - deltaHelper * SystemConf.PERFORMANCE_MONITOR_INTERVAL;
+                        deltaHelper = 0;
 
-					if (firstLatencyMeasurement)
-						firstLatencyMeasurement = false;
-					else {
-						latency = (time - _time) / 1000.;
+                        System.out.format("Latency(ms) %10.3f, Delta %7.3f, Min %10.3f, Max %10.3f, Avg %10.3f", latency, latencyDelta, latencyMin, latencyMax, latencyAvg);
+                        System.out.println();
+                    }
+                    _time = time;
+                }
 
-						latencyMin = (latency < latencyMin) ? latency : latencyMin;
-						latencyMax = (latency > latencyMax) ? latency : latencyMax;
+                s = String.format(" S%03d " + ANSI_RED + "%10.3f" + ANSI_RESET + " MB/s output %10.3f MB/s [%s]",
+                        id,
+                        MBpsProcessed,
+                        MBpsGenerated,
+                        monitor);
+            }
 
-						latencySum += latency;
-						if (_time > 0) {
-							latencyCounter++;
-							latencyAvg = latencySum / latencyCounter;
-						}
+            _bytesProcessed = bytesProcessed;
+            _bytesGenerated = bytesGenerated;
 
-						latencyDelta = latency - deltaHelper * SystemConf.PERFORMANCE_MONITOR_INTERVAL;
-						deltaHelper = 0;
-
-						System.out.format("Latency(ms) %10.3f, Delta %7.3f, Min %10.3f, Max %10.3f, Avg %10.3f", latency, latencyDelta, latencyMin, latencyMax, latencyAvg);
-						System.out.println();
-					}
-					_time = time;
-				}
-
-				s = String.format(" S%03d %10.3f MB/s output %10.3f MB/s [%s]",
-						id,
-						MBpsProcessed,
-						MBpsGenerated,
-						monitor);
-			}
-
-			_bytesProcessed = bytesProcessed;
-			_bytesGenerated = bytesGenerated;
-
-			return s;
-		}
-	}
+            return s;
+        }
+    }
 }

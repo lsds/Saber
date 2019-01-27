@@ -34,4 +34,4 @@ $ make cpu
 
 $ cd ..
 
-$ ./run.sh uk.ac.imperial.lsds.saber.experiments.benchmarks.yahoo.YahooBenchmarkApp
+$ ./run.sh uk.ac.imperial.lsds.saber.experiments.benchmarks.yahoo.PerformanceEngineeringAppApp
