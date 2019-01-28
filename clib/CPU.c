@@ -131,7 +131,7 @@ JNIEXPORT jint JNICALL Java_uk_ac_imperial_lsds_saber_devices_TheCPU_init_1clock
     clock_mhz = (c1 - c0) / ((t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec
       - t0.tv_usec);
 
-    printf("Number of instructions per microsecond: %lu \n", (clock_mhz));
+    printf("[DBG] Number of instructions per microsecond: %lu \n", (clock_mhz));
     for ( size_t j = 0; j < sizeof( long ); j++ ) {
         // my characters are 8 bit
         result[j] = (( clock_mhz >> ( j << 3 )) & 0xff );

@@ -85,8 +85,8 @@ public class PerformanceEngineering extends InputStream {
         int select1Column = 5;
         int select1Constant = 0;
         ComparisonPredicate select1ComparisonPredicate = ComparisonPredicate.EQUAL;
-        int select2Column = (this.queryNum == 3) ? 4 : 0;
-        int select2Constant = (this.queryNum == 3) ? 2 : 98;
+        int select2Column = (this.queryNum == 2) ? 4 : 0;
+        int select2Constant = (this.queryNum == 2) ? 2 : 98;
         ComparisonPredicate select2ComparisonPredicate = ComparisonPredicate.GREATER;
 
         int project1Column1 = 0;
@@ -133,7 +133,7 @@ public class PerformanceEngineering extends InputStream {
                 joinColumnFromRightSide,
                 joinComparisonPredicate,
                 relationSchema,
-                relationBuffer,
+                campaignGen.getInputRelation(),
                 isV2, this.queryNum
         );
 
@@ -150,8 +150,8 @@ public class PerformanceEngineering extends InputStream {
         Set<Query> queries = new HashSet<Query>();
         queries.add(query1);
 
-        Query query2 = null; // we only need this in the case we aggregate -- queryNum == 2
-        if (this.queryNum == 2) {
+        Query query2 = null; // we only need this in the case we aggregate -- queryNum == 3
+        if (this.queryNum == 3) {
             // Create the aggregate operator
             ITupleSchema joinSchema = ((PerformanceEngineeringUDF) cpuCode).getOutputSchema();
             cpuCode = new Aggregation(windowDefinition, aggregationTypes, aggregationAttributes, groupByAttributes);
@@ -170,7 +170,7 @@ public class PerformanceEngineering extends InputStream {
             application = new QueryApplication(queries);
             application.setup();
 
-            if (this.queryNum == 2) {
+            if (this.queryNum == 3) {
                 /* The path is query -> dispatcher -> handler -> aggregator */
                 if (SystemConf.CPU)
                     query2.setAggregateOperator((IAggregateOperator) cpuCode);

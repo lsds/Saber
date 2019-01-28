@@ -1,10 +1,12 @@
 package uk.ac.imperial.lsds.saber.cql.operators.udfs;
 
+import javafx.util.Pair;
 import uk.ac.imperial.lsds.saber.ITupleSchema;
 import uk.ac.imperial.lsds.saber.SystemConf;
 import uk.ac.imperial.lsds.saber.WindowBatch;
 import uk.ac.imperial.lsds.saber.WindowDefinition;
 import uk.ac.imperial.lsds.saber.buffers.IQueryBuffer;
+import uk.ac.imperial.lsds.saber.buffers.RelationalTableQueryBuffer;
 import uk.ac.imperial.lsds.saber.buffers.UnboundedQueryBufferFactory;
 import uk.ac.imperial.lsds.saber.cql.expressions.ComparisonPredicate;
 import uk.ac.imperial.lsds.saber.cql.expressions.Expression;
@@ -25,8 +27,9 @@ import uk.ac.imperial.lsds.saber.cql.predicates.LongLongComparisonPredicate;
 import uk.ac.imperial.lsds.saber.processors.HashMap;
 import uk.ac.imperial.lsds.saber.tasks.IWindowAPI;
 
-import java.util.Arrays;
-import java.util.Random;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.*;
 
 
 public class PerformanceEngineeringUDF implements IOperatorCode, IAggregateOperator {
@@ -87,7 +90,8 @@ public class PerformanceEngineeringUDF implements IOperatorCode, IAggregateOpera
     private ThreadLocal<byte[]> tl_tuplekey;
     private ThreadLocal<boolean[]> tl_found;
 
-    //private Multimap<Integer,Integer> multimap;
+    private List<Pair<UUID, UUID>> inputRelation;
+
     private HashMap hashTable;
 
     private byte [] testTupleBefore = new byte[128];
@@ -109,7 +113,7 @@ public class PerformanceEngineeringUDF implements IOperatorCode, IAggregateOpera
             int joinColumnFromRightSide,
             ComparisonPredicate joinComparisonPredicate,
             ITupleSchema relationSchema,
-            IQueryBuffer relationBuffer,
+            List<Pair<UUID, UUID>> inputRelation,
             //HashMap hashMap,
             boolean isV2,
             int queryNum
@@ -141,8 +145,8 @@ public class PerformanceEngineeringUDF implements IOperatorCode, IAggregateOpera
 
         /* Create HashTable for join */
         this.relationSchema = relationSchema;
-        this.relationBuffer = relationBuffer;
-        buildHashTable(); // Build hashtable from the static relation
+        this.inputRelation = inputRelation;
+        buildByteBufferAndHashTable(inputRelation);
 
         this.expressions2 = new Expression[2];
         this.expressions2[0] = new LongColumnReference(project2Column1);        // event_time
@@ -162,13 +166,28 @@ public class PerformanceEngineeringUDF implements IOperatorCode, IAggregateOpera
         this.queryNum = queryNum;
     }
 
-    void buildHashTable() {
+    void buildByteBufferAndHashTable(List<Pair<UUID, UUID>> inputRelation) {
+        int tupleSize = this.relationSchema.getTupleSize();
+
+        // build byte buffer
+        byte [] data = new byte [tupleSize * 100 * 10];
+        ByteBuffer b1 = ByteBuffer.wrap(data);
+        b1.order(ByteOrder.LITTLE_ENDIAN);
+        for (Pair<UUID,UUID> rel : inputRelation) {
+            b1.putLong(rel.getKey().getMostSignificantBits());
+            b1.putLong(rel.getKey().getLeastSignificantBits());			// ad_id
+            b1.putLong(rel.getValue().getMostSignificantBits());
+            b1.putLong(rel.getValue().getLeastSignificantBits());       // campaign_id
+        }
+        this.relationBuffer = new RelationalTableQueryBuffer(0, SystemConf.RELATIONAL_TABLE_BUFFER_SIZE, true);
+        this.relationBuffer.put(data, data.length);
+
+        // build hashtable
         this.hashTable = new HashMap();
         byte[] buffer = new byte[this.relationBuffer.getByteBuffer().position()];
         for (int i = 0; i < this.relationBuffer.getByteBuffer().position(); i++)
             buffer[i] = this.relationBuffer.getByteBuffer().get(i);
 
-        int tupleSize = this.relationSchema.getTupleSize();
 
         int column = ((LongLongColumnReference) this.joinPredicate.getSecondExpression()).getColumn();
         int offset = this.relationSchema.getAttributeOffset(column);
@@ -223,151 +242,6 @@ public class PerformanceEngineeringUDF implements IOperatorCode, IAggregateOpera
         if (idx < 0 || idx > aggregationTypes.length - 1)
             throw new ArrayIndexOutOfBoundsException("error: invalid aggregation type index");
         return aggregationTypes[idx];
-    }
-
-    @Override
-    public void processData(WindowBatch batch, IWindowAPI api) {
-        switch (this.queryNum) {
-            case 0:
-            case 1:
-                query0_1(batch, api);
-                break;
-            case 2:
-                query2(batch, api);
-                break;
-            case 3:
-                query3(batch, api);
-                break;
-            default:
-                System.out.println("Wrong query number!");
-                System.exit(1);
-        }
-    }
-
-    public void query0_1(WindowBatch batch, IWindowAPI api) {
-        // variables testing for correctness
-        int inputPointer, randPos, offset;
-        long tempLongVar1, tempLongVar2, tempLongVar3;
-
-        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer());
-        offset = batch.getBufferStartPointer() + 1024;
-        for (int i = 0; i < 128; i++)
-            testTupleBefore[i] = batch.getBuffer().getByteBuffer().get(offset+i);
-
-        /* Select */
-        if (selectPredicate != null)
-            select(batch, api);
-
-        offset = batch.getBufferStartPointer();
-        offset += (this.queryNum == 0 || this.queryNum == 2) ? 2*batch.getSchema().getTupleSize() : 4*batch.getSchema().getTupleSize();
-        for (int i = 0; i < 128; i++)
-            testTupleAfter[i] = batch.getBuffer().getByteBuffer().get(offset+i);
-        assert (batch.getBuffer().limit() == inputPointer * SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
-        assert (Arrays.equals(testTupleBefore, testTupleAfter)) : "Broken Selection: Wrong tuples passed!";
-
-
-        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer() + 1) / batch.getSchema().getTupleSize();
-        randPos = this.randGen.nextInt(inputPointer);
-        tempLongVar1 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize());
-        /* Project */
-        if (expressions != null)
-            project(batch, api);
-
-        assert (batch.getBuffer().limit() == (inputPointer * projectedSchema.getTupleSize())) : "Broken project: wrong number of columns copied!";
-        assert (tempLongVar1 == batch.getBuffer().getByteBuffer().getLong(randPos * projectedSchema.getTupleSize())) : "Broken project: Wrong tuples passed!";
-
-        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer());
-        randPos = this.randGen.nextInt(inputPointer/batch.getSchema().getTupleSize());
-        tempLongVar1 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize());
-        tempLongVar2 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+8);
-        tempLongVar3 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+16);
-
-        /* Hash Join */
-        if (joinPredicate != null)
-            hashJoin(batch, api);
-
-        assert (batch.getBuffer().limit() == inputPointer * 4 / SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken HashJoin: The pointer of the outputBuffer hasn't moved properly!";
-        assert (tempLongVar1 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()) &&
-                tempLongVar2 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+8) &&
-                tempLongVar3 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+16)) : "Broken HashJoin: Wrong tuples passed!";
-
-        /* Select */
-        if (selectPredicate2 != null)
-            select2(batch, api);
-        assert (batch.getBuffer().limit() % batch.getSchema().getTupleSize() == 0) : "Broken second Selection: The pointer of the outputBuffer hasn't moved properly!";
-    }
-
-    public void query2(WindowBatch batch, IWindowAPI api) {
-        // variables testing for correctness
-        int inputPointer, randPos, offset;
-        long tempLongVar1, tempLongVar2, tempLongVar3;
-
-        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer());
-        offset = batch.getBufferStartPointer() + 1024;
-        for (int i = 0; i < 128; i++)
-            testTupleBefore[i] = batch.getBuffer().getByteBuffer().get(offset+i);
-
-        /* Select */
-        if (selectPredicate != null)
-            select(batch, api);
-
-        offset = batch.getBufferStartPointer();
-        offset += (this.queryNum == 0 || this.queryNum == 2) ? 2*batch.getSchema().getTupleSize() : 4*batch.getSchema().getTupleSize();
-        for (int i = 0; i < 128; i++)
-            testTupleAfter[i] = batch.getBuffer().getByteBuffer().get(offset+i);
-        assert (batch.getBuffer().limit() == inputPointer * SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
-        assert (Arrays.equals(testTupleBefore, testTupleAfter)) : "Broken Selection: Wrong tuples passed!";
-
-        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer() + 1)/batch.getSchema().getTupleSize();
-        randPos = this.randGen.nextInt(inputPointer);
-        tempLongVar1 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize());
-        /* Project */
-        if (expressions != null)
-            project(batch, api);
-
-        assert (batch.getBuffer().limit() == (inputPointer * projectedSchema.getTupleSize())) : "Broken project: wrong number of columns copied";
-        assert (tempLongVar1 == batch.getBuffer().getByteBuffer().getLong(randPos * projectedSchema.getTupleSize())) : "Broken project: wrong tuple passed";
-
-        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer());
-        randPos = this.randGen.nextInt(inputPointer/batch.getSchema().getTupleSize());
-        tempLongVar1 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize());
-        tempLongVar2 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+8);
-        tempLongVar3 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+16);
-
-        /* Hash Join */
-        if (joinPredicate != null)
-            hashJoin(batch, api);
-
-        assert (batch.getBuffer().limit() == inputPointer * 4 / SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken HashJoin: The pointer of the outputBuffer hasn't moved properly!";
-        assert (tempLongVar1 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()) &&
-                tempLongVar2 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+8) &&
-                tempLongVar3 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+16)) : "Broken HashJoin: Wrong tuples passed!";
-    }
-
-    public void query3(WindowBatch batch, IWindowAPI api) {
-        // variables testing for correctness
-        int inputPointer, offset;
-
-        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer());
-        offset = batch.getBufferStartPointer() + 1024;
-        for (int i = 0; i < 128; i++)
-            testTupleBefore[i] = batch.getBuffer().getByteBuffer().get(offset+i);
-
-        /* Select */
-        if (selectPredicate != null)
-            select(batch, api);
-
-        offset = batch.getBufferStartPointer();
-        offset += (this.queryNum == 0 || this.queryNum == 2) ? 2*batch.getSchema().getTupleSize() : 4*batch.getSchema().getTupleSize();
-        for (int i = 0; i < 128; i++)
-            testTupleAfter[i] = batch.getBuffer().getByteBuffer().get(offset+i);
-        assert (batch.getBuffer().limit() == inputPointer * SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
-        assert (Arrays.equals(testTupleBefore, testTupleAfter)) : "Broken Selection: Wrong tuples passed!";
-
-        /* Select */
-        if (selectPredicate2 != null)
-            select2(batch, api);
-        assert (batch.getBuffer().limit() % batch.getSchema().getTupleSize() == 0) : "Broken second Selection: The pointer of the outputBuffer hasn't moved properly!";
     }
 
     public void select(WindowBatch batch, IWindowAPI api) {
@@ -667,6 +541,152 @@ public class PerformanceEngineeringUDF implements IOperatorCode, IAggregateOpera
     public void setup() {
 
         throw new UnsupportedOperationException("error: `setup` method is applicable only to GPU operators");
+    }
+
+    // DO NOT CHANGE ANYTHING BELOW THIS POINT!!!
+    @Override
+    public void processData(WindowBatch batch, IWindowAPI api) {
+        switch (this.queryNum) {
+            case 0:
+            case 1:
+                query0_1(batch, api);
+                break;
+            case 2:
+                query2(batch, api);
+                break;
+            case 3:
+                query3(batch, api);
+                break;
+            default:
+                System.out.println("Wrong query number!");
+                System.exit(1);
+        }
+    }
+
+    public void query0_1(WindowBatch batch, IWindowAPI api) {
+        // variables testing for correctness
+        int inputPointer, randPos, offset;
+        long tempLongVar1, tempLongVar2, tempLongVar3;
+
+        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer());
+        offset = batch.getBufferStartPointer() + 1024;
+        for (int i = 0; i < 128; i++)
+            testTupleBefore[i] = batch.getBuffer().getByteBuffer().get(offset+i);
+
+        /* Select */
+        if (selectPredicate != null)
+            select(batch, api);
+
+        offset = batch.getBufferStartPointer();
+        offset += (this.queryNum == 0 || this.queryNum == 3) ? 2*batch.getSchema().getTupleSize() : 4*batch.getSchema().getTupleSize();
+        for (int i = 0; i < 128; i++)
+            testTupleAfter[i] = batch.getBuffer().getByteBuffer().get(offset+i);
+        assert (batch.getBuffer().limit() == inputPointer * SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
+        assert (Arrays.equals(testTupleBefore, testTupleAfter)) : "Broken Selection: Wrong tuples passed!";
+
+
+        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer() + 1) / batch.getSchema().getTupleSize();
+        randPos = 5%inputPointer; //this.randGen.nextInt(inputPointer);
+        tempLongVar1 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize());
+        /* Project */
+        if (expressions != null)
+            project(batch, api);
+
+        assert (batch.getBuffer().limit() == (inputPointer * projectedSchema.getTupleSize())) : "Broken project: wrong number of columns copied!";
+        assert (tempLongVar1 == batch.getBuffer().getByteBuffer().getLong(randPos * projectedSchema.getTupleSize())) : "Broken project: Wrong tuples passed!";
+
+        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer());
+        randPos = 5%inputPointer; //this.randGen.nextInt(inputPointer/batch.getSchema().getTupleSize());
+        tempLongVar1 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize());
+        tempLongVar2 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+8);
+        tempLongVar3 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+16);
+
+        /* Hash Join */
+        if (joinPredicate != null)
+            hashJoin(batch, api);
+
+        assert (batch.getBuffer().limit() == inputPointer * 4 / SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken HashJoin: The pointer of the outputBuffer hasn't moved properly!";
+        assert (tempLongVar1 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()) &&
+                tempLongVar2 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+8) &&
+                tempLongVar3 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+16)) : "Broken HashJoin: Wrong tuples passed!";
+
+        /* Select */
+        if (selectPredicate2 != null)
+            select2(batch, api);
+        assert (batch.getBuffer().limit() % batch.getSchema().getTupleSize() == 0) : "Broken second Selection: The pointer of the outputBuffer hasn't moved properly!";
+    }
+
+    public void query2(WindowBatch batch, IWindowAPI api) {
+        // variables testing for correctness
+        int inputPointer, offset;
+
+        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer());
+        offset = batch.getBufferStartPointer() + 1024;
+        for (int i = 0; i < 128; i++)
+            testTupleBefore[i] = batch.getBuffer().getByteBuffer().get(offset+i);
+
+        /* Select */
+        if (selectPredicate != null)
+            select(batch, api);
+
+        offset = batch.getBufferStartPointer();
+        offset += (this.queryNum == 0 || this.queryNum == 3) ? 2*batch.getSchema().getTupleSize() : 4*batch.getSchema().getTupleSize();
+        for (int i = 0; i < 128; i++)
+            testTupleAfter[i] = batch.getBuffer().getByteBuffer().get(offset+i);
+        assert (batch.getBuffer().limit() == inputPointer * SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
+        assert (Arrays.equals(testTupleBefore, testTupleAfter)) : "Broken Selection: Wrong tuples passed!";
+
+        /* Select */
+        if (selectPredicate2 != null)
+            select2(batch, api);
+        assert (batch.getBuffer().limit() % batch.getSchema().getTupleSize() == 0) : "Broken second Selection: The pointer of the outputBuffer hasn't moved properly!";
+    }
+
+    public void query3(WindowBatch batch, IWindowAPI api) {
+        // variables testing for correctness
+        int inputPointer, randPos, offset;
+        long tempLongVar1, tempLongVar2, tempLongVar3;
+
+        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer());
+        offset = batch.getBufferStartPointer() + 1024;
+        for (int i = 0; i < 128; i++)
+            testTupleBefore[i] = batch.getBuffer().getByteBuffer().get(offset+i);
+
+        /* Select */
+        if (selectPredicate != null)
+            select(batch, api);
+
+        offset = batch.getBufferStartPointer();
+        offset += (this.queryNum == 0 || this.queryNum == 3) ? 2*batch.getSchema().getTupleSize() : 4*batch.getSchema().getTupleSize();
+        for (int i = 0; i < 128; i++)
+            testTupleAfter[i] = batch.getBuffer().getByteBuffer().get(offset+i);
+        assert (batch.getBuffer().limit() == inputPointer * SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken Selection: The pointer of the outputBuffer hasn't moved properly!";
+        assert (Arrays.equals(testTupleBefore, testTupleAfter)) : "Broken Selection: Wrong tuples passed!";
+
+        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer() + 1)/batch.getSchema().getTupleSize();
+        randPos = 5%inputPointer; //this.randGen.nextInt(inputPointer);
+        tempLongVar1 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize());
+        /* Project */
+        if (expressions != null)
+            project(batch, api);
+
+        assert (batch.getBuffer().limit() == (inputPointer * projectedSchema.getTupleSize())) : "Broken project: wrong number of columns copied";
+        assert (tempLongVar1 == batch.getBuffer().getByteBuffer().getLong(randPos * projectedSchema.getTupleSize())) : "Broken project: wrong tuple passed";
+
+        inputPointer = (batch.getBufferEndPointer() - batch.getBufferStartPointer());
+        randPos = 5%inputPointer; //this.randGen.nextInt(inputPointer/batch.getSchema().getTupleSize());
+        tempLongVar1 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize());
+        tempLongVar2 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+8);
+        tempLongVar3 = batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+16);
+
+        /* Hash Join */
+        if (joinPredicate != null)
+            hashJoin(batch, api);
+
+        assert (batch.getBuffer().limit() == inputPointer * 4 / SystemConf.FIRST_FILTER_SELECTIVITY) : "Broken HashJoin: The pointer of the outputBuffer hasn't moved properly!";
+        assert (tempLongVar1 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()) &&
+                tempLongVar2 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+8) &&
+                tempLongVar3 == batch.getBuffer().getByteBuffer().getLong(randPos * batch.getSchema().getTupleSize()+16)) : "Broken HashJoin: Wrong tuples passed!";
     }
 
 }

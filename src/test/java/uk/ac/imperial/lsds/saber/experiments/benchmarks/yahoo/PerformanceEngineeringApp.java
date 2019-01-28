@@ -9,15 +9,14 @@ public class PerformanceEngineeringApp {
     public static final String usage = "usage: PerformanceEngineeringApp with in-memory generation";
 
     public static void main(String[] args) throws InterruptedException {
-        // Queries
-        // q0: select(25% selectivity)->project->staticHashJoin->select
-        // q1: select(50% selectivity)->project->staticHashJoin->select
-        // q2: select(25% selectivity)->project->staticHashJoin->aggregate
-        // q3: select(50% selectivity)->select
-        int queryNum = 0;
-        boolean isShortRun = true; // define if the application runs for either 3 or 60 seconds
 
-        // Do not change anything bellow this line!!!
+        // choose a query between 0-3
+        int queryNum = 0;
+        boolean isShortRun = true; // define if the application runs for either 3 (isShortRun==true) or 60 seconds (isShortRun==false)
+
+
+
+        // DO NOT CHANGE ANYHTING BELOW THIS LINE!!!
         PerformanceEngineeringQuery benchmarkQuery = null;
         int numberOfThreads = 1;
         int batchSize = 2 * 1048576;
@@ -36,12 +35,10 @@ public class PerformanceEngineeringApp {
             queryNum = Integer.parseInt(args[0]);
 
         if (queryNum > 3) {
-            System.out.println("This application supports only four queries. Enter a number between 0-3 to choose one of the following:");
-            System.out.println("0: select(25% selectivity)->project->staticHashJoin->select");
-            System.out.println("1: select(50% selectivity)->project->staticHashJoin->select");
-            System.out.println("2: select(25% selectivity)->project->staticHashJoin->aggregate");
-            System.out.println("3: select(50% selectivity)-> select(25% selectivity)");
+            System.out.println("[DBG] This application supports only four queries. Enter a number between 0-3 to choose one of them");
             System.exit(1);
+        } else {
+            System.out.println("[DBG] Running query " + queryNum);
         }
 
         // Set SABER's configuration
@@ -61,7 +58,7 @@ public class PerformanceEngineeringApp {
         SystemConf.HYBRID = SystemConf.CPU && SystemConf.GPU;
         SystemConf.THREADS = numberOfThreads;
         SystemConf.LATENCY_ON = false;
-        SystemConf.FIRST_FILTER_SELECTIVITY = (queryNum == 1 || queryNum == 3) ? 0.50 : 0.25;
+        SystemConf.FIRST_FILTER_SELECTIVITY = (queryNum == 1 || queryNum == 2) ? 0.50 : 0.25;
 
 
         /* Initialize the Operators of the Benchmark */

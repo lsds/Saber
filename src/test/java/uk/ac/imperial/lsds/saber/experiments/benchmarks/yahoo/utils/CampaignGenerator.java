@@ -2,12 +2,15 @@ package uk.ac.imperial.lsds.saber.experiments.benchmarks.yahoo.utils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 //import com.google.common.collect.ArrayListMultimap;
 //import com.google.common.collect.Multimap;
 
+import javafx.util.Pair;
 import uk.ac.imperial.lsds.saber.ITupleSchema;
 import uk.ac.imperial.lsds.saber.SystemConf;
 import uk.ac.imperial.lsds.saber.TupleSchema;
@@ -26,6 +29,8 @@ public class CampaignGenerator {
 	public IQueryBuffer relationBuffer = null;
 	public HashMap hashMap = null;
 	long [][] adsArray = null;
+
+    List<Pair<UUID, UUID>> inputRelation = new ArrayList<>();
 	
 	private boolean isV2 = false;
 
@@ -45,7 +50,8 @@ public class CampaignGenerator {
 			generateBufferV2();
 		else
 			generateBuffer();
-		
+
+
 		/* Create Hash Table*/
 		int column = isV2?((LongColumnReference) joinPredicate.getSecondExpression()).getColumn() : 
 							((LongLongColumnReference) joinPredicate.getSecondExpression()).getColumn();
@@ -147,7 +153,11 @@ public class CampaignGenerator {
 				
 				// padding
 				b1.put(this.campaignsSchema.getPad());
-				
+
+
+				// create Java list
+                this.inputRelation.add(new Pair<>(ad_id, campaign_id));
+
 				value++;
 			}
 			value2++;
@@ -267,4 +277,6 @@ public class CampaignGenerator {
 	public long [][] getAds () {
 		return this.adsArray;
 	}
+
+	public List<Pair<UUID, UUID>> getInputRelation () { return this.inputRelation; }
 }
