@@ -146,7 +146,11 @@ inputSchema {
 We represent unique ids (user_id, page_id, ad_id, campaign_id) with 16 bytes integers. However, long long integers are not supported by Java, thus we have implemented our own class and we hash and compare the lower 64 bits and then the higher 64 ones for the HashJoin operator. Currently, for the hash join we use a hashtable that points to our actual data in a bytebuffer.
 
 Regarding the execution of the benchmark, we decide to pin our workers to threads in order to improve our system's performance:
+
 a thread is used for scheduling the tasks (1st core)
+
 one for actual computation (2nd core)  <-----
+
 one for fast data ingestion (3rd core)
+
 one for continuous data generation (4rd core)
