@@ -40,6 +40,7 @@ $ cd ..
 # The Benchmark
 
 The input schema of our benchmark data stream is:
+
 inputSchema {
 	
 	long timestamp;		// 8 bytes
@@ -57,18 +58,40 @@ inputSchema {
 	int ip_address;    	// 4 bytes
 	
 	char padding[60]   	// 60 bytes
-
-}				// 128 bytes in total
+	
+				// 128 bytes in total
+				
+}				
 
 The applications we want to optimise are related to Yahoo Streaming Benchmark (https://yahooeng.tumblr.com/post/135321837876/benchmarking-streaming-computation-engines-at). These are the queries we have:
 
-q0: select(25% selectivity)->project->staticHashJoin->select
+q0: select(inputStream, Predicate(column, constant, comparisonPredicate))--[25% selectivity]-->
 
-q1: select(50% selectivity)->project->staticHashJoin->select
+project(inputStream, columns)-->
 
-q2: select(50% selectivity)->select
+staticHashJoin(inputStream, columnLeftSide, staticRelation, columnRightSide, comparisonPredicate)-->
 
-q3: select(25% selectivity)->project->staticHashJoin->windowAggregate
+select(inputStream, Predicate(column, constant, comparisonPredicate))
+
+q1: select(inputStream, Predicate(column, constant, comparisonPredicate))--[50% selectivity]-->
+
+project(inputStream, columns)-->
+
+staticHashJoin(inputStream, columnLeftSide, staticRelation, columnRightSide, comparisonPredicate)-->
+
+select(inputStream, Predicate(column, constant, comparisonPredicate))
+
+q2: select(inputStream, Predicate(column, constant, comparisonPredicate))--[50% selectivity]-->
+
+select(inputStream, Predicate(column, constant, comparisonPredicate))
+
+q3: select(inputStream, Predicate(column, constant, comparisonPredicate))--[25% selectivity]-->
+
+project(inputStream, columns)-->
+
+staticHashJoin(inputStream, columnLeftSide, staticRelation, columnRightSide, comparisonPredicate)-->
+
+windowAggregate(column, aggrFunction, groupColumn, windowSemantics)
 
 You can run each of the queries like this:
 
