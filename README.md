@@ -130,11 +130,18 @@ For building the project manually or from an IDE, add these flags to the VM:
 -ea -server -XX:+UseConcMarkSweepGC -XX:NewRatio=2 -XX:SurvivorRatio=16 -Xms2g -Xmx2g
 
 In SABER, all data structures and tuple sizes are a power of two. In addition, as we are referring to streaming data, the time dimension is a first class citizen and is always the first attribute of our input schema.  Thus, if we have an input schema with a timestamp and one integer value, we should always add padding like this:
+
 inputSchema {
+	
 	long timestamp;	// 8 bytes
-	int attr_1; 		// 4 bytes
+	
+	int attr_1; 	// 4 bytes
+	
 	char padding[4]	// 4 bytes
-}                   	// 16 bytes in total
+	
+			// 16 bytes in total
+		
+}                   	
 
 We represent unique ids (user_id, page_id, ad_id, campaign_id) with 16 bytes integers. However, long long integers are not supported by Java, thus we have implemented our own class and we hash and compare the lower 64 bits and then the higher 64 ones for the HashJoin operator. Currently, for the hash join we use a hashtable that points to our actual data in a bytebuffer.
 
