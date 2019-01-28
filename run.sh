@@ -2,6 +2,9 @@
 USAGE="usage: ./run.sh [class name]"
 
 MVN="/home/$USER/.m2/repository"
+export JAVA_HOME=/usr/lib/jvm/oracle-java10-jdk-amd64
+export PATH=$SABER_HOME/clib:$JAVA_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$(pwd)/clib:$LD_LIBRARY_PATH
 
 # LOG4J="${MVN}/log4j/log4j/1.2.12/log4j-1.2.12.jar"
 
