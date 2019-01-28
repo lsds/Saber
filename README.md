@@ -41,20 +41,33 @@ $ cd ..
 
 The input schema of our benchmark data stream is:
 inputSchema {
-	long timestamp;	// 8 bytes
+	
+	long timestamp;		// 8 bytes
+	
 	long long user_id; 	// 16 bytes
+	
 	long long page_id; 	// 16 bytes
+	
 	long long ad_id;   	// 16 bytes
+	
 	int ad_type;	   	// 4 bytes
+	
 	int event_type;    	// 4 bytes
+	
 	int ip_address;    	// 4 bytes
+	
 	char padding[60]   	// 60 bytes
-}					// 128 bytes in total
+
+}				// 128 bytes in total
 
 The applications we want to optimise are related to Yahoo Streaming Benchmark (https://yahooeng.tumblr.com/post/135321837876/benchmarking-streaming-computation-engines-at). These are the queries we have:
+
 q0: select(25% selectivity)->project->staticHashJoin->select
+
 q1: select(50% selectivity)->project->staticHashJoin->select
+
 q2: select(50% selectivity)->select
+
 q3: select(25% selectivity)->project->staticHashJoin->windowAggregate
 
 You can run each of the queries like this:
