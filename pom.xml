@@ -89,7 +89,7 @@
   		<dependency>
   			<groupId>org.eclipse.jetty</groupId>
   			<artifactId>jetty-io</artifactId>
-  			<version>9.0.0.v20130308</version>
+  			<version>10.0.2</version>
   		</dependency>
   	</dependencies>
   </dependencyManagement>
